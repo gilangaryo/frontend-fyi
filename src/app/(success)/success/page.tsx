@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -13,9 +14,7 @@ interface Product {
     title: string;
     imageUrl: string;
     price: string;
-    category: {
-        title: string;
-    };
+    category: { title: string };
 }
 
 interface OrderItem {
@@ -32,11 +31,7 @@ interface Order {
     shippingCost: string;
     subTotal: string;
     courierCompany: string | null;
-    user: {
-        name: string;
-        email: string;
-        phone: string;
-    };
+    user: { name: string; email: string; phone: string };
     items: OrderItem[];
 }
 
@@ -59,15 +54,10 @@ interface Session {
 interface OrderResponse {
     success: boolean;
     message: string;
-    data: {
-        session: Session;
-        payment: Payment;
-        order: Order;
-    };
+    data: { session: Session; payment: Payment; order: Order };
 }
 
-
-export default function SuccessPage() {
+function SuccessContent() {
     const searchParams = useSearchParams();
     const order_id = searchParams.get("order_id");
 
@@ -109,9 +99,6 @@ export default function SuccessPage() {
     const { session, order, payment } = data;
     const customer = order.user;
     const items = order.items ?? [];
-
-    // const shippingCost = Number(order.shippingCost || 0);
-    // const subTotal = Number(order.subTotal || 0);
     const total = Number(order.total || session.amount || 0);
 
     return (
@@ -171,7 +158,6 @@ export default function SuccessPage() {
                         </div>
                     ))}
 
-                    {/* Payment Info */}
                     <div className="border-t pt-4 border-gray-300 text-gray-500 space-y-3 text-sm font-light">
                         <div className="flex justify-between">
                             <span>Transaction Date</span>
@@ -195,25 +181,6 @@ export default function SuccessPage() {
                             <span>{payment.channel || "Xendit Payment Link"}</span>
                         </div>
 
-                        {/* {order.courierCompany && (
-                            <div className="flex justify-between">
-                                <span>Shipping Method</span>
-                                <span>{order.courierCompany.toUpperCase()}</span>
-                            </div>
-                        )}
-
-                        <div className="flex justify-between">
-                            <span>Subtotal</span>
-                            <span>IDR {subTotal.toLocaleString("id-ID")}</span>
-                        </div>
-
-                        {shippingCost > 0 && (
-                            <div className="flex justify-between">
-                                <span>Shipping</span>
-                                <span>IDR {shippingCost.toLocaleString("id-ID")}</span>
-                            </div>
-                        )} */}
-
                         <div className="flex justify-between font-medium border-t border-gray-300 pt-3">
                             <span>Total</span>
                             <span>IDR {total.toLocaleString("id-ID")}</span>
@@ -229,5 +196,13 @@ export default function SuccessPage() {
                 </Link>
             </main>
         </div>
+    );
+}
+
+export default function SuccessPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <SuccessContent />
+        </Suspense>
     );
 }
