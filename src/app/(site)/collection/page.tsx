@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import CollectionSection from '../components/collection/CollectionSection'
 import { API_BASE } from '@/lib/constants'
+import Loading from '@/app/(site)/components/Loading'
 
 interface Product {
     id: string
@@ -53,7 +54,7 @@ export default function CollectionPage() {
         fetchCollections()
     }, [])
 
-    if (loading) return <div className="p-10 text-center">Loading collections...</div>
+    if (loading) return <div className="p-10 text-center"><Loading /></div>
     if (error) return <div className="p-10 text-center text-red-500">{error}</div>
 
     return (

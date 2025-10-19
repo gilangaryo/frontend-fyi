@@ -13,6 +13,8 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { getImageUrl } from "@/lib/utils";
+import Loading from '@/app/(site)/components/Loading'
+
 interface Blog {
     id: number;
     slug: string;
@@ -70,7 +72,7 @@ export default function Beyond() {
             <HeroSection />
 
             {loading && (
-                <div className="py-20 text-center text-gray-400">Loading stories...</div>
+                <div className="py-20 text-center text-gray-400"><Loading /></div>
             )}
 
             {!loading && blogs.length > 0 && (
