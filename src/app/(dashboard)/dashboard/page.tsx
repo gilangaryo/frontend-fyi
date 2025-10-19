@@ -1,0 +1,289 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import StatsCard from "../components/StatsCard";
+import DateFilter from "../components/DateFilter";
+import { API_BASE } from "@/lib/constants";
+import { getImageUrl } from "@/lib/utils";
+
+interface Product {
+    id: string;
+    title: string;
+    collection?: { title: string };
+    price: string;
+    stock: number;
+    imageUrl: string;
+}
+
+interface Order {
+    id: string;
+    customer: string;
+    totalAmount: number;
+    status: string;
+    user: {
+        name: string;
+    };
+}
+
+export default function DashboardPage() {
+    const [activeTab, setActiveTab] = useState<"product" | "orders">("product");
+    const [products, setProducts] = useState<Product[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [summary, setSummary] = useState({
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalProducts: 0,
+        orderChange: 0,
+        revenueChange: 0,
+        productChange: 0,
+    });
+
+    useEffect(() => {
+        async function fetchDashboardData() {
+            try {
+                setLoading(true);
+
+                const token = localStorage.getItem("token");
+                if (!token) throw new Error("Unauthorized — token not found");
+
+                const headers = {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                };
+
+                const [summaryRes, prodRes, orderRes] = await Promise.all([
+                    fetch(`${API_BASE}/dashboard/summary`, { headers, cache: "no-store" }),
+                    fetch(`${API_BASE}/products?limit=5`, { headers, cache: "no-store" }),
+                    fetch(`${API_BASE}/orders?page=1&limit=5`, { headers, cache: "no-store" }),
+                ]);
+
+                if (summaryRes.status === 401) {
+                    console.warn("⚠️ Token invalid — redirect to login");
+                    window.location.href = "/login";
+                    return;
+                }
+
+                const [summaryJson, prodJson, orderJson] = await Promise.all([
+                    summaryRes.json(),
+                    prodRes.json(),
+                    orderRes.json(),
+                ]);
+
+                if (summaryJson.success && summaryJson.data) setSummary(summaryJson.data);
+
+                if (prodJson.success && Array.isArray(prodJson.data)) {
+                    const mappedProducts = prodJson.data.map((p: Product) => ({
+                        id: p.id,
+                        title: p.title,
+                        collection: p.collection,
+                        price: p.price,
+                        stock: p.stock,
+                        imageUrl: `${API_BASE}${p.imageUrl}`,
+                    }));
+                    setProducts(mappedProducts);
+                }
+
+                if (orderJson.success && Array.isArray(orderJson.data)) {
+                    const mappedOrders = orderJson.data.map((o: Order) => ({
+                        id: o.id,
+                        customer: o.user.name,
+                        totalAmount: o.totalAmount,
+                        status: o.status,
+                    }));
+                    setOrders(mappedOrders);
+                }
+            } catch (err) {
+                console.error("⚠️ Failed to fetch dashboard data:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchDashboardData();
+    }, []);
+
+
+
+    return (
+        <div className="min-h-screen">
+            {/* Header */}
+            <div>
+                <h1 className="text-2xl font-semibold">Good Morning, Moni!</h1>
+                <p className="text-gray-500">
+                    Start your daily by checking today&apos;s tasks and updates.
+                </p>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <StatsCard
+                    title="Total Order"
+                    subtitle="Last 30 days"
+                    value={summary.totalOrders.toString()}
+                    change={`${summary.orderChange > 0 ? "+" : ""}${summary.orderChange}%`}
+                    changeType={summary.orderChange >= 0 ? "up" : "down"}
+                    icon="/dashboard/home/total-order.svg"
+                />
+                <StatsCard
+                    title="Total Revenue"
+                    subtitle="Last 30 days"
+                    value={
+                        "Rp " + Number(summary.totalRevenue || 0).toLocaleString("id-ID")
+                    }
+                    change={`${summary.revenueChange > 0 ? "+" : ""}${summary.revenueChange}%`}
+                    changeType={summary.revenueChange >= 0 ? "up" : "down"}
+                    icon="/dashboard/home/total-revenue.svg"
+                />
+                <StatsCard
+                    title="Total Product"
+                    subtitle="Active inventory"
+                    value={summary.totalProducts.toString()}
+                    change={`${summary.productChange > 0 ? "+" : ""}${summary.productChange}%`}
+                    changeType={summary.productChange >= 0 ? "up" : "down"}
+                    icon="/dashboard/home/total-reservation.svg"
+                />
+            </div>
+
+
+            <DateFilter />
+
+            {/* Today Activity */}
+            <div className="mt-10">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Today Activity</h2>
+                    <a href="#" className="text-primary-studio text-sm">
+                        View Report Snapshot →
+                    </a>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-6 mt-4 border-b border-gray-200">
+                    <button
+                        onClick={() => setActiveTab("product")}
+                        className={`pb-2 ${activeTab === "product"
+                            ? "text-primary-studio font-medium border-b-2 border-primary-studio"
+                            : "text-gray-500"
+                            }`}
+                    >
+                        Add Product
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("orders")}
+                        className={`pb-2 ${activeTab === "orders"
+                            ? "text-primary-studio font-medium border-b-2 border-primary-studio"
+                            : "text-gray-500"
+                            }`}
+                    >
+                        Orders
+                    </button>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto mt-4">
+                    {loading ? (
+                        <div className="text-center text-gray-400 py-16">Loading data...</div>
+                    ) : activeTab === "product" ? (
+                        <table className="w-full rounded-t-xl overflow-hidden">
+                            <thead>
+                                <tr className="bg-primary-studio text-white text-left">
+                                    <th className="p-3">Product</th>
+                                    <th className="p-3">Price</th>
+                                    <th className="p-3">Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white">
+                                {products.map((p) => (
+                                    <tr key={p.id}>
+                                        <td className="p-3 flex items-center gap-3">
+                                            <Image
+                                                src={getImageUrl(p.imageUrl) || p.imageUrl}
+                                                alt={p.title}
+                                                width={40}
+                                                height={40}
+                                                className=" object-cover"
+                                            />
+                                            <div>
+                                                <p className="font-medium">{p.title}</p>
+                                                <p className="text-sm text-gray-500">
+                                                    {p.collection?.title || "-"}
+                                                </p>
+                                            </div>
+                                        </td>
+                                        <td className="p-3">
+                                            Rp {Number(p.price).toLocaleString("id-ID")}
+                                        </td>
+                                        <td className="p-3">
+                                            {p.stock > 10 ? (
+                                                <span className="bg-green-100 text-green-600 px-3 py-1 text-xs rounded-full">
+                                                    Enough Stock
+                                                </span>
+                                            ) : p.stock > 0 ? (
+                                                <span className="bg-yellow-100 text-yellow-600 px-3 py-1 text-xs rounded-full">
+                                                    Almost Out
+                                                </span>
+                                            ) : (
+                                                <span className="bg-red-100 text-red-600 px-3 py-1 text-xs rounded-full">
+                                                    Out of Stock
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <table className="w-full rounded-t-xl overflow-hidden">
+                            <thead>
+                                <tr className="bg-sky-400 text-white text-left">
+                                    <th className="p-3">Order No</th>
+                                    <th className="p-3">Customer</th>
+                                    <th className="p-3">Total</th>
+                                    <th className="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white">
+                                {orders.map((o) => (
+                                    <tr key={o.id}>
+                                        <td className="p-3">{o.id}</td>
+                                        <td className="p-3">{o.customer}</td>
+                                        <td className="p-3">
+                                            Rp {Number(o.totalAmount).toLocaleString("id-ID")}
+                                        </td>
+                                        <td className="p-3">
+                                            <span
+                                                className={`text-sm ${o.status === "NEW"
+                                                    ? "text-green-600"
+                                                    : o.status === "SHIPPED"
+                                                        ? "text-sky-500"
+                                                        : "text-gray-600"
+                                                    }`}
+                                            >
+                                                ● {o.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+
+                {/* Footer link */}
+                <div className="flex justify-end mt-4">
+                    <a
+                        href={
+                            activeTab === "orders"
+                                ? "/dashboard/manage-sales"
+                                : "/dashboard/products"
+                        }
+                        className="text-primary-studio text-sm flex items-center gap-1"
+                    >
+                        {activeTab === "orders" ? "See all Orders" : "View All Product"} →
+                    </a>
+                </div>
+            </div>
+        </div>
+    );
+}
