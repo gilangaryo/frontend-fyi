@@ -82,6 +82,25 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
 
+      {
+        protocol: "https",
+        hostname: "fyicouture.com",
+      },
+      {
+        protocol: "https",
+        hostname: "api.fyicouture.com",
+      },
+
+      {
+        protocol: "https",
+        hostname: "api.fyicouture.com",
+        pathname: "/api/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "api.fyicouture.com",
+        pathname: "/api/uploads/**",
+      },
     ],
   },
 };
