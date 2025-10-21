@@ -19,7 +19,7 @@ interface Product {
 interface Order {
     id: string;
     customer: string;
-    totalAmount: number;
+    total: number;
     status: string;
     user: {
         name: string;
@@ -89,7 +89,7 @@ export default function DashboardPage() {
                     const mappedOrders = orderJson.data.map((o: Order) => ({
                         id: o.id,
                         customer: o.user.name,
-                        totalAmount: o.totalAmount,
+                        total: o.total,
                         status: o.status,
                     }));
                     setOrders(mappedOrders);
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                                     <tr key={p.id}>
                                         <td className="p-3 flex items-center gap-3">
                                             <Image
-                                                src={getImageUrl(p.imageUrl) || p.imageUrl}
+                                                src={getImageUrl(p.imageUrl)}
                                                 alt={p.title}
                                                 width={40}
                                                 height={40}
@@ -215,9 +215,11 @@ export default function DashboardPage() {
                                             Rp {Number(p.price).toLocaleString("id-ID")}
                                         </td>
                                         <td className="p-3">
-                                            {p.stock > 10 ? (
+                                            {p.stock}
+                                            {/* {p.stock > 10 ? (
                                                 <span className="bg-green-100 text-green-600 px-3 py-1 text-xs rounded-full">
                                                     Enough Stock
+                                                    {p.stock}
                                                 </span>
                                             ) : p.stock > 0 ? (
                                                 <span className="bg-yellow-100 text-yellow-600 px-3 py-1 text-xs rounded-full">
@@ -227,7 +229,7 @@ export default function DashboardPage() {
                                                 <span className="bg-red-100 text-red-600 px-3 py-1 text-xs rounded-full">
                                                     Out of Stock
                                                 </span>
-                                            )}
+                                            )} */}
                                         </td>
                                     </tr>
                                 ))}
@@ -249,7 +251,7 @@ export default function DashboardPage() {
                                         <td className="p-3">{o.id}</td>
                                         <td className="p-3">{o.customer}</td>
                                         <td className="p-3">
-                                            Rp {Number(o.totalAmount).toLocaleString("id-ID")}
+                                            Rp {Number(o.total).toLocaleString("id-ID")}
                                         </td>
                                         <td className="p-3">
                                             <span
@@ -276,7 +278,7 @@ export default function DashboardPage() {
                         href={
                             activeTab === "orders"
                                 ? "/dashboard/manage-sales"
-                                : "/dashboard/products"
+                                : "/dashboard/product"
                         }
                         className="text-primary-studio text-sm flex items-center gap-1"
                     >

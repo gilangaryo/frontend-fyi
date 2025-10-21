@@ -13,11 +13,37 @@ export default function CheckoutPage() {
     const dispatch = useDispatch()
     const [mounted, setMounted] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [storeOpen, setStoreOpen] = useState<boolean | null>(null) // null = loading
+    const [storeMessage, setStoreMessage] = useState('')
 
     const cartItems = useSelector((state: RootState) => state.cart.items)
     const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
     useEffect(() => setMounted(true), [])
+
+    // ✅ Fetch store status
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/setting/store-status`)
+                const json = await res.json()
+                if (json.success) {
+                    setStoreOpen(json.data.isOpen)
+                    setStoreMessage(
+                        json.data.isOpen
+                            ? ''
+                            : '⚠️ Our store is currently closed — checkout is temporarily disabled.'
+                    )
+                } else {
+                    setStoreOpen(true)
+                }
+            } catch (err) {
+                console.error('Failed to fetch store status:', err)
+                // fallback: tetap buka biar tidak menghalangi testing
+                setStoreOpen(true)
+            }
+        })()
+    }, [])
 
     const [form, setForm] = useState({
         email: '',
@@ -34,6 +60,7 @@ export default function CheckoutPage() {
         country: 'Indonesia',
         paymentMethod: '',
     })
+
     const isFormValid =
         form.email &&
         form.firstName &&
@@ -46,6 +73,7 @@ export default function CheckoutPage() {
         form.postalCode &&
         form.phone &&
         cartItems.length > 0
+
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -55,14 +83,16 @@ export default function CheckoutPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
         if (!isFormValid) {
             alert('⚠️ Please complete all required fields before checkout.')
             return
         }
+        if (storeOpen === false) {
+            alert('🚫 The store is currently closed. You cannot place an order right now.')
+            return
+        }
 
         setLoading(true)
-
         try {
             const basePayload = {
                 email: form.email,
@@ -80,6 +110,7 @@ export default function CheckoutPage() {
                     order_note: 'tolong hati-hati ya paketnya',
                 },
             }
+
 
             let payload: unknown
             if (form.country === 'Indonesia') {
@@ -108,7 +139,6 @@ export default function CheckoutPage() {
                     },
                 }
             }
-
 
             const endpoint =
                 form.country === 'Indonesia'
@@ -140,11 +170,29 @@ export default function CheckoutPage() {
         }
     }
 
+    if (!mounted)
+        return (
+            <div className="min-h-screen flex items-center justify-center text-gray-500">
+                Loading checkout...
+            </div>
+        )
 
-    if (!mounted) return <div className="min-h-screen flex items-center justify-center text-gray-500">Loading checkout...</div>
+    // ⏳ Kalau status toko belum terload
+    if (storeOpen === null)
+        return (
+            <div className="min-h-screen flex items-center justify-center text-gray-500">
+                Checking store status...
+            </div>
+        )
 
     return (
         <div className="min-h-screen bg-white">
+            {/* 🟥 Banner jika toko tutup */}
+            {!storeOpen && (
+                <div className="bg-red-100 text-red-700 text-center py-3 text-sm font-medium">
+                    {storeMessage}
+                </div>
+            )}
 
             <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* LEFT SIDE */}
@@ -161,17 +209,12 @@ export default function CheckoutPage() {
                             required
                             className="w-full border border-gray-300 rounded-md p-3 focus:ring-1 focus:ring-black"
                         />
-                        {/* <label className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                            <input type="checkbox" className="border-gray-300 rounded" />
-                            Email me with news & offers
-                        </label> */}
                     </div>
 
                     {/* Delivery */}
                     <div>
                         <h2 className="text-lg font-semibold mb-3">Delivery</h2>
 
-                        {/* Country selector */}
                         <select
                             name="country"
                             value={form.country}
@@ -185,14 +228,42 @@ export default function CheckoutPage() {
                         </select>
 
                         <div className="grid grid-cols-2 gap-3 mb-3">
-                            <input type="text" name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} className="border border-gray-300 rounded-md p-3" />
-                            <input type="text" name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} className="border border-gray-300 rounded-md p-3" />
+                            <input
+                                type="text"
+                                name="firstName"
+                                placeholder="First Name"
+                                value={form.firstName}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-3"
+                            />
+                            <input
+                                type="text"
+                                name="lastName"
+                                placeholder="Last Name"
+                                value={form.lastName}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-3"
+                            />
                         </div>
 
-                        <input type="text" name="address" placeholder="Street Address" value={form.address} onChange={handleChange} className="w-full border border-gray-300 rounded-md p-3 mb-3" />
-                        <input type="text" name="apartment" placeholder="Apartment, suite, etc. (optional)" value={form.apartment} onChange={handleChange} className="w-full border border-gray-300 rounded-md p-3 mb-3" />
+                        <input
+                            type="text"
+                            name="address"
+                            placeholder="Street Address"
+                            value={form.address}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded-md p-3 mb-3"
+                        />
+                        <input
+                            type="text"
+                            name="apartment"
+                            placeholder="Apartment, suite, etc. (optional)"
+                            value={form.apartment}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded-md p-3 mb-3"
+                        />
 
-                        {form.country === "Indonesia" ? (
+                        {form.country === 'Indonesia' ? (
                             <AddressSelector form={form} setForm={setForm} />
                         ) : (
                             <>
@@ -215,14 +286,22 @@ export default function CheckoutPage() {
                             </>
                         )}
 
-                        <input type="tel" name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-md p-3 mt-3" />
+                        <input
+                            type="tel"
+                            name="phone"
+                            placeholder="Phone"
+                            value={form.phone}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded-md p-3 mt-3"
+                        />
                     </div>
-
 
                     {/* Payment */}
                     <div>
                         <h2 className="text-lg font-semibold mb-3">Payment</h2>
-                        <p className="text-sm text-gray-500 mb-2">All transactions are secure and encrypted.</p>
+                        <p className="text-sm text-gray-500 mb-2">
+                            All transactions are secure and encrypted.
+                        </p>
                         <label className="flex items-center gap-2 border border-gray-300 rounded-md p-3 cursor-pointer hover:bg-gray-50">
                             <input type="radio" name="paymentMethod" value="Xendit" checked readOnly />
                             Pay with Xendit
@@ -231,17 +310,21 @@ export default function CheckoutPage() {
 
                     <button
                         type="submit"
-                        disabled={loading || !isFormValid}
-                        className={`w-full py-3 font-medium transition rounded-md ${loading || !isFormValid
+                        disabled={loading || !isFormValid || !storeOpen}
+                        className={`w-full py-3 font-medium transition rounded-md ${loading || !isFormValid || !storeOpen
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-secondary text-white hover:bg-gray-700'
                             }`}
                     >
-                        {loading ? 'Processing...' : 'Complete Order'}
+                        {storeOpen
+                            ? loading
+                                ? 'Processing...'
+                                : 'Complete Order'
+                            : 'Store Closed'}
                     </button>
                 </form>
 
-                {/* RIGHT SIDE */}
+                {/* RIGHT SIDE (order summary) */}
                 <div className="border-t lg:border-t-0 lg:border-l border-gray-200 pt-8 lg:pt-0 lg:pl-8">
                     <div className="space-y-6">
                         {cartItems.map((item) => (
@@ -251,7 +334,7 @@ export default function CheckoutPage() {
                                         <Image src={getImageUrl(item.imageUrl)} alt={item.title} fill className="object-cover rounded" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-sm">{item.title} </p>
+                                        <p className="font-medium text-sm">{item.title}</p>
                                         <p className="text-gray-500 text-sm">{item.size || 'All Size'}</p>
                                         <p className="font-semibold text-gray-800">
                                             IDR {item.price.toLocaleString('id-ID')}

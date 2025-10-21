@@ -1,7 +1,7 @@
 'use client'
-
-import { getImageUrl } from "@/lib/utils"
 import Image from "next/image"
+import { getImageUrl } from "@/lib/utils"
+import AcceptOrderButton from "./AcceptOrderButton"
 
 interface Order {
     id: string
@@ -15,7 +15,11 @@ interface Order {
     paymentStatus: string
 }
 
-export default function OrderCard({ order }: { order: Order }) {
+export default function OrderCard({
+    order,
+    onAccepted,
+}: { order: Order; onAccepted: (id: string) => void }) {
+
     const paymentColor =
         order.paymentStatus === "PAID"
             ? "bg-green-100 text-green-700"
@@ -37,7 +41,7 @@ export default function OrderCard({ order }: { order: Order }) {
                             : "bg-gray-100 text-gray-600"
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer ">
             {/* Header */}
             <div className="flex justify-between items-start border-b border-gray-100 pb-3">
                 <div className="border-l-4 border-primary-studio pl-3">
@@ -87,15 +91,16 @@ export default function OrderCard({ order }: { order: Order }) {
                     </div>
                 </div>
 
-                <button
-                    disabled={order.status !== "NEW"}
-                    className={`${order.status === "NEW"
-                        ? "bg-sky-500 hover:bg-sky-600 text-white"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        } text-sm font-medium px-4 py-2 rounded-md transition`}
-                >
-                    {order.status === "NEW" ? "Accept Order" : "Processed"}
-                </button>
+                <div className="text-right">
+                    <AcceptOrderButton
+                        orderId={order.id}
+                        status={order.status}
+                        onAccepted={onAccepted}
+                    />
+                </div>
+
+
+
             </div>
         </div>
     )

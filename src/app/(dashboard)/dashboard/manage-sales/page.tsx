@@ -57,6 +57,25 @@ export default function ManageSalesPage() {
             setLoading(false)
         }
     }
+    async function handleOpenOrder(orderId: string) {
+        try {
+            const res = await fetch(`${API_BASE}/orders/${orderId}`)
+            const json = await res.json()
+            if (json.success) {
+                setSelectedOrder(json.data)
+            }
+        } catch (err) {
+            console.error("⚠️ Failed to fetch order detail:", err)
+        }
+    }
+
+    function handleOrderAccepted(orderId: string) {
+        setOrders(prev =>
+            prev.map(o =>
+                o.id === orderId ? { ...o, status: "PACKED" } : o
+            )
+        )
+    }
 
     const tabs = [
         { key: "all", label: "All" },
@@ -98,9 +117,11 @@ export default function ManageSalesPage() {
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {orders.map(order => (
-                            <div key={order.id} onClick={() => setSelectedOrder(order as unknown as OrderApi)}>
-                                <OrderCard order={order} />
+                            <div key={order.id} onClick={() => handleOpenOrder(order.id)}>
+                                <OrderCard order={order} onAccepted={handleOrderAccepted} />
+
                             </div>
+
                         ))}
                     </div>
 
@@ -131,8 +152,13 @@ export default function ManageSalesPage() {
 
             {/* Detail Modal */}
             {selectedOrder && (
-                <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+                <OrderDetailModal
+                    order={selectedOrder}
+                    onClose={() => setSelectedOrder(null)}
+                    onAccepted={handleOrderAccepted}
+                />
             )}
+
         </div>
     )
 }

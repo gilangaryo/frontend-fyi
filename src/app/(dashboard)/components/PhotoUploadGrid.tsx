@@ -46,7 +46,7 @@ export default function PhotoUploadGrid({ onChange, onUploadingChange, initialIm
                 const formData = new FormData()
                 formData.append('file', file)
 
-                const res = await fetch(`${API_BASE}/upload`, {
+                const res = await fetch(`${API_BASE}/upload?folder=product`, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
@@ -77,7 +77,18 @@ export default function PhotoUploadGrid({ onChange, onUploadingChange, initialIm
         }
     }
 
-    const handleRemove = (index: number) => {
+    const handleRemove = async (index: number) => {
+        const removed = images[index]
+        const filename = removed.url.split('/').pop()
+        const token = localStorage.getItem('token')
+
+        if (filename && token) {
+            await fetch(`${API_BASE}/upload?folder=product&filename=${filename}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            })
+        }
+
         const updated = images.filter((_, i) => i !== index)
         setImages(updated)
         onChange(updated)

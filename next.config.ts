@@ -34,6 +34,10 @@ const nextConfig: NextConfig = {
         hostname: "placehold.co",
       },
       {
+        protocol: "https",
+        hostname: "johnhardy.com",
+      },
+      {
         protocol: 'http',
         hostname: '192.168.1.11',
         port: '4300',
@@ -41,6 +45,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: '192.168.1.13',
+        port: '4300',
+      },
+      {
+        protocol: 'http',
+        hostname: '192.168.56.1',
         port: '4300',
       },
       {

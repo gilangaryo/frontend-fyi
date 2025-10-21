@@ -42,8 +42,9 @@ async function getBlogDetail(slug: string): Promise<BlogDetail | null> {
     }
 }
 
-export default async function BeyondDetailPage({ params }: { params: { slug: string } }) {
-    const blog = await getBlogDetail(params.slug);
+export default async function BeyondDetailPage(props: { params: Promise<{ slug: string }> }) {
+    const { slug } = await props.params;
+    const blog = await getBlogDetail(slug);
     if (!blog) return notFound();
 
     return (
@@ -57,14 +58,17 @@ export default async function BeyondDetailPage({ params }: { params: { slug: str
                     priority
                     className="object-cover"
                 />
-                <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center text-white px-6">
-                    <Link href="/beyond" className="text-sm md:text-base mb-4 hover:underline">
-                        ← Back to Beyond
-                    </Link>
-                    <h2 className="text-2xl md:text-4xl font-light mb-2">{blog.event}</h2>
-                    <h1 className="text-4xl md:text-6xl font-light max-w-3xl leading-tight">
-                        {blog.title}
-                    </h1>
+                <div className="absolute inset-0 bg-black/20 flex flex-col justify-center items-center text-center text-white px-6 ">
+                    <div className="-translate-y-8">
+                        <Link href="/beyond" className="text-sm md:text-base mb-4 hover:underline">
+                            ← Back to Beyond
+                        </Link>
+                        <h2 className="text-2xl md:text-4xl font-extralight mb-2">{blog.event}</h2>
+                        <h1 className="text-4xl md:text-6xl font-extralight max-w-5xl leading-tight">
+                            {blog.title}
+                        </h1>
+                    </div>
+
                 </div>
             </section>
 

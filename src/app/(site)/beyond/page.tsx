@@ -139,7 +139,7 @@ export default function Beyond() {
                                                         className="mr-5 opacity-60 hover:opacity-100 transition cursor-pointer"
                                                     >
                                                         <Image
-                                                            src="/beyond/arrow-left.svg"
+                                                            src="/arrow-left.svg"
                                                             alt="left arrow"
                                                             width={36}
                                                             height={36}
@@ -154,7 +154,7 @@ export default function Beyond() {
                                                         className="ml-5 opacity-60 hover:opacity-100 transition cursor-pointer "
                                                     >
                                                         <Image
-                                                            src="/beyond/arrow-right.svg"
+                                                            src="/arrow-right.svg"
                                                             alt="left arrow"
                                                             width={36}
                                                             height={36}
@@ -168,7 +168,7 @@ export default function Beyond() {
                                                 >
                                                     See Whats New in Our <br /> Beyond Gallery
                                                     <span className="text-right ml-auto text-lg">
-                                                        <Image src="/beyond/arrow-right-white.svg" alt="left arrow" width={36} height={36} />
+                                                        <Image src="/arrow-right-white.svg" alt="left arrow" width={36} height={36} />
                                                     </span>
                                                 </Link>
                                             </div>

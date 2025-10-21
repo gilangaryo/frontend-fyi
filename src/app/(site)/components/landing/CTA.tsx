@@ -20,7 +20,7 @@ export default function CTA() {
     useEffect(() => {
         async function fetchSuggested() {
             try {
-                const res = await fetch(`${API_BASE}/products/suggested?limit=6`, {
+                const res = await fetch(`${API_BASE}/products/suggested?limit=12`, {
                     cache: "no-store",
                 });
                 const json = await res.json();

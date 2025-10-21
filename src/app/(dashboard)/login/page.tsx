@@ -30,6 +30,7 @@ export default function LoginPage() {
             localStorage.setItem('token', data.token)
             localStorage.setItem('user', JSON.stringify(data.user))
 
+
             document.cookie = `token=${data.token}; path=/; max-age=86400; secure; samesite=lax`
 
             router.replace('/dashboard')

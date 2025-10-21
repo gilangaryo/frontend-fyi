@@ -18,6 +18,7 @@ type Product = {
     collection?: { title: string };
     price: string;
     sold: number;
+    stock: number;
     status: boolean;
     imageUrl: string;
 };
@@ -73,6 +74,7 @@ export default function ProductPage() {
         subLabel: p.collection?.title || "-",
         price: `Rp ${Number(p.price).toLocaleString("id-ID")}`,
         sold: p.sold,
+        stock: p.stock,
         imageUrl: p.imageUrl,
         isActive: p.status,
     }));

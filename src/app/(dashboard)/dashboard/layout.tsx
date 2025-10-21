@@ -78,11 +78,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             iconDefault: '/dashboard/icons/beyond-black.svg',
             iconActive: '/dashboard/icons/beyond-white.svg',
         },
+        // {
+        //     name: 'Shipping',
+        //     href: '/dashboard/shipping',
+        //     iconDefault: '/dashboard/icons/shipping-black.svg',
+        //     iconActive: '/dashboard/icons/shipping-white.svg',
+        // },
         {
-            name: 'Shipping',
-            href: '/dashboard/shipping',
-            iconDefault: '/dashboard/icons/shipping-black.svg',
-            iconActive: '/dashboard/icons/shipping-white.svg',
+            name: 'Store Settings',
+            href: '/dashboard/settings',
+            iconDefault: '/dashboard/icons/beyond-black.svg',
+            iconActive: '/dashboard/icons/beyond-white.svg'
         },
     ]
 

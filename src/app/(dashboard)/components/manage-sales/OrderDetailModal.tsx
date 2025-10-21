@@ -1,17 +1,18 @@
 'use client'
 
 import Image from "next/image"
-import { X } from "lucide-react"
-import { getImageUrl } from "@/lib/utils"
 import { useRef, useEffect } from "react"
+import { getImageUrl } from "@/lib/utils"
 import type { OrderApi } from "@/types/order"
+import AcceptOrderButton from "./AcceptOrderButton"
 
 interface OrderDetailModalProps {
     order: OrderApi
     onClose: () => void
+    onAccepted: (id: string) => void
 }
 
-export default function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
+export default function OrderDetailModal({ order, onClose, onAccepted }: OrderDetailModalProps) {
     const modalRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -24,12 +25,10 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [onClose])
 
-    const totalPrice = order.items.reduce(
+    const totalPrice = (order.items ?? []).reduce(
         (sum, item) => sum + Number(item.priceAtPurchase) * item.quantity,
         0
     )
-
-
     const totalSales = totalPrice + Number(order.shippingCost || 0)
 
     const responseDeadline = new Date(
@@ -46,24 +45,32 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
             <div
                 ref={modalRef}
-                className="bg-white rounded-xl shadow-lg w-full max-w-2xl overflow-y-auto max-h-[90vh]"
+                className="bg-white rounded-xl shadow-lg w-full max-w-2xl overflow-y-auto max-h-[95vh]"
             >
                 {/* Header */}
-                <div className="flex justify-between items-center border-b px-6 py-4">
-                    <h2 className="text-xl font-semibold text-gray-800">Detail Orders</h2>
+                <div className="flex justify-left items-center border-b border-gray-200 px-6 py-4">
                     <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
-                        <X size={20} />
+                        <Image
+                            src="/arrow-left.svg"
+                            alt="close"
+                            width={20}
+                            height={20}
+                            className="object-contain"
+                        />
                     </button>
+                    <h2 className="text-xl font-semibold text-gray-800 ml-3">Detail Orders</h2>
                 </div>
 
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     {/* Order Info */}
                     <div>
-                        <h3 className="font-semibold text-gray-700 mb-2">New Order</h3>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">New Order</h3>
                         <div className="text-sm text-gray-600 space-y-1">
                             <p><span className="font-medium">Order ID:</span> #{order.id}</p>
-                            <p><span className="font-medium">Buyer Name:</span> {order.user?.name}</p>
+                            <p><span className="font-medium">Buyer Name:</span> {order.user.name}</p>
+                            <p><span className="font-medium">Buyer Email:</span> {order.user.email}</p>
+                            <p><span className="font-medium">Buyer Phone:</span> {order.user.phone}</p>
                             <p>
                                 <span className="font-medium">Order Date:</span>{" "}
                                 {new Date(order.createdAt).toLocaleDateString("en-US", {
@@ -85,9 +92,11 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
 
                     {/* Product Detail */}
                     <div>
-                        <h3 className="font-semibold text-gray-700 mb-2">Detail Product</h3>
-                        {order.items.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 border rounded-lg p-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b border-gray-200 pb-1">
+                            Detail Product
+                        </h3>
+                        {order.items?.map((item) => (
+                            <div key={item.id} className="flex items-center gap-3 rounded-lg p-3 mb-2">
                                 {item.product?.imageUrl && (
                                     <Image
                                         src={getImageUrl(item.product.imageUrl)}
@@ -109,7 +118,7 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
 
                     {/* Shipping Detail */}
                     <div>
-                        <h3 className="font-semibold text-gray-700 mb-2">Detail Shipping</h3>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Detail Shipping</h3>
                         <div className="text-sm text-gray-600 space-y-1">
                             <p><span className="font-medium">Courier:</span> {order.courierCompany?.toUpperCase() || "N/A"}</p>
                             <div className="mt-2">
@@ -124,17 +133,17 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
 
                     {/* Payment Details */}
                     <div>
-                        <h3 className="font-semibold text-gray-700 mb-2">Payment Details</h3>
+                        <h3 className="text-lg font-semibold text-gray-700">Payment Details</h3>
                         <div className="text-sm text-gray-600 space-y-1">
                             <div className="flex justify-between">
                                 <span>Total Product</span>
                                 <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between mb-2">
                                 <span>Total Shipping</span>
                                 <span>Rp {Number(order.shippingCost || 0).toLocaleString("id-ID")}</span>
                             </div>
-                            <div className="flex justify-between font-semibold text-gray-800 pt-2 border-t">
+                            <div className="flex justify-between font-semibold text-gray-800 pt-2 border-t border-gray-200">
                                 <span>Total Sales</span>
                                 <span>Rp {totalSales.toLocaleString("id-ID")}</span>
                             </div>
@@ -142,10 +151,16 @@ export default function OrderDetailModal({ order, onClose }: OrderDetailModalPro
                     </div>
 
                     {/* Action */}
-                    <div className="pt-4">
-                        <button className="w-full bg-primary-studio text-white py-3 rounded-md font-medium hover:opacity-90">
-                            Accept Order
-                        </button>
+                    <div>
+                        <AcceptOrderButton
+                            orderId={order.id}
+                            status={order.status}
+                            onAccepted={(id) => {
+                                onAccepted(id)
+                                setTimeout(onClose, 1000)
+                            }}
+                            fullWidth
+                        />
                     </div>
                 </div>
             </div>

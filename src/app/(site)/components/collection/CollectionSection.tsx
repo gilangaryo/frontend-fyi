@@ -55,12 +55,12 @@ export default function CollectionSection({
                 }`}
         >
             {/* LEFT (hero text) */}
-            <div className="relative h-svh md:h-[700px] bg-black text-white flex flex-col justify-center px-8 md:px-16 lg:px-20 text-center">
+            <div className="relative h-svh md:h-[700px] text-white flex flex-col justify-center px-8 md:px-16 lg:px-20 text-center">
                 <Image
                     src={getImageUrl(data.heroImage)}
                     alt={data.title}
                     fill
-                    className="object-cover opacity-40"
+                    className="object-cover "
                 />
 
                 <div className="relative z-10 font-thin">
@@ -79,10 +79,10 @@ export default function CollectionSection({
             </div>
 
             {/* RIGHT (carousel + button) */}
-            <div className="flex flex-col justify-between bg-white p-8 md:p-12">
+            <div className="flex flex-col justify-between bg-white p-4 md:p-6">
                 <div className="flex-1 flex flex-col justify-center items-center relative">
                     <div className="flex flex-col items-center text-center mb-6">
-                        <p className="font-light text-sm text-secondary max-w-md leading-relaxed">
+                        <p className="font-light text-lg text-secondary max-w-md leading-relaxed">
                             {data.quote}
                         </p>
                     </div>
@@ -94,32 +94,24 @@ export default function CollectionSection({
                             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 text-secondary hover:text-[#6B5435] transition-colors z-10 hidden md:block"
                             aria-label="Previous image"
                         >
-                            <svg
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                            >
-                                <path d="M15 18l-6-6 6-6" />
-                            </svg>
+                            <Image
+                                src="/arrow-left.svg"
+                                alt="left arrow"
+                                width={36}
+                                height={36}
+                            />
                         </button>
                         <button
                             onClick={() => swiperRef.current?.slideNext()}
                             className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 text-secondary hover:text-[#6B5435] transition-colors z-10 hidden md:block"
                             aria-label="Next image"
                         >
-                            <svg
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                            >
-                                <path d="M9 18l6-6-6-6" />
-                            </svg>
+                            <Image
+                                src="/arrow-right.svg"
+                                alt="left arrow"
+                                width={36}
+                                height={36}
+                            />
                         </button>
 
                         {/* Swiper */}
