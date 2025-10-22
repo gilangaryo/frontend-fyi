@@ -45,7 +45,20 @@ export default function FilterDropdown({
                                 type="checkbox"
                                 checked={selected.includes(opt)}
                                 onChange={() => toggleSelection(opt)}
-                                className="w-4 h-4 border border-gray-400 rounded-sm cursor-pointer checked:bg-[#6B4F44] checked:border-[#6B4F44]"
+                                className="
+                                            w-4 h-4
+                                            border border-gray-400 rounded-sm
+                                            cursor-pointer
+                                            appearance-none
+                                            checked:bg-[#6B4F44]
+                                            checked:border-[#6B4F44]
+                                            checked:before:content-['✓']
+                                            checked:before:text-white
+                                            checked:before:text-[10px]
+                                            checked:before:flex
+                                            checked:before:items-center
+                                            checked:before:justify-center
+                                        "
                             />
                             {opt}
                         </label>

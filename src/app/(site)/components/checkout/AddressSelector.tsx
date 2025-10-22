@@ -184,7 +184,7 @@ export default function AddressSelector({ form, setForm }: AddressSelectorProps)
 
             {/* City */}
             <div>
-                <label className="text-sm text-gray-600 mb-1 block">City / Regency</label>
+                <label className="text-sm text-gray-600 mb-1 block">City </label>
                 <select
                     onChange={handleCityChange}
                     disabled={!cities.length}

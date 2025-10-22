@@ -14,7 +14,6 @@ export default function CheckoutPage() {
     const [mounted, setMounted] = useState(false)
     const [loading, setLoading] = useState(false)
     const [storeOpen, setStoreOpen] = useState<boolean | null>(null) // null = loading
-    const [storeMessage, setStoreMessage] = useState('')
 
     const cartItems = useSelector((state: RootState) => state.cart.items)
     const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -29,17 +28,11 @@ export default function CheckoutPage() {
                 const json = await res.json()
                 if (json.success) {
                     setStoreOpen(json.data.isOpen)
-                    setStoreMessage(
-                        json.data.isOpen
-                            ? ''
-                            : '⚠️ Our store is currently closed — checkout is temporarily disabled.'
-                    )
                 } else {
                     setStoreOpen(true)
                 }
             } catch (err) {
                 console.error('Failed to fetch store status:', err)
-                // fallback: tetap buka biar tidak menghalangi testing
                 setStoreOpen(true)
             }
         })()
@@ -177,7 +170,6 @@ export default function CheckoutPage() {
             </div>
         )
 
-    // ⏳ Kalau status toko belum terload
     if (storeOpen === null)
         return (
             <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -187,12 +179,6 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            {/* 🟥 Banner jika toko tutup */}
-            {!storeOpen && (
-                <div className="bg-red-100 text-red-700 text-center py-3 text-sm font-medium">
-                    {storeMessage}
-                </div>
-            )}
 
             <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* LEFT SIDE */}

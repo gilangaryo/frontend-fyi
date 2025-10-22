@@ -18,7 +18,7 @@ export default function HeroSection() {
 
             {/* Content */}
             <div className="relative w-full h-full items-center text-center flex flex-col justify-center px-4 md:px-0 font-light text-white">
-                <p className="text-lg mb-6">
+                <p className="text-lg mb-3">
                     our story
                 </p>
                 <h2 className="text-5xl">

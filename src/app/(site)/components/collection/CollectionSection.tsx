@@ -82,7 +82,7 @@ export default function CollectionSection({
             <div className="flex flex-col justify-between bg-white p-4 md:p-6">
                 <div className="flex-1 flex flex-col justify-center items-center relative">
                     <div className="flex flex-col items-center text-center mb-6">
-                        <p className="font-light text-lg text-secondary max-w-md leading-relaxed">
+                        <p className="font-light text-lg text-secondary max-w-lg leading-relaxed">
                             {data.quote}
                         </p>
                     </div>

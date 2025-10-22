@@ -318,78 +318,122 @@ export default function EditProductPage() {
                 {/* Variants */}
                 <div>
                     <label className="block text-sm font-medium mb-2">Product Variants</label>
-                    <div className="border border-gray-200 rounded-lg divide-y divide-gray-200">
-                        {variants.map((v, i) => (
-                            <div key={i} className="relative grid grid-cols-7 gap-2 p-3 items-center">
-                                <input
-                                    type="text"
-                                    placeholder="Size"
-                                    value={v.size}
-                                    onChange={(e) => handleVariantChange(i, 'size', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Bust"
-                                    value={v.bust}
-                                    onChange={(e) => handleVariantChange(i, 'bust', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Waist"
-                                    value={v.waist}
-                                    onChange={(e) => handleVariantChange(i, 'waist', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Length"
-                                    value={v.length}
-                                    onChange={(e) => handleVariantChange(i, 'length', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Sleeve"
-                                    value={v.sleeve}
-                                    onChange={(e) => handleVariantChange(i, 'sleeve', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Height"
-                                    value={v.height}
-                                    onChange={(e) => handleVariantChange(i, 'height', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
-                                <input
-                                    type="number"
-                                    placeholder="Stock"
-                                    value={v.stock}
-                                    onChange={(e) => handleVariantChange(i, 'stock', e.target.value)}
-                                    className="border rounded p-2 text-sm"
-                                />
 
+                    <div className="space-y-4">
+                        {variants.map((v, i) => (
+                            <div
+                                key={i}
+                                className="relative border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                            >
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                                    {/* Size */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Size</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Size"
+                                            value={v.size}
+                                            onChange={(e) => handleVariantChange(i, 'size', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+
+                                    {/* Bust */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Bust</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Bust"
+                                            value={v.bust}
+                                            onChange={(e) => handleVariantChange(i, 'bust', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+
+                                    {/* Waist */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Waist</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Waist"
+                                            value={v.waist}
+                                            onChange={(e) => handleVariantChange(i, 'waist', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+
+                                    {/* Length */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Length</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Length"
+                                            value={v.length}
+                                            onChange={(e) => handleVariantChange(i, 'length', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+
+                                    {/* Sleeve */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Sleeve</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Sleeve"
+                                            value={v.sleeve}
+                                            onChange={(e) => handleVariantChange(i, 'sleeve', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+
+                                    {/* Height */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Height</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Height"
+                                            value={v.height}
+                                            onChange={(e) => handleVariantChange(i, 'height', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+
+                                    {/* Stock */}
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">Stock</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0"
+                                            value={v.stock}
+                                            onChange={(e) => handleVariantChange(i, 'stock', e.target.value)}
+                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Remove button */}
                                 <button
                                     type="button"
                                     onClick={() => removeVariant(i)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 hover:bg-red-600 hover:text-white rounded-full w-7 h-7 flex items-center justify-center transition"
+                                    className="absolute top-1/2 -translate-y-1/2 right-5 text-red-500 hover:bg-red-600 hover:text-white rounded-full w-9 h-9 flex items-center justify-center  transition"
+                                    title="Remove variant"
                                 >
-                                    <Trash size={16} />
+                                    <Trash />
                                 </button>
                             </div>
                         ))}
                     </div>
 
+                    {/* Add variant button */}
                     <button
                         type="button"
                         onClick={addVariant}
-                        className="mt-2 text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition"
+                        className="mt-4 text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md border border-gray-300 transition"
                     >
                         + Add Variant
                     </button>
                 </div>
+
 
                 <button
                     type="submit"

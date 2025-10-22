@@ -100,7 +100,7 @@ export default function StorySection() {
                             Self Worth is an Art
                         </h3>
                         <p className="text-lg md:text-xl font-light">We could either neglect it or scream for validation</p>
-                        <p className="md:text-sm leading-normal font-light">
+                        <p className="text-sm leading-normal font-light">
                             FYI believes that self worth is what we can embody everyday. An Indonesian wearable daily couture that highlight our self worth.
                             <br /><br />
                             Wear your worth. Day in day out.

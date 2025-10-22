@@ -77,7 +77,7 @@ export default function CatalogSection() {
 
             {/* Filters */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-10">
-                <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 gap-6 text-lg w-full md:w-auto flex-grow">
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-6 text-lg w-full md:w-auto flex-grow">
                     <FilterDropdown
                         label="Collection"
                         options={collections}
@@ -121,7 +121,7 @@ export default function CatalogSection() {
             {filteredProducts.length === 0 ? (
                 <p className="text-center text-gray-500">No products found.</p>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {filteredProducts.map((product) => {
                         const primaryImg = getImageUrl(
                             product.images?.find((img) => img.isPrimary)?.imageUrl
