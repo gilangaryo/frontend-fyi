@@ -139,7 +139,7 @@ export default function CollectionSection({
                                         : [{ imageUrl: product.imageUrl || '/placeholder.jpg' }]
                                     ).map((img, j) => (
                                         <SwiperSlide key={`${product.id}-${j}`}>
-                                            <div className="relative w-full h-full">
+                                            <div className="relative w-full h-full ">
                                                 <Image
                                                     src={getImageUrl(img.imageUrl)}
                                                     alt={product.title}
@@ -163,7 +163,7 @@ export default function CollectionSection({
                         {/* Pagination dots */}
                         <div
                             id={`pagination-${data.id || index}`}
-                            className="flex justify-center gap-2 mt-6"
+                            className="flex justify-center gap-2 my-6"
                         >
 
                         </div>

@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowUp } from "lucide-react";
-
+import { ArrowUp, ArrowUpRight } from "lucide-react";
 export default function Footer() {
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -12,7 +11,7 @@ export default function Footer() {
             <div className="max-w-full mx-auto flex flex-col gap-10">
                 {/* Top Area */}
                 <h2 className="text-3xl font-medium mb-4 flex items-center gap-2">
-                    Collection <span className="text-lg -translate-y-3">↗</span>
+                    Collection <span className="text-lg -translate-y-4"> <ArrowUpRight /></span>
                 </h2>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-8">
                     {/* Left Section */}

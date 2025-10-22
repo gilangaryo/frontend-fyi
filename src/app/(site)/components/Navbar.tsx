@@ -46,7 +46,35 @@ export default function Navbar() {
         state.cart.items.reduce((sum, item) => sum + item.quantity, 0)
     )
 
-    // 🔔 Fetch announcement + store status
+    const [lastScrollY, setLastScrollY] = useState(0)
+    const [showNavbar, setShowNavbar] = useState(true)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY
+
+            if (currentScrollY < 150) {
+                setShowNavbar(true)
+                setLastScrollY(currentScrollY)
+                return
+            }
+
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                setShowNavbar(false)
+            }
+            else if (currentScrollY < lastScrollY - 10) {
+                setShowNavbar(true)
+            }
+
+            setLastScrollY(currentScrollY)
+        }
+
+        window.addEventListener("scroll", handleScroll, { passive: true })
+        return () => window.removeEventListener("scroll", handleScroll)
+    }, [lastScrollY])
+
+
+
     useEffect(() => {
         async function fetchData() {
             try {
@@ -75,8 +103,6 @@ export default function Navbar() {
         }
 
         fetchData()
-        // const interval = setInterval(fetchData, 10 * 60 * 1000)
-        // return () => clearInterval()
     }, [])
 
     useEffect(() => setIsClient(true), [])
@@ -84,7 +110,7 @@ export default function Navbar() {
         document.body.style.overflow = openMenu ? "hidden" : ""
     }, [openMenu])
 
-    // 🔍 Debounced search
+    // === Debounced search ===
     useEffect(() => {
         if (!search.trim()) {
             setSearchResults([])
@@ -132,7 +158,11 @@ export default function Navbar() {
 
     return (
         <>
-            <header className={`w-full sticky top-0 shadow-sm bg-white ${openMenu ? "z-[10000]" : "z-50"}`}>
+            <header
+                className={`w-full sticky top-0 bg-white shadow-sm transition-transform duration-300 
+    ${showNavbar ? "translate-y-0" : "-translate-y-full"} 
+    ${openMenu ? "z-[10000]" : "z-50"}`}
+            >
                 {/* Announcement Bar */}
                 <div
                     className={`h-[40px] flex items-center justify-center text-center text-sm font-medium

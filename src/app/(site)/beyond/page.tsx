@@ -129,43 +129,46 @@ export default function Beyond() {
                                                 {blog.title}
                                             </h2>
                                             <div className="flex-grow" />
-                                            <p className="text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify indent-33 place-self-end">
+                                            <p className="text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify indent-33 place-self-end mt-20 md:mt-0">
                                                 {blog.description}
                                             </p>
 
-                                            <div className="mt-auto flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                                                <div className="flex w-5/15 items-center border-2 border-secondary text-secondary h-full justify-center">
+                                            <div className="mt-auto flex flex-col sm:flex-row items-stretch  justify-center gap-4 w-full">
+
+                                                {/* Left: navigation arrows + index */}
+                                                <div className="flex w-full md:w-auto items-center justify-center border-2 border-secondary text-secondary px-6 py-3 flex-shrink-0">
                                                     <button
                                                         onClick={handlePrev}
-                                                        className="mr-5 opacity-60 hover:opacity-100 transition cursor-pointer"
+                                                        className="opacity-60 hover:opacity-100 transition cursor-pointer mr-5 "
                                                     >
                                                         <Image
                                                             src="/arrow-left.svg"
-                                                            alt="left arrow"
-                                                            width={36}
-                                                            height={36}
+                                                            alt="Previous"
+                                                            width={32}
+                                                            height={32}
                                                         />
                                                     </button>
-                                                    <div className="text-sm lg:text-xl font-light">
+
+                                                    <span className="text-sm md:text-base lg:text-xl font-light min-w-[80px] text-center">
                                                         {currentIndex + 1} – {blogs.length}
-                                                    </div>
+                                                    </span>
 
                                                     <button
                                                         onClick={handleNext}
-                                                        className="ml-5 opacity-60 hover:opacity-100 transition cursor-pointer "
+                                                        className="opacity-60 hover:opacity-100 transition cursor-pointer ml-5"
                                                     >
                                                         <Image
                                                             src="/arrow-right.svg"
-                                                            alt="left arrow"
-                                                            width={36}
-                                                            height={36}
+                                                            alt="Next"
+                                                            width={32}
+                                                            height={32}
                                                         />
                                                     </button>
                                                 </div>
 
                                                 <Link
                                                     href={`/beyond/${blog.slug}`}
-                                                    className="flex w-10/15 h-full items-center bg-secondary text-white px-5 py-4 text-sm leading-relaxed tracking-wide font-light hover:bg-secondary/90 transition"
+                                                    className="flex w-full md:w-10/15 h-full items-center bg-secondary text-white px-5 py-4 text-sm leading-relaxed tracking-wide font-light hover:bg-secondary/90 transition"
                                                 >
                                                     See Whats New in Our <br /> Beyond Gallery
                                                     <span className="text-right ml-auto text-lg">
