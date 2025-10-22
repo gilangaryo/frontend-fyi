@@ -21,6 +21,7 @@ interface Blog {
     event: string;
     title: string;
     heroImage: string;
+    description: string;
     firstDescription: string;
     firstSubDescription: string;
     firstParagraph: string;
@@ -107,9 +108,9 @@ export default function Beyond() {
                         >
                             {blogs.map((blog) => (
                                 <SwiperSlide key={blog.id}>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch h-full">
                                         {/* Left: Image */}
-                                        <div className="relative w-full aspect-[3/2] lg:aspect-[4/3] overflow-hidden ">
+                                        <div className="relative w-full aspect-[3/2] lg:aspect-[4/3] overflow-hidden h-full">
                                             <Image
                                                 src={getImageUrl(blog.heroImage)}
                                                 alt={blog.title}
@@ -124,12 +125,12 @@ export default function Beyond() {
                                                 {blog.event}
                                             </p>
 
-                                            <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-secondary mb-22 leading-tight tracking-tight">
+                                            <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-secondary leading-tight tracking-tight">
                                                 {blog.title}
                                             </h2>
-
-                                            <p className="text-secondary leading-relaxed mb-8 text-base lg:text-lg font-light text-justify indent-33">
-                                                {blog.firstDescription}
+                                            <div className="flex-grow" />
+                                            <p className="text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify indent-33 place-self-end">
+                                                {blog.description}
                                             </p>
 
                                             <div className="mt-auto flex flex-col sm:flex-row items-start sm:items-center gap-6">
