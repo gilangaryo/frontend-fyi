@@ -46,7 +46,10 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
     const { slug } = await props.params;
     const blog = await getBlogDetail(slug);
     if (!blog) return notFound();
-
+    const list = {
+        quote:
+            "Through Tanya’s artistry, every garment becomes more than clothing. It becomes an expression of freedom, presence, and feminine grace. FYI captures this spirit through craftsmanship that celebrates natural beauty and authenticity."
+    }
     return (
         <>
 
@@ -71,6 +74,11 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
 
                 </div>
             </section>
+            <section className="relative w-full py-24 flex flex-col items-center justify-center text-center font-light text-md md:text-2xl">
+                <h2 className="mb-2">{blog.event}</h2>
+                <h1 className=" ">{blog.title}</h1>
+            </section>
+
 
             <BlogSection
                 image={blog.firstHeaderImage}
@@ -86,12 +94,27 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                 reverse
                 bg="bg-gray-50"
             />
+
+            <Image
+                src="/beyond/dummy-beyond-1.jpg"
+                alt="dummy"
+                width={10}
+                height={10}
+                sizes="100vw"
+                className="w-full aspect-[3/1] object-cover my-30"
+            />
             <BlogSection
                 image={blog.thirdHeaderImage}
                 heading={blog.thirdHeading}
                 description={blog.thirdDescription}
                 subDescription={blog.thirdSubDescription}
             />
+
+            <section className="relative max-w-5xl w-full mx-auto py-24 px-6 flex flex-col items-center justify-center text-center font-light text-lg md:text-2xl leading-relaxed text-gray-700">
+                <h1>{list.quote}</h1>
+            </section>
+
+
             <BlogSection
                 image={blog.fourthHeaderImage}
                 heading={blog.fourthHeading}
@@ -100,6 +123,27 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                 reverse
                 bg="bg-gray-50"
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 mb-20">
+                <Image
+                    src="/beyond/beyond-3.jpg"
+                    alt="dummy"
+                    width={800}
+                    height={400}
+                    sizes="100vw"
+                    className="w-full aspect-[1/1] object-cover"
+                />
+                <Image
+                    src="/beyond/beyond-4.jpg"
+                    alt="dummy"
+                    width={800}
+                    height={400}
+                    sizes="100vw"
+                    className="w-full aspect-[1/1] object-cover"
+                />
+            </div>
+
+
 
         </>
     );
