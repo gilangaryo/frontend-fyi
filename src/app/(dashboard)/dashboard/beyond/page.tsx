@@ -84,10 +84,9 @@ export default function BeyondListPage() {
                     {blogs.map((b) => (
                         <div
                             key={b.id}
-                            className="flex flex-col md:flex-row items-start gap-6 pb-10"
+                            className="flex flex-col md:flex-row gap-6 pb-10 border-b border-gray-100"
                         >
-                            {/* Image */}
-                            <div className="relative w-full md:w-1/3 aspect-[4/3] rounded-lg overflow-hidden">
+                            <div className="relative w-full md:w-1/4 aspect-[4/3] rounded-lg overflow-hidden flex-shrink-0">
                                 <Image
                                     src={getImageUrl(b.heroImage)}
                                     alt={b.title}
@@ -101,26 +100,22 @@ export default function BeyondListPage() {
                                 </div>
                             </div>
 
-                            {/* Content */}
-                            <div className="flex-1 flex flex-col justify-between min-h-[180px]">
-                                <div>
-                                    <p className="text-gray-400 text-sm mb-1">
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <div className="flex-1">
+                                    <p className="text-gray-400 font-medium text-sm mb-1">
                                         {new Date(b.createdAt).toLocaleDateString('en-GB', {
                                             day: 'numeric',
                                             month: 'short',
                                             year: 'numeric',
                                         })}
                                     </p>
-                                    <h2 className="italic font-semibold text-lg mb-3">
-                                        {b.event}
-                                    </h2>
-                                    <p className="text-gray-600 text-sm leading-relaxed">
+                                    <h2 className="italic font-medium text-lg mb-3">{b.event + "  " + b.title}</h2>
+                                    <p className="text-secondary text-sm leading-relaxed">
                                         {b.description?.slice(0, 250) || ''}...
                                     </p>
                                 </div>
 
-                                {/* Action buttons */}
-                                <div className="flex gap-3 mt-4">
+                                <div className="flex gap-3 mt-6">
                                     <button
                                         onClick={() => deleteBlog(b.id)}
                                         className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-600 py-2 rounded-md transition"

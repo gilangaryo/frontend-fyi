@@ -54,12 +54,25 @@ export default function CollectionPage() {
         fetchCollections()
     }, [])
 
+    useEffect(() => {
+        if (loading || collections.length === 0) return
+
+        const hash = window.location.hash
+        if (!hash) return
+
+        const target = document.querySelector(hash)
+        if (target) {
+            setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }, 300)
+        }
+    }, [loading, collections])
+
     if (loading) return <div className="p-10 text-center"><Loading /></div>
     if (error) return <div className="p-10 text-center text-red-500">{error}</div>
 
     return (
         <>
-            {/* <Navbar /> */}
             {collections.length > 0 ? (
                 collections.map((col, i) => (
                     <CollectionSection key={col.id} data={col} index={i} />

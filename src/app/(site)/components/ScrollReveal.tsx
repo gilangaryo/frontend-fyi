@@ -13,7 +13,7 @@ export default function ScrollReveal({
     children,
     className,
     delay = 0,
-    yOffset = 50,
+    yOffset = 20,
 }: ScrollRevealProps) {
     const variants: Variants = {
         hidden: { opacity: 0, y: yOffset },
@@ -23,7 +23,7 @@ export default function ScrollReveal({
             transition: {
                 duration: 1,
                 delay: delay / 1000,
-                ease: [0.25, 0.1, 0.25, 1],
+                ease: [0.35, 0.1, 0.35, 1],
             },
         },
     };

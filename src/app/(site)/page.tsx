@@ -9,6 +9,11 @@ export default function Home() {
     <>
       <Hero />
       <ScrollReveal>
+        <h2 className="text-secondary text-base md:text-xl font-light text-center mx-auto px-4 md:px-0 py-20 leading-relaxed my-0">
+          Welcome to FYI Couture
+        </h2>
+      </ScrollReveal>
+      <ScrollReveal>
         <Features />
       </ScrollReveal>
       <ScrollReveal>

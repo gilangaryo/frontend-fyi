@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { Search, Menu, X } from "lucide-react"
+import { Search, Menu, X, ChevronDown } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -25,12 +25,17 @@ interface Product {
     price?: number | string
     images?: ProductImage[]
 }
+interface CollectionSlug {
+    id: string
+    slug: string
+}
 
 export default function Navbar() {
     const [search, setSearch] = useState("")
     const [searchResults, setSearchResults] = useState<Product[]>([])
     const [showResults, setShowResults] = useState(false)
     const [loadingSearch, setLoadingSearch] = useState(false)
+    const [collections, setCollections] = useState<CollectionSlug[]>([])
     const [showMobileSearch, setShowMobileSearch] = useState(false)
 
     const [openCart, setOpenCart] = useState(false)
@@ -38,6 +43,8 @@ export default function Navbar() {
     const [isClient, setIsClient] = useState(false)
     const [announcement, setAnnouncement] = useState<string | null>(null)
     const [storeOpen, setStoreOpen] = useState<boolean>(true)
+    const [dropdownOpen, setDropdownOpen] = useState(false)
+
 
     const pathname = usePathname()
     const router = useRouter()
@@ -104,6 +111,29 @@ export default function Navbar() {
 
         fetchData()
     }, [])
+
+    useEffect(() => setIsClient(true), [])
+    useEffect(() => {
+        document.body.style.overflow = openMenu ? "hidden" : ""
+    }, [openMenu])
+
+    useEffect(() => {
+        async function fetchCollections() {
+            try {
+                const res = await fetch(`${API_BASE}/collections/slugs`)
+                const json = await res.json()
+                if (json.success) setCollections(json.data)
+            } catch (err) {
+                console.error("Failed to fetch collection slugs:", err)
+            }
+        }
+        fetchCollections()
+    }, [])
+
+    useEffect(() => setIsClient(true), [])
+    useEffect(() => {
+        document.body.style.overflow = openMenu ? "hidden" : ""
+    }, [openMenu])
 
     useEffect(() => setIsClient(true), [])
     useEffect(() => {
@@ -180,16 +210,62 @@ export default function Navbar() {
                     <div className="flex items-center">
                         <ul className="hidden lg:flex gap-8 text-charcoal font-light">
                             {navItems.map((item) => (
-                                <li key={item.href}>
-                                    <Link
-                                        href={item.href}
-                                        className={`pb-1 transition hover:opacity-70 ${pathname === item.href
-                                            ? "text-secondary underline underline-offset-2 decoration-1"
-                                            : ""
-                                            }`}
-                                    >
-                                        {item.name}
-                                    </Link>
+                                <li key={item.href} className="relative group">
+                                    {item.name === "Collection" ? (
+                                        <>
+                                            <button
+                                                onMouseEnter={() => setDropdownOpen(true)}
+                                                onMouseLeave={() => setDropdownOpen(false)}
+                                                onClick={() => router.push(item.href)}
+                                                className={`pb-1 flex items-center gap-1 transition hover:opacity-70 ${pathname === item.href
+                                                    ? "text-secondary underline underline-offset-2 decoration-1"
+                                                    : ""
+                                                    }`}
+                                            >
+                                                {item.name}
+                                                <ChevronDown
+                                                    size={18}
+                                                    className={`ml-1 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : "rotate-0"}`}
+                                                />
+                                            </button>
+
+                                            {/* Dropdown menu */}
+                                            <div
+                                                onMouseEnter={() => setDropdownOpen(true)}
+                                                onMouseLeave={() => setDropdownOpen(false)}
+                                                className={`absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md transition-all duration-200 ${dropdownOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}
+                                            >
+                                                <ul className="py-2 min-w-[180px]">
+                                                    {collections.length > 0 ? (
+                                                        collections.map((col) => (
+                                                            <li key={col.id}>
+                                                                <Link
+                                                                    href={`/collection/#${col.slug}`}
+                                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                                >
+                                                                    {col.slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                                                </Link>
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li className="px-4 py-2 text-sm text-gray-400">
+                                                            Loading...
+                                                        </li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <Link
+                                            href={item.href}
+                                            className={`pb-1 transition hover:opacity-70 ${pathname === item.href
+                                                ? "text-secondary underline underline-offset-2 decoration-1"
+                                                : ""
+                                                }`}
+                                        >
+                                            {item.name}
+                                        </Link>
+                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -199,13 +275,10 @@ export default function Navbar() {
                             onClick={() => setOpenMenu((prev) => !prev)}
                             className="lg:hidden relative w-7 h-7"
                         >
-                            <div className="relative w-full h-full">
-                                <Menu className={`w-7 h-7 text-charcoal absolute inset-0 transition-all ${openMenu ? "rotate-90 opacity-0 scale-50" : "rotate-0 opacity-100 scale-100"}`} />
-                                <X className={`w-7 h-7 text-charcoal absolute inset-0 transition-all ${openMenu ? "rotate-0 opacity-100 scale-100" : "-rotate-90 opacity-0 scale-50"}`} />
-                            </div>
+                            <Menu className={`absolute w-7 h-7 text-charcoal transition-all ${openMenu ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"}`} />
+                            <X className={`absolute w-7 h-7 text-charcoal transition-all ${openMenu ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"}`} />
                         </button>
                     </div>
-
                     {/* Center Logo */}
                     <div className="absolute left-1/2 transform -translate-x-1/2">
                         <Link href="/">

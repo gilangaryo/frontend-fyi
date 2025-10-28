@@ -16,7 +16,7 @@ export default function Features() {
     };
 
     return (
-        <section className="px-4 py-8 md:px-10 md:py-12 bg-white">
+        <section className="px-4 pb-8 md:px-10 md:pb-12 bg-white">
 
             <div className="max-w-full mx-auto">
                 <div className="grid md:grid-cols-3 gap-2">

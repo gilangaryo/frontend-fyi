@@ -48,14 +48,22 @@ export default function CollectionSection({
     const isReversed = index % 2 === 1
 
     const activeProducts = data.products?.filter((p) => p.status) || []
-
+    const heroHeightClass =
+        index === 0
+            ? 'md:h-[700px]'
+            : 'md:h-screen'
+    const scrollMarginTop = index === 0 ? 'scroll-mt-50' : 'scroll-mt-0'
     return (
         <section
-            className={`grid grid-cols-1 lg:grid-cols-2 ${isReversed ? 'lg:[&>*:first-child]:order-2' : ''
+            id={data.slug}
+            className={` ${scrollMarginTop} grid grid-cols-1 lg:grid-cols-2 ${isReversed ? 'lg:[&>*:first-child]:order-2' : ''
                 }`}
         >
+
             {/* LEFT (hero text) */}
-            <div className="relative h-svh md:h-[700px] text-white flex flex-col justify-center px-8 md:px-16 lg:px-20 text-center">
+            <div
+                className={`relative h-svh ${heroHeightClass} text-white flex flex-col justify-center px-8 md:px-16 lg:px-20 text-center`}
+            >
                 <Image
                     src={getImageUrl(data.heroImage)}
                     alt={data.title}

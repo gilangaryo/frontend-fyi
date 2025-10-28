@@ -77,7 +77,7 @@ export default function Beyond() {
             )}
 
             {!loading && blogs.length > 0 && (
-                <section className="bg-white py-6 px-4 md:px-6 overflow-hidden">
+                <section className="bg-white py-6 pr-4 md:pr-6 overflow-hidden">
                     <div className="max-w-full mx-auto">
                         <Swiper
                             modules={[Navigation, Pagination, Autoplay]}
