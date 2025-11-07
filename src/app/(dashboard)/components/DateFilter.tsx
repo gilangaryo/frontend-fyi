@@ -7,7 +7,6 @@ export default function DateFilter() {
     const [selected, setSelected] = useState("Last 30 days");
 
     const options = [
-        "Custom",
         "Yesterday",
         "This Week",
         "Last Week",
@@ -20,9 +19,9 @@ export default function DateFilter() {
             {/* Button */}
             <div
                 onClick={() => setOpen(!open)}
-                className="mt-10 bg-white p-3 rounded-lg shadow w-40 cursor-pointer flex justify-between items-center text-gray-700"
+                className="bg-white px-4 py-3 rounded-lg shadow w-40 cursor-pointer flex justify-between items-center text-gray-700"
             >
-                <span>{selected}</span>
+                <span className="text-sm">{selected}</span>
                 <svg
                     className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""
                         }`}
@@ -37,7 +36,7 @@ export default function DateFilter() {
 
             {/* Dropdown */}
             {open && (
-                <div className="absolute mt-1 w-40 bg-white rounded-lg shadow z-10">
+                <div className="absolute mt-1 w-40  bg-white rounded-lg shadow z-10">
                     {options.map((option, i) => (
                         <div
                             key={i}

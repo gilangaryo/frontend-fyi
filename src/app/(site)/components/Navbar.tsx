@@ -97,7 +97,7 @@ export default function Navbar() {
                 setStoreOpen(isOpen)
 
                 if (!isOpen) {
-                    setAnnouncement("⚠️ Our store is currently closed — orders are temporarily unavailable.")
+                    setAnnouncement("Our store is currently closed — orders are temporarily unavailable.")
                 } else if (ann?.success && ann?.data?.isActive) {
                     setAnnouncement(ann.data.value || "Free shipping all over Indonesia")
                 } else {
@@ -196,7 +196,7 @@ export default function Navbar() {
                 {/* Announcement Bar */}
                 <div
                     className={`h-[40px] flex items-center justify-center text-center text-sm font-medium
-                    ${storeOpen ? "bg-primary-muted text-secondary" : "bg-red-100 text-red-700"}`}
+                    ${storeOpen ? "bg-primary-muted text-secondary" : "bg-primary-muted text-secondary"}`}
                 >
                     {announcement ? (
                         <h2>{announcement}</h2>

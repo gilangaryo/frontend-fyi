@@ -6,8 +6,10 @@ import Image from 'next/image'
 import { Plus, Trash2, Upload, X } from 'lucide-react'
 import { API_BASE } from '@/lib/constants'
 import { getImageUrl } from '@/lib/utils'
+import AlertModal from '@/app/(dashboard)/components/AlertModal'
+import LoadingOverlay from '@/app/(dashboard)/components/LoadingOverlay'
 
-// util
+// utils
 const slugify = (text: string) =>
     text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
 
@@ -15,7 +17,9 @@ interface Section {
     headerImage: string
     heading: string
     description: string
+    subDescription?: string
     headerFile?: File | null
+
 }
 
 export default function EditBeyondPage() {
@@ -24,16 +28,27 @@ export default function EditBeyondPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
-    // blog main fields
     const [event, setEvent] = useState('')
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
+    const [quote, setQuote] = useState('')
+
     const [heroImage, setHeroImage] = useState<string>('')
     const [heroFile, setHeroFile] = useState<File | null>(null)
+    const [imageDivider, setImageDivider] = useState<string>('')
+    const [imageDividerFile, setImageDividerFile] = useState<File | null>(null)
+    const [firstFooterImage, setFirstFooterImage] = useState<string>('')
+    const [secondFooterImage, setSecondFooterImage] = useState<string>('')
+    const [firstFooterFile, setFirstFooterFile] = useState<File | null>(null)
+    const [secondFooterFile, setSecondFooterFile] = useState<File | null>(null)
 
     const [sections, setSections] = useState<Section[]>([])
 
-    // 🔹 Load existing blog data
+
+    const [alertOpen, setAlertOpen] = useState(false)
+    const [alertType, setAlertType] = useState<'success' | 'error'>('success')
+    const [alertTitle, setAlertTitle] = useState('')
+    const [alertMessage, setAlertMessage] = useState('')
     useEffect(() => {
         ; (async () => {
             try {
@@ -45,61 +60,61 @@ export default function EditBeyondPage() {
                     setTitle(d.title || '')
                     setDescription(d.description || '')
                     setHeroImage(d.heroImage || '')
+                    setQuote(d.quote || '')
+                    setImageDivider(d.imageDivider || '')
+                    setFirstFooterImage(d.firstFooterImage || '')
+                    setSecondFooterImage(d.secondFooterImage || '')
 
-                    // build section array
                     const arr: Section[] = []
-                    const names = ['first', 'second', 'third', 'fourth']
-                    names.forEach((key) => {
+                    const keys = ['first', 'second', 'third', 'fourth']
+                    keys.forEach((key) => {
                         const img = d[`${key}HeaderImage`]
                         const head = d[`${key}Heading`]
                         const desc = d[`${key}Description`]
-                        if (img || head || desc)
+
+                        const subDesc = key === 'third' ? d[`thirdSubDescription`] : ''
+
+                        if (img || head || desc || subDesc)
                             arr.push({
                                 headerImage: img || '',
                                 heading: head || '',
                                 description: desc || '',
+                                subDescription: subDesc || '',
                                 headerFile: null,
                             })
                     })
+
                     setSections(
                         arr.length
                             ? arr
-                            : [
-                                {
-                                    headerImage: '',
-                                    heading: '',
-                                    description: '',
-                                    headerFile: null,
-                                },
-                            ]
+                            : [{
+                                headerImage: '',
+                                heading: '',
+                                description: '',
+                                subDescription: '',
+                                headerFile: null
+                            }]
                     )
+
                 }
             } catch (err) {
-                console.error('Failed to load blog', err)
+                console.error('❌ Failed to load blog', err)
             } finally {
                 setLoading(false)
             }
         })()
     }, [id])
 
-    // 🔹 Add/remove/update section
     const addSection = () => {
-        if (sections.length >= 4) return
-        setSections([
-            ...sections,
-            { headerImage: '', heading: '', description: '', headerFile: null },
-        ])
+        if (sections.length >= 3) return
+        setSections([...sections, { headerImage: '', heading: '', description: '', headerFile: null }])
     }
 
     const removeSection = (index: number) => {
         setSections(sections.filter((_, i) => i !== index))
     }
 
-    const updateSection = <K extends keyof Section>(
-        index: number,
-        key: K,
-        value: Section[K]
-    ) => {
+    const updateSection = <K extends keyof Section>(index: number, key: K, value: Section[K]) => {
         const updated = [...sections]
         updated[index][key] = value
         setSections(updated)
@@ -131,7 +146,6 @@ export default function EditBeyondPage() {
         return json.url
     }
 
-    // 🔹 Submit update
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSaving(true)
@@ -139,9 +153,11 @@ export default function EditBeyondPage() {
             const token = localStorage.getItem('token')
             if (!token) throw new Error('Unauthorized')
 
-            const uploadedHero = heroFile
-                ? await uploadImage(heroFile, token)
-                : heroImage
+            // Upload hero/footer/divider if replaced
+            const uploadedHero = heroFile ? await uploadImage(heroFile, token) : heroImage
+            const uploadedDivider = imageDividerFile ? await uploadImage(imageDividerFile, token) : imageDivider
+            const uploadedFirstFooter = firstFooterFile ? await uploadImage(firstFooterFile, token) : firstFooterImage
+            const uploadedSecondFooter = secondFooterFile ? await uploadImage(secondFooterFile, token) : secondFooterImage
 
             const uploadedSections = await Promise.all(
                 sections.map(async (section) => ({
@@ -156,8 +172,12 @@ export default function EditBeyondPage() {
                 event,
                 title,
                 description,
-                slug: slugify(title),
+                quote,
+                slug: slugify(event + title),
                 heroImage: uploadedHero,
+                imageDivider: uploadedDivider,
+                firstFooterImage: uploadedFirstFooter,
+                secondFooterImage: uploadedSecondFooter,
                 firstHeaderImage: uploadedSections[0]?.headerImage || null,
                 firstHeading: uploadedSections[0]?.heading || null,
                 firstDescription: uploadedSections[0]?.description || null,
@@ -167,6 +187,7 @@ export default function EditBeyondPage() {
                 thirdHeaderImage: uploadedSections[2]?.headerImage || null,
                 thirdHeading: uploadedSections[2]?.heading || null,
                 thirdDescription: uploadedSections[2]?.description || null,
+                thirdSubDescription: uploadedSections[2]?.subDescription || null,
                 fourthHeaderImage: uploadedSections[3]?.headerImage || null,
                 fourthHeading: uploadedSections[3]?.heading || null,
                 fourthDescription: uploadedSections[3]?.description || null,
@@ -183,17 +204,22 @@ export default function EditBeyondPage() {
             const json = await res.json()
             if (!res.ok) throw new Error(json.message || 'Failed to update')
 
-            alert('✅ Blog updated successfully!')
-            router.push('/dashboard/beyond')
+            setAlertType('success')
+            // setAlertTitle('Beyond Updated!')
+            setAlertMessage(' Your Beyond was successfully updated.')
+            setAlertOpen(true)
+            setTimeout(() => router.push('/dashboard/beyond'), 1500)
         } catch (err) {
             console.error(err)
-            alert('❌ Error updating blog')
+            setAlertType('error')
+            setAlertTitle('Update Failed')
+            setAlertMessage('❌ Something went wrong while updating the Beyond.')
+            setAlertOpen(true)
         } finally {
             setSaving(false)
         }
     }
 
-    // 🔹 Image input UI
     const DropImage = ({
         value,
         onChange,
@@ -206,27 +232,18 @@ export default function EditBeyondPage() {
         onFileChange?: (file: File | null) => void
     }) => {
         const inputRef = useRef<HTMLInputElement>(null)
-
-        const displayUrl =
-            value?.startsWith('blob:') || value?.startsWith('data:')
-                ? value
-                : getImageUrl(value)
+        const displayUrl = value?.startsWith('blob:') || value?.startsWith('data:') ? value : getImageUrl(value)
 
         return (
             <div
                 onDragOver={(e) => e.preventDefault()}
-                className="border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:bg-gray-50 relative"
+                className="border-2 border-dashed max-w-xs rounded-lg p-3 text-center cursor-pointer hover:bg-gray-50 relative"
                 onClick={() => inputRef.current?.click()}
             >
                 {value ? (
                     <div className="relative">
                         <div className="relative w-full aspect-[4/3]">
-                            <Image
-                                src={displayUrl}
-                                alt={label}
-                                fill
-                                className="object-cover rounded-md"
-                            />
+                            <Image src={displayUrl || ''} alt={label} fill className="object-cover rounded-md" />
                         </div>
                         <button
                             type="button"
@@ -257,32 +274,24 @@ export default function EditBeyondPage() {
         )
     }
 
-    if (loading)
-        return <div className="p-8 text-gray-500 text-center">Loading...</div>
+    if (loading) return <div className="p-8 text-gray-500 text-center">Loading...</div>
 
     return (
         <div className="p-8 max-w-full mx-auto">
-            <button
-                onClick={() => router.back()}
-                className="text-sm text-gray-500 hover:text-gray-800 mb-6"
-            >
+            <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-800 mb-6">
                 ← Back to Beyond
             </button>
 
             <h1 className="text-2xl font-semibold mb-6">Edit Beyond</h1>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Hero image */}
+                {/* Hero Image */}
                 <div>
                     <label className="block text-sm font-medium mb-2">Hero Image*</label>
-                    <DropImage
-                        value={heroImage}
-                        onChange={setHeroImage}
-                        onFileChange={setHeroFile}
-                        label="+ Add Hero Image"
-                    />
+                    <DropImage value={heroImage} onChange={setHeroImage} onFileChange={setHeroFile} label="+ Add Hero Image" />
                 </div>
 
+                {/* Headline */}
                 <div>
                     <label className="block text-sm font-medium mb-1">Headline</label>
                     <input
@@ -293,6 +302,7 @@ export default function EditBeyondPage() {
                     />
                 </div>
 
+                {/* Event */}
                 <div>
                     <label className="block text-sm font-medium mb-1">Event</label>
                     <input
@@ -303,6 +313,7 @@ export default function EditBeyondPage() {
                     />
                 </div>
 
+                {/* Description */}
                 <div>
                     <label className="block text-sm font-medium mb-1">Description</label>
                     <textarea
@@ -334,9 +345,7 @@ export default function EditBeyondPage() {
                                 <DropImage
                                     value={section.headerImage}
                                     onChange={(url) => updateSection(index, 'headerImage', url)}
-                                    onFileChange={(file) =>
-                                        updateSection(index, 'headerFile', file)
-                                    }
+                                    onFileChange={(file) => updateSection(index, 'headerFile', file)}
                                     label="+ Add Header Image"
                                 />
 
@@ -344,26 +353,33 @@ export default function EditBeyondPage() {
                                     type="text"
                                     placeholder="Heading"
                                     value={section.heading}
-                                    onChange={(e) =>
-                                        updateSection(index, 'heading', e.target.value)
-                                    }
+                                    onChange={(e) => updateSection(index, 'heading', e.target.value)}
                                     className="w-full border rounded-md p-2"
                                 />
 
                                 <textarea
                                     placeholder="Description"
                                     value={section.description}
-                                    onChange={(e) =>
-                                        updateSection(index, 'description', e.target.value)
-                                    }
+                                    onChange={(e) => updateSection(index, 'description', e.target.value)}
                                     className="w-full border rounded-md p-2"
                                     rows={3}
                                 />
+
+                                {index === 2 && (
+                                    <textarea
+                                        placeholder="Sub Description (third section only)"
+                                        value={section.subDescription || ''}
+                                        onChange={(e) => updateSection(index, 'subDescription', e.target.value)}
+                                        className="w-full border rounded-md p-2"
+                                        rows={3}
+                                    />
+                                )}
+
                             </div>
                         </div>
                     ))}
 
-                    {sections.length < 4 && (
+                    {sections.length < 3 && (
                         <button
                             type="button"
                             onClick={addSection}
@@ -374,6 +390,53 @@ export default function EditBeyondPage() {
                     )}
                 </div>
 
+                {/* Divider Image */}
+                <div className="flex-1 min-w-[20px]">
+                    <h3 className="font-semibold mb-2">Image Divider</h3>
+                    <DropImage
+                        value={imageDivider}
+                        onChange={setImageDivider}
+                        onFileChange={setImageDividerFile}
+                        label="+ Add Image Divider"
+                    />
+                </div>
+
+                {/* Quote */}
+                <div className="border rounded-xl p-4">
+                    <h3 className="font-semibold mb-2">Quote</h3>
+                    <input
+                        type="text"
+                        placeholder="Quote"
+                        value={quote}
+                        onChange={(e) => setQuote(e.target.value)}
+                        className="w-full border rounded-md p-2"
+                    />
+                </div>
+
+                {/* Footer Images */}
+                <div className="flex flex-wrap gap-6">
+                    <div className="flex-1 min-w-[20px]">
+                        <h3 className="font-semibold mb-2">First Footer Image</h3>
+                        <DropImage
+                            value={firstFooterImage}
+                            onChange={setFirstFooterImage}
+                            onFileChange={setFirstFooterFile}
+                            label="+ Add First Footer Image"
+                        />
+                    </div>
+
+                    <div className="flex-1 min-w-[20px]">
+                        <h3 className="font-semibold mb-2">Second Footer Image</h3>
+                        <DropImage
+                            value={secondFooterImage}
+                            onChange={setSecondFooterImage}
+                            onFileChange={setSecondFooterFile}
+                            label="+ Add Second Footer Image"
+                        />
+                    </div>
+                </div>
+
+                {/* Submit */}
                 <button
                     type="submit"
                     disabled={saving}
@@ -382,6 +445,21 @@ export default function EditBeyondPage() {
                     {saving ? 'Updating...' : 'Update Blog'}
                 </button>
             </form>
+            <AlertModal
+                open={alertOpen}
+                type={alertType}
+                title={alertTitle}
+                message={alertMessage}
+                onClose={() => setAlertOpen(false)}
+            />
+
+            {/* <LoadingOverlay show={loading} message="Editing blog..." /> */}
+            {/* ✅ Overlay untuk loading awal */}
+            {/* <LoadingOverlay show={loading} message="Loading content..." /> */}
+
+            {/* ✅ Overlay untuk submit/update */}
+            <LoadingOverlay show={saving} message="Updating blog..." />
         </div>
+
     )
 }

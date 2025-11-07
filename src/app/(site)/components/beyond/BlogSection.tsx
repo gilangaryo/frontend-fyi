@@ -42,8 +42,9 @@ export default function BlogSection({
                 </div>
 
                 {/* Text */}
+
                 <div
-                    className={`flex flex-col items-center justify-center text-center py-20 px-4 space-y-4 text-secondary max-w-md mx-auto ${reverse ? "order-2 md:order-1" : ""
+                    className={`flex flex-col  ${subDescription ? "items-start" : "items-center"} justify-start text-left py-20 px-4 space-y-4 text-secondary max-w-md mx-auto ${reverse ? "order-2 md:order-1" : ""
                         }`}
                 >
                     {heading && (

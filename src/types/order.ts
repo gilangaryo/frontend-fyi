@@ -51,7 +51,14 @@ export interface Order {
     items: OrderItem[]
     payments: Payment[]
     shippingAddress?: {
-        addressLine?: string
+        address?: string
+        addressDetail?: string
+        country?: string
+        province?: string
+        city?: string
+        district?: string
+        village?: string
+        postalCode?: string
     } | null
 }
 
@@ -65,6 +72,8 @@ export interface OrderApi {
         phone?: string | null
         city?: string | null
     }
+    giftNote?: string | null
+    bytestepShipmentId: string
     status: string
     subTotal?: string
     shippingCost?: string
@@ -81,9 +90,29 @@ export interface OrderApi {
         }
     }[]
     payments: { status: string }[]
-    shippingAddress?: {
-        addressLine?: string
-    } | null
+    shippingAddress: {
+        address: string
+        addressDetails: string
+        country: string
+        province: string
+        city: string
+        district?: string
+        village?: string
+        postalCode?: string
+    }
+    discount: {
+        id: string
+        code: string
+        type: string
+        value: number
+    }
+    tracking: {
+        id: string
+        trackingLink: string
+        trackingId: string
+        courier: string
+        estimatedDelivery: string
+    }
 }
 
 
@@ -97,4 +126,5 @@ export interface OrderCardData {
     createdAt: string
     status: string
     paymentStatus: string
+    trackingLink: string
 }

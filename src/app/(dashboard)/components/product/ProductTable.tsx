@@ -5,6 +5,7 @@ import Image from 'next/image'
 import StatusDropdown from '../StatusDropdown'
 import { getImageUrl } from '@/lib/utils'
 import { API_BASE } from '@/lib/constants'
+import { Trash } from 'lucide-react'
 
 interface ProductItem {
     id: string
@@ -121,15 +122,15 @@ export default function ProductTable({ products }: { products: ProductItem[] }) 
                         <div className="flex justify-center gap-2 py-3">
                             <Link
                                 href={`/dashboard/product/${item.id}/edit`}
-                                className="px-3 py-1 bg-sky-500 text-white text-xs rounded hover:bg-sky-600 transition"
+                                className="px-4 py-2 bg-sky-500 text-white text-xs rounded hover:bg-sky-600 transition"
                             >
                                 Edit
                             </Link>
                             <button
                                 onClick={() => handleDelete(item.id, item.title)}
-                                className="px-2 py-1 border rounded text-xs hover:bg-gray-100 transition"
+                                className="px-2 py-2  text-red-500 border rounded text-xs hover:text-white hover:bg-red-500  transition"
                             >
-                                Delete
+                                <Trash size={16} />
                             </button>
                         </div>
                     </div>

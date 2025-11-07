@@ -31,10 +31,14 @@ export default function EditProductPage() {
 
     const [collections, setCollections] = useState<{ id: string; title: string }[]>([])
     const [categories, setCategories] = useState<{ id: string; title: string }[]>([])
+    const [fabrics, setFabrics] = useState<{ id: string; name: string }[]>([])
     const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([])
     const [variants, setVariants] = useState([
         { size: '', bust: '', waist: '', length: '', sleeve: '', height: '', stock: '', sku: '' },
     ])
+
+    const [fabricInput, setFabricInput] = useState('')
+    const [showFabricSuggestions, setShowFabricSuggestions] = useState(false)
 
     const [form, setForm] = useState({
         title: '',
@@ -52,21 +56,28 @@ export default function EditProductPage() {
                 const token = localStorage.getItem('token')
                 if (!token) throw new Error('Unauthorized')
 
-                const [prodRes, colRes, catRes] = await Promise.all([
+                const [prodRes, colRes, catRes, fabRes] = await Promise.all([
                     fetch(`${API_BASE}/products/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_BASE}/collections`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_BASE}/categories`, { headers: { Authorization: `Bearer ${token}` } }),
+                    fetch(`${API_BASE}/kain`, { headers: { Authorization: `Bearer ${token}` } }),
                 ])
 
-                const [prodData, colData, catData] = await Promise.all([
+                const [prodData, colData, catData, fabData] = await Promise.all([
                     prodRes.json(),
                     colRes.json(),
                     catRes.json(),
+                    fabRes.ok ? fabRes.json() : { data: [] },
                 ])
 
                 if (!prodRes.ok) throw new Error(prodData.message || 'Failed to fetch product')
 
                 const product = prodData.data
+
+                console.log('🔍 Product data:', product)
+                console.log('🔍 Kain data:', product.kain)
+                console.log('🔍 KainId:', product.kainId)
+
                 setForm({
                     title: product.title,
                     description: product.description || '',
@@ -97,9 +108,22 @@ export default function EditProductPage() {
                     }))
                 )
 
-
                 setCollections(colData.data || [])
                 setCategories(catData.data || [])
+                setFabrics(fabData.data || [])
+
+                if (product.kain?.name) {
+                    setFabricInput(product.kain.name)
+                } else if (product.kainId && fabData.data) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const kainFromList = fabData.data.find((f: any) => f.id === product.kainId)
+                    if (kainFromList) {
+                        console.log('✅ Setting fabric from kainId lookup:', kainFromList.name)
+                        setFabricInput(kainFromList.name)
+                    } else {
+                        console.log('⚠️ KainId exists but fabric not found in list')
+                    }
+                }
             } catch (err) {
                 console.error('❌ Error fetching product:', err)
                 alert('Failed to load product data.')
@@ -134,6 +158,40 @@ export default function EditProductPage() {
         setVariants(variants.filter((_, i) => i !== index))
     }
 
+    const findOrCreateFabric = async (fabricName: string): Promise<string | null> => {
+        if (!fabricName.trim()) return null
+
+        try {
+            const token = localStorage.getItem('token')
+            if (!token) throw new Error('Unauthorized')
+
+            const existingFabric = fabrics.find(
+                f => f.name.toLowerCase() === fabricName.trim().toLowerCase()
+            )
+
+            if (existingFabric) {
+                return existingFabric.id
+            }
+
+            const res = await fetch(`${API_BASE}/kain`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ name: fabricName.trim() }),
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.message || 'Failed to create fabric')
+
+            return data.data.id
+        } catch (err) {
+            console.error('❌ Error with fabric:', err)
+            return null
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (uploadingImages) {
@@ -151,6 +209,8 @@ export default function EditProductPage() {
                 return
             }
 
+            const kainId = await findOrCreateFabric(fabricInput)
+
             const body = {
                 title: form.title.trim(),
                 description: form.description.trim() || null,
@@ -160,6 +220,7 @@ export default function EditProductPage() {
                 imageUrl: images.find((i) => i.isPrimary)?.url || images[0]?.url || '',
                 categoryId: form.categoryId,
                 collectionId: form.collectionId,
+                kainId: kainId || null,
                 images: images.map((img) => ({
                     imageUrl: img.url,
                     isPrimary: img.isPrimary,
@@ -315,6 +376,79 @@ export default function EditProductPage() {
                     </select>
                 </div>
 
+                {/* Fabric Section - Combobox Style */}
+                <div>
+                    <label className="block text-sm font-medium mb-1">Fabric / Kain</label>
+                    <div className="flex gap-2 items-center">
+                        <div className="flex-1 relative">
+                            <input
+                                type="text"
+                                value={fabricInput}
+                                onChange={(e) => {
+                                    setFabricInput(e.target.value)
+                                    setShowFabricSuggestions(true)
+                                }}
+                                onFocus={() => setShowFabricSuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowFabricSuggestions(false), 200)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        setShowFabricSuggestions(false)
+                                    }
+                                }}
+                                placeholder="Select or type fabric name..."
+                                className="w-full border border-gray-300 rounded-lg p-2 pr-8"
+                            />
+                            <svg
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+
+                            {/* Suggestions Dropdown */}
+                            {showFabricSuggestions && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                    {fabrics
+                                        .filter(f => f.name.toLowerCase().includes(fabricInput.toLowerCase()))
+                                        .map((fabric) => (
+                                            <div
+                                                key={fabric.id}
+                                                onClick={() => {
+                                                    setFabricInput(fabric.name)
+                                                    setShowFabricSuggestions(false)
+                                                }}
+                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                            >
+                                                {fabric.name}
+                                            </div>
+                                        ))}
+                                    {fabrics.filter(f => f.name.toLowerCase().includes(fabricInput.toLowerCase())).length === 0 && fabricInput && (
+                                        <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                            No matching fabric. Press Enter to add {fabricInput} as new fabric.
+                                        </div>
+                                    )}
+                                    {!fabricInput && (
+                                        <div className="px-3 py-2 text-sm text-gray-400 italic">
+                                            Start typing to see suggestions or add new fabric
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        {fabricInput && !fabrics.find(f => f.name.toLowerCase() === fabricInput.toLowerCase()) && (
+                            <span className="flex items-center px-3 py-2 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200 whitespace-nowrap">
+                                New: {fabricInput}
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Click to see options or type directly. New fabrics will be created automatically when you submit.
+                    </p>
+                </div>
+
                 {/* Variants */}
                 <div>
                     <label className="block text-sm font-medium mb-2">Product Variants</label>
@@ -437,10 +571,13 @@ export default function EditProductPage() {
 
                 <button
                     type="submit"
-                    disabled={submitting}
-                    className="w-full bg-primary-studio text-white py-3 rounded-lg hover:bg-secondary-studio transition"
+                    disabled={submitting || uploadingImages}
+                    className={`w-full py-3 rounded-lg transition text-white ${submitting || uploadingImages
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-primary-studio hover:bg-secondary-studio'
+                        }`}
                 >
-                    {submitting ? 'Updating...' : 'Update Product'}
+                    {uploadingImages ? 'Uploading images...' : submitting ? 'Updating...' : 'Update Product'}
                 </button>
             </form>
         </div>

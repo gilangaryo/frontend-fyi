@@ -59,5 +59,10 @@ export interface Product {
     images: ProductImage[];
     category: Category;
     collection: Collection;
+    kain?: Kain;
 }
 
+export interface Kain {
+    id: string;
+    name: string;
+}

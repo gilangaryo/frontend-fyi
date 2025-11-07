@@ -2,45 +2,50 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { Volume2, VolumeX } from "lucide-react";
 import ScrollReveal from "../ScrollReveal";
 
 export default function StorySection() {
     const videoRefs = useRef<HTMLVideoElement[]>([]);
-    const [userInteracted, setUserInteracted] = useState(false);
+    const [, setUserInteracted] = useState(false);
+    const [muted, setMuted] = useState(true);
 
     useEffect(() => {
         const handleInteraction = () => {
             setUserInteracted(true);
             window.removeEventListener("click", handleInteraction);
             window.removeEventListener("touchstart", handleInteraction);
+            window.removeEventListener("scroll", handleInteraction);
         };
 
         window.addEventListener("click", handleInteraction);
         window.addEventListener("touchstart", handleInteraction);
+        window.addEventListener("scroll", handleInteraction);
 
         return () => {
             window.removeEventListener("click", handleInteraction);
             window.removeEventListener("touchstart", handleInteraction);
+            window.removeEventListener("scroll", handleInteraction);
         };
     }, []);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
-                entries.forEach((entry) => {
+                entries.forEach(async (entry) => {
                     const video = entry.target as HTMLVideoElement;
 
                     if (entry.isIntersecting) {
-                        video.muted = false;
-                        video.volume = 1;
-                        video.play().catch((err) => {
-                            console.warn("Play with audio blocked, trying muted:", err);
+                        try {
+                            video.muted = muted;
+                            await video.play();
+                        } catch (err) {
+                            console.warn("Autoplay blocked:", err);
                             video.muted = true;
-                            video.play().catch((e) => console.warn("Play failed:", e));
-                        });
+                            await video.play().catch(() => { });
+                        }
                     } else {
                         video.pause();
-                        video.muted = true;
                     }
                 });
             },
@@ -52,18 +57,24 @@ export default function StorySection() {
         });
 
         return () => observer.disconnect();
-    }, []);
+    }, [muted]);
 
-    useEffect(() => {
-        if (userInteracted) {
-            videoRefs.current.forEach((video) => {
-                if (video && !video.paused) {
-                    video.muted = false;
-                    video.volume = 1;
-                }
-            });
+    const setVideoRef = (el: HTMLVideoElement | null) => {
+        if (el && !videoRefs.current.includes(el)) {
+            videoRefs.current.push(el);
         }
-    }, [userInteracted]);
+    };
+
+    const toggleMute = () => {
+        const newMuted = !muted;
+        setMuted(newMuted);
+        videoRefs.current.forEach((video) => {
+            video.muted = newMuted;
+            if (!newMuted) {
+                video.volume = 1;
+            }
+        });
+    };
 
     return (
         <section>
@@ -74,25 +85,34 @@ export default function StorySection() {
             </ScrollReveal>
 
             <ScrollReveal>
-
                 {/* Grid 1 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-15 items-center bg-primary ">
                     <div className="relative w-full aspect-[3/4]">
                         <video
-                            ref={(el) => {
-                                if (el && !videoRefs.current.includes(el)) {
-                                    videoRefs.current.push(el);
-                                }
-                            }}
+                            ref={setVideoRef}
                             loop
-                            muted
+                            muted={muted}
                             playsInline
                             className="absolute top-0 left-0 w-full h-full object-cover"
-                        >  <source
+                        >
+                            <source
                                 src="https://cdn.fyicouture.com/videos/interview-cila-streamable.mp4"
                                 type="video/mp4"
                             />
                         </video>
+
+                        {/* Tombol Mute */}
+                        <button
+                            onClick={toggleMute}
+                            className="absolute bottom-7 right-7 bg-white/20 backdrop-blur-xs p-2 rounded-full hover:bg-white/40 transition"
+                            aria-label="Toggle sound"
+                        >
+                            {muted ? (
+                                <VolumeX size={21} className="text-white hover:text-gray-800" />
+                            ) : (
+                                <Volume2 size={21} className="text-white hover:text-gray-800" />
+                            )}
+                        </button>
                     </div>
 
                     <div className="flex flex-col justify-center text-center md:text-center space-y-4 max-w-sm md:max-w-md mx-auto text-secondary py-8 px-4">
@@ -117,8 +137,8 @@ export default function StorySection() {
                     The journey of becoming a woman is a dance of strength and softness, of holding heritage while embracing change
                 </h2>
             </ScrollReveal>
-            <ScrollReveal>
 
+            <ScrollReveal>
                 {/* Grid 2: Two Images */}
                 <div className="grid grid-cols-1 md:grid-cols-2">
                     <div className="relative w-full aspect-[7/6]">
@@ -134,11 +154,11 @@ export default function StorySection() {
                     The journey of becoming a woman is a dance of strength and softness, of holding heritage while embracing change
                 </h2>
             </ScrollReveal>
+
             <ScrollReveal>
                 {/* Grid 3 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-15 items-center bg-primary">
                     <div className="flex flex-col justify-center text-center md:text-center space-y-4  max-w-sm md:max-w-md  mx-auto text-secondary py-8 px-4">
-
                         <h3 className="text-2xl md:text-4xl font-light italic mb-2">Story About FYI &apos; s</h3>
                         <p className="text-lg md:text-xl  font-light">
                             Every woman carries her own journey of becoming, shaped by stories,
@@ -150,19 +170,27 @@ export default function StorySection() {
 
                     <div className="relative w-full aspect-[3/4]">
                         <video
-                            ref={(el) => {
-                                if (el && !videoRefs.current.includes(el)) {
-                                    videoRefs.current.push(el);
-                                }
-                            }}
+                            ref={setVideoRef}
                             loop
-                            muted
+                            muted={muted}
                             playsInline
                             className="absolute top-0 left-0 w-full h-full object-cover"
                         >
-
                             <source src="https://cdn.fyicouture.com/videos/interview-fiona-streamable.mp4" type="video/mp4" />
                         </video>
+
+                        {/* Tombol Mute */}
+                        <button
+                            onClick={toggleMute}
+                            className="absolute bottom-7 right-7 bg-white/20 backdrop-blur-xs p-2 rounded-full hover:bg-white/40 transition"
+                            aria-label="Toggle sound"
+                        >
+                            {muted ? (
+                                <VolumeX size={21} className="text-white hover:text-gray-800" />
+                            ) : (
+                                <Volume2 size={21} className="text-white hover:text-gray-800" />
+                            )}
+                        </button>
                     </div>
                 </div>
             </ScrollReveal>

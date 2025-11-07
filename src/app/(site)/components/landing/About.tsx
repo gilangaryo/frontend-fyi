@@ -114,7 +114,7 @@ export default function About() {
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-medium mb-4 mt-6">Wear Your Worth</h2>
+                    {/* <h2 className="text-2xl font-medium mb-4 mt-6">Wear Your Worth</h2>
                     <div className="text-gray-600 font-light text-sm leading-relaxed max-w-[90%]">
                         <p className="mb-6">
                             True self-worth doesn’t scream for attention, demand validation, or
@@ -126,7 +126,7 @@ export default function About() {
                             be louder, bolder, more. Real self-worth isn’t about proving. It’s about
                             owning it gracefully.
                         </p>
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="flex flex-col justify-between">
@@ -158,7 +158,7 @@ export default function About() {
                         </button>
                     </div>
 
-                    <div className="text-gray-600 font-light text-sm leading-relaxed">
+                    {/* <div className="text-gray-600 font-light text-sm leading-relaxed">
                         <p className="mb-6 mt-6 md:mt-0">
                             We create daily couture carrying that presence: intentional, refined,
                             versatile. Pieces that move with you, elevating your worth without
@@ -168,7 +168,7 @@ export default function About() {
                         <p className="text-xl md:text-2xl font-semibold">
                             Wear your worth. Day in, day out.
                         </p>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </section>

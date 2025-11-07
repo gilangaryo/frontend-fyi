@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import FilterDropdown from "./FilterDropdown";
 import ActiveFilters from "./ActiveFilters";
 import { API_BASE } from "@/lib/constants";
-import { Product } from "@/types/product";
+import { Product, Kain } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
 
 export default function CatalogSection() {
@@ -16,7 +16,7 @@ export default function CatalogSection() {
     const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
-    const kains = ["Newest", "Best Seller"];
+    const [kains, setKains] = useState<string[]>([]);
 
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get("category");
@@ -41,6 +41,20 @@ export default function CatalogSection() {
         }
         fetchProducts();
     }, []);
+    useEffect(() => {
+        async function fetchKains() {
+            try {
+                const res = await fetch(`${API_BASE}/kain`, { cache: "no-store" });
+                const json = await res.json();
+                if (json.success) {
+                    setKains(json.data.map((k: Kain) => k.name));
+                }
+            } catch (err) {
+                console.error("❌ Failed to fetch kain:", err);
+            }
+        }
+        fetchKains();
+    }, []);
 
     const getUniqueValues = (items: Product[], key: "collection" | "category") =>
         Array.from(
@@ -61,11 +75,16 @@ export default function CatalogSection() {
             return (
                 (selectedCollections.length === 0 ||
                     selectedCollections.includes(product.collection?.slug ?? "")) &&
+
                 (selectedCategories.length === 0 ||
-                    selectedCategories.includes(product.category?.slug ?? ""))
+                    selectedCategories.includes(product.category?.slug ?? "")) &&
+
+                (selectedKains.length === 0 ||
+                    (product.kain && selectedKains.includes(product.kain.name)))
+
             );
         });
-    }, [products, selectedCollections, selectedCategories]);
+    }, [products, selectedCollections, selectedCategories, selectedKains]);
 
     return (
         <section className="px-6 md:px-10 pb-8">
@@ -77,7 +96,7 @@ export default function CatalogSection() {
 
             {/* Filters */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-10">
-                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-6 text-lg w-full md:w-auto flex-grow">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-2 md:gap-6 text-lg w-full md:w-auto flex-grow">
                     <FilterDropdown
                         label="Collection"
                         options={collections}
@@ -105,6 +124,7 @@ export default function CatalogSection() {
                         setOpenFilter={setOpenFilter}
                         filterKey="kain"
                     />
+
                 </div>
 
                 <ActiveFilters

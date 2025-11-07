@@ -19,23 +19,23 @@ export default function HeroSection() {
 
             {/* Desktop Texts */}
             <div className="absolute inset-0 text-white font-light text-5xl hidden md:block">
-                <p className="absolute bottom-[55%] left-[5%]">Every</p>
-                <p className="absolute bottom-[45%] left-[13%]">Kain</p>
-                <p className="absolute bottom-[30%] left-[16%]">Carries</p>
-                <p className="absolute bottom-[19%] left-[27%]">A Story</p>
-                <p className="absolute bottom-[19%] right-[5%]">
-                    woven with history
+                <p className="absolute bottom md:bottom-[55%] md:left-[5%]">Where</p>
+                <p className="absolute md:bottom-[45%] md:left-[13%]">Couture</p>
+                <p className="absolute md:bottom-[30%] md:left-[24%]">Meets</p>
+                <p className="absolute md:bottom-[19%] md:left-[34%]">Art</p>
+                <p className="absolute md:bottom-[19%] md:right-[5%]">
+                    Beyond Fashion
                 </p>
             </div>
 
             {/* Mobile Texts */}
-            <div className="absolute inset-0 flex flex-col justify-center items-center text-white font-light text-3xl gap-1 px-4 text-center md:hidden">
-                <p>Every</p>
-                <p>Kain</p>
-                <p>Carries</p>
-                <p>A Story</p>
-                <p className="text-sm uppercase tracking-wider mt-3 opacity-80">
-                    woven with history
+            <div className="absolute inset-0 text-white font-light text-3xl gap-1 px-4 text-center md:hidden">
+                <p className="absolute bottom-[66%] left-[10%]">Where</p>
+                <p className="absolute bottom-[57%] left-[18%]">Couture</p>
+                <p className="absolute bottom-[48%] left-[64%]">Meets</p>
+                <p className="absolute bottom-[37%] left-[10%]">Art</p>
+                <p className="absolute bottom-[25%] left-[16%]">
+                    Beyond Fashion
                 </p>
             </div>
         </section>

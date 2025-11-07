@@ -8,19 +8,68 @@ import { clearCart } from '@/store/cartSlice'
 import { API_BASE } from '@/lib/constants'
 import { getImageUrl } from '@/lib/utils'
 import AddressSelector from '../components/checkout/AddressSelector'
+import { Gift } from 'lucide-react'
 
 export default function CheckoutPage() {
     const dispatch = useDispatch()
     const [mounted, setMounted] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [storeOpen, setStoreOpen] = useState<boolean | null>(null) // null = loading
+    const [storeOpen, setStoreOpen] = useState<boolean | null>(null)
+    const [discountCode, setDiscountCode] = useState('')
+    const [discountAmount, setDiscountAmount] = useState(0)
+    const [discountId, setDiscountId] = useState<string | null>(null)
+    const [appliedCode, setAppliedCode] = useState<string | null>(null)
+    const [discountTried, setDiscountTried] = useState(false)
+    const [discountLoading, setDiscountLoading] = useState(false)
 
     const cartItems = useSelector((state: RootState) => state.cart.items)
+    const giftNote = useSelector((state: RootState) => state.cart.giftNote)
     const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const total = Math.max(subtotal - discountAmount, 0)
+
+    // Handle apply discount dengan API
+    const handleApplyDiscount = async () => {
+        if (!discountCode.trim()) {
+            return
+        }
+
+        setDiscountTried(true)
+        setDiscountLoading(true)
+
+        try {
+            const res = await fetch(`${API_BASE}/discounts/validate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: discountCode,
+                    orderTotal: subtotal,
+                }),
+            })
+
+            const data = await res.json()
+
+            if (data.success) {
+                setDiscountAmount(data.data.discountAmount)
+                setDiscountId(data.data.discountId)
+                setAppliedCode(discountCode.toUpperCase())
+            } else {
+                // Reset jika tidak valid
+                setDiscountAmount(0)
+                setDiscountId(null)
+                setAppliedCode(null)
+            }
+        } catch (err) {
+            console.error('❌ Discount validation error:', err)
+            setDiscountAmount(0)
+            setDiscountId(null)
+            setAppliedCode(null)
+        } finally {
+            setDiscountLoading(false)
+        }
+    }
 
     useEffect(() => setMounted(true), [])
 
-    // ✅ Fetch store status
     useEffect(() => {
         (async () => {
             try {
@@ -100,10 +149,11 @@ export default function CheckoutPage() {
                     courier_company: null,
                     courier_type: null,
                     delivery_type: null,
-                    order_note: 'tolong hati-hati ya paketnya',
+                    order_note: null,
                 },
+                giftNote: giftNote || null,
+                discountId: discountId || null, // Tambahkan discountId
             }
-
 
             let payload: unknown
             if (form.country === 'Indonesia') {
@@ -111,13 +161,13 @@ export default function CheckoutPage() {
                     ...basePayload,
                     address: {
                         country: form.country,
+                        address: form.address,
+                        apartment: form.apartment,
                         province: form.province,
                         city: form.city,
                         district: form.district,
                         village: form.village,
                         postalCode: form.postalCode,
-                        address: form.address,
-                        apartment: form.apartment,
                     },
                 }
             } else {
@@ -158,6 +208,7 @@ export default function CheckoutPage() {
             dispatch(clearCart())
         } catch (err) {
             console.error('❌ Checkout error:', err)
+            alert('Failed to complete checkout. Please try again.')
         } finally {
             setLoading(false)
         }
@@ -179,8 +230,7 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-white">
-
-            <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="max-w-full mx-auto px-15 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* LEFT SIDE */}
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Contact */}
@@ -331,14 +381,70 @@ export default function CheckoutPage() {
                             </div>
                         ))}
 
-                        <div className="space-y-2 text-sm text-gray-700">
-                            <div className="flex justify-between">
-                                <span>Subtotal</span>
-                                <span>IDR {subtotal.toLocaleString('id-ID')}</span>
+                        {/* Gift Note Display */}
+                        {giftNote && (
+                            <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
+                                <div className="flex items-start gap-2">
+                                    <Gift size={18} className="text-gray-600 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-gray-700 mb-1">Gift Note:</p>
+                                        <p className="text-sm text-gray-600 italic">&quot;{giftNote}&quot;</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between font-semibold pt-2 border-t">
-                                <span>Total</span>
-                                <span>IDR {subtotal.toLocaleString('id-ID')}</span>
+                        )}
+
+                        <div className="space-y-4 text-sm text-gray-700">
+                            {/* Discount Input */}
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Discount code"
+                                        value={discountCode}
+                                        onChange={(e) => setDiscountCode(e.target.value)}
+                                        className="flex-1 border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-200 uppercase"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleApplyDiscount}
+                                        disabled={discountLoading}
+                                        className="px-4 py-3 bg-gray-100 rounded-md text-gray-700 font-medium hover:bg-gray-200 transition disabled:opacity-50"
+                                    >
+                                        {discountLoading ? 'Checking...' : 'Apply'}
+                                    </button>
+                                </div>
+
+                                {discountTried && !appliedCode && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                        ⚠️ Invalid or expired discount code.
+                                    </p>
+                                )}
+                                {discountTried && appliedCode && (
+                                    <p className="text-xs text-green-600 mt-2">
+                                        ✅ Discount code &quot;{appliedCode}&quot; applied successfully!
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Price Summary */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span>Subtotal</span>
+                                    <span>IDR {subtotal.toLocaleString('id-ID')}</span>
+                                </div>
+
+                                {appliedCode && discountAmount > 0 && (
+                                    <div className="flex justify-between text-green-600">
+                                        <span>Discount ({appliedCode})</span>
+                                        <span>-IDR {discountAmount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between font-semibold pt-2 border-t">
+                                    <span>Total</span>
+                                    <span>IDR {total.toLocaleString('id-ID')}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -90,6 +90,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             iconDefault: '/dashboard/icons/beyond-black.svg',
             iconActive: '/dashboard/icons/beyond-white.svg'
         },
+        {
+            name: 'Discount',
+            href: '/dashboard/discount',
+            iconDefault: '/dashboard/icons/beyond-black.svg',
+            iconActive: '/dashboard/icons/beyond-white.svg'
+        },
     ]
 
     const closeMobileMenu = () => {

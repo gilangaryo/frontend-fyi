@@ -13,6 +13,8 @@ interface Order {
     createdAt: string
     status: string
     paymentStatus: string
+    trackingLink: string
+
 }
 
 export default function OrderCard({
@@ -91,12 +93,15 @@ export default function OrderCard({
                     </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right" onClick={(e) => e.stopPropagation()}>
+
                     <AcceptOrderButton
                         orderId={order.id}
-                        status={order.status}
+                        status={order.status.toUpperCase()}
                         onAccepted={onAccepted}
+                        trackingLink={order.trackingLink}
                     />
+
                 </div>
 
 

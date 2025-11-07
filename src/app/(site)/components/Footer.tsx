@@ -50,7 +50,8 @@ export default function Footer() {
                         </div>
                         <div>
                             <p className="uppercase text-xs text-charcoal mb-1">Opening Hours</p>
-                            <p className="text-lg font-medium">10am—5pm</p>
+                            <p className="text-lg font-medium">10am—5pm </p>
+                            <p className="text-xs">(Sunday closed)</p>
                         </div>
                     </div>
                     {/* Copyright */}

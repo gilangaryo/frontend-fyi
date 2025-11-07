@@ -6,8 +6,7 @@ import StatusDropdown from "../StatusDropdown";
 import { API_BASE } from "@/lib/constants";
 import React from "react"
 import type { DropResult } from "@hello-pangea/dnd"
-import { Grip } from "lucide-react";
-import Image from "next/image";
+import { Grip, Trash } from "lucide-react";
 interface CollectionItem {
     id: string;
     title: string;
@@ -67,6 +66,41 @@ export default function CollectionTable({
         }
     }
 
+    async function fetchCollections() {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${API_BASE}/collections`, {
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to fetch collections");
+            const data = await res.json();
+            setItems(data.data || []);
+        } catch (err) {
+            console.error("❌ Fetch error:", err);
+        }
+    }
+    async function handleDelete(id: string) {
+        if (!confirm("Delete this collection?")) return;
+
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${API_BASE}/collections/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const json = await res.json();
+            if (json.success) {
+                alert("✅ Deleted successfully!");
+                fetchCollections();
+            } else {
+                alert(json.message || "Failed to delete");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error deleting collection");
+        }
+    }
     return (
         <div className="rounded-lg border bg-white overflow-visible">
             {/* Header */}
@@ -112,21 +146,17 @@ export default function CollectionTable({
                                             <div className="w-40 flex justify-center gap-2 py-3">
                                                 <Link
                                                     href={`/dashboard/product/collection/${item.id}/edit`}
-                                                    className="px-3 py-1 bg-sky-500 text-white text-xs rounded hover:bg-sky-600 transition"
+                                                    className="px-4 py-2 bg-sky-500 text-white text-xs rounded hover:bg-sky-600 transition"
                                                 >
                                                     Edit
                                                 </Link>
                                                 <button
-                                                    onClick={() => alert(`Delete ${item.title}?`)}
-                                                    className="hover:bg-red-600 px-2 py-1 border rounded text-xs hover:bg-gray-100 transition"
+                                                    onClick={() =>
+                                                        handleDelete(item.id)
+                                                    }
+                                                    className=" px-2 py-2 border rounded text-sm text-red-500 hover:text-white hover:bg-red-500 transition"
                                                 >
-                                                    <Image
-                                                        src="/dashboard/icons/delete-outline.svg"
-                                                        alt="Delete"
-                                                        width={16}
-                                                        height={16}
-                                                        className=""
-                                                    />
+                                                    <Trash size={16} />
                                                 </button>
                                             </div>
                                         </div>

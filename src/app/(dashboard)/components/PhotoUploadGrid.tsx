@@ -132,7 +132,7 @@ export default function PhotoUploadGrid({ onChange, onUploadingChange, initialIm
                             type="button"
                             onClick={() => handleSetPrimary(i)}
                             className={`absolute bottom-1 left-1 right-1 mx-auto text-xs rounded px-2 py-1 ${img.isPrimary
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-primary-studio text-white'
                                 : 'bg-white/80 text-gray-700 hover:bg-gray-200'
                                 }`}
                         >

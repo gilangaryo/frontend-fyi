@@ -5,7 +5,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/store"
-import { removeFromCart, updateQuantity } from "@/store/cartSlice"
+import { removeFromCart, updateQuantity, setGiftNote } from "@/store/cartSlice"
+import { Gift } from "lucide-react"
+import { useEffect, useState } from "react"
+import { API_BASE } from '@/lib/constants'
 
 interface CartModalProps {
     open: boolean
@@ -15,7 +18,32 @@ interface CartModalProps {
 export default function CartModal({ open, onClose }: CartModalProps) {
     const dispatch = useDispatch()
     const cartItems = useSelector((state: RootState) => state.cart.items)
+    const giftNote = useSelector((state: RootState) => state.cart.giftNote)
     const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+    const [storeOpen, setStoreOpen] = useState<boolean | null>(null)
+    const [giftNoteOpen, setGiftNoteOpen] = useState(false)
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/setting/store-status`)
+                const json = await res.json()
+                if (json.success) {
+                    setStoreOpen(json.data.isOpen)
+                } else {
+                    setStoreOpen(true)
+                }
+            } catch (err) {
+                console.error('Failed to fetch store status:', err)
+                setStoreOpen(true)
+            }
+        })()
+    }, [])
+
+    const handleGiftNoteChange = (value: string) => {
+        dispatch(setGiftNote(value))
+    }
 
     return (
         <AnimatePresence>
@@ -33,16 +61,16 @@ export default function CartModal({ open, onClose }: CartModalProps) {
 
                     {/* Side Drawer */}
                     <motion.div
-                        className="fixed top-0 right-0 h-full w-[85%] max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
+                        className="fixed top-0 right-0 h-full w-[85%] max-w-2xl bg-white shadow-xl z-50 flex flex-col "
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "tween", ease: "easeOut", duration: 0.35 }}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                        <div className="flex items-center justify-between p-6 bg-primary-muted border-b border-gray-200 ">
                             <div>
-                                <h2 className="text-2xl font-semibold">Your Bag</h2>
+                                <h2 className="text-2xl font-semibold mb-1">Your Bag</h2>
                                 <p className="text-sm text-gray-500">
                                     {cartItems.length > 0
                                         ? "Your order qualifies for free shipping!"
@@ -157,6 +185,45 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
                             >
+                                {/* Gift Note Section */}
+                                <div className="border border-gray-200 rounded-md">
+                                    <button
+                                        type="button"
+                                        onClick={() => setGiftNoteOpen(!giftNoteOpen)}
+                                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition"
+                                    >
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <Gift size={18} />
+                                            <span className="text-sm font-medium">Add gift note</span>
+                                        </div>
+                                        <svg
+                                            className={`w-5 h-5 text-gray-500 transition-transform ${giftNoteOpen ? 'rotate-180' : ''
+                                                }`}
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {giftNoteOpen && (
+                                        <div className="px-4 pb-4 space-y-2">
+                                            <textarea
+                                                value={giftNote}
+                                                onChange={(e) => handleGiftNoteChange(e.target.value)}
+                                                placeholder="Write your gift message here..."
+                                                rows={3}
+                                                maxLength={200}
+                                                className="w-full border border-gray-300 rounded-md p-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none"
+                                            />
+                                            <p className="text-xs text-gray-500 text-right">
+                                                {giftNote.length}/200 characters
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="flex justify-between text-gray-700 font-medium">
                                     <span>
                                         Subtotal{" "}
@@ -170,13 +237,28 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                 <p className="text-gray-500 text-sm">
                                     Shipping and tax calculated at checkout
                                 </p>
-                                <Link
-                                    href="/checkout"
-                                    onClick={onClose}
-                                    className="block w-full text-center bg-secondary text-white py-3 rounded font-semibold hover:bg-secondary/90 transition"
-                                >
-                                    Checkout Now
-                                </Link>
+
+                                {storeOpen ? (
+                                    <Link
+                                        href="/checkout"
+                                        onClick={onClose}
+                                        className="block w-full text-center bg-secondary text-white py-3 rounded font-semibold hover:bg-secondary/90 transition"
+                                    >
+                                        Checkout Now
+                                    </Link>
+                                ) : (
+                                    <button
+                                        onClick={onClose}
+                                        className="block w-full text-center bg-gray-400 text-white py-3 rounded font-semibold hover:bg-gray-500 transition"
+                                    >
+                                        Store Closed
+                                    </button>
+                                )}
+
+                                {/* {storeOpen
+                                    ? 'Checkout Now'
+                                    : 'Store Closed'} */}
+
                             </motion.div>
                         )}
                     </motion.div>

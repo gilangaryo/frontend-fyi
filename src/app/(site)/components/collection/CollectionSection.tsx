@@ -1,10 +1,10 @@
 'use client'
 
 import Image from 'next/image'
-import { useRef } from 'react'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Pagination } from 'swiper/modules'
-import type { Swiper as SwiperType } from 'swiper'
+// import { useRef } from 'react'
+// import { Swiper, SwiperSlide } from 'swiper/react'
+// import { Pagination } from 'swiper/modules'
+// import type { Swiper as SwiperType } from 'swiper'
 import ButtonFull from '../ButtonFull'
 
 // Import Swiper styles
@@ -44,13 +44,13 @@ export default function CollectionSection({
     data: CollectionData
     index: number
 }) {
-    const swiperRef = useRef<SwiperType | null>(null)
-    const isReversed = index % 2 === 1
+    // const swiperRef = useRef<SwiperType | null>(null)
+    // const activeProducts = data.products?.filter((p) => p.status) || []
 
-    const activeProducts = data.products?.filter((p) => p.status) || []
+    const isReversed = index % 2 === 1
     const heroHeightClass =
         index === 0
-            ? 'md:h-[700px]'
+            ? 'md:h-[calc(100vh-140px)]'
             : 'md:h-screen'
     const scrollMarginTop = index === 0 ? 'scroll-mt-50' : 'scroll-mt-0'
     return (
@@ -70,7 +70,7 @@ export default function CollectionSection({
                     fill
                     className="object-cover "
                 />
-
+                {/* 
                 <div className="relative z-10 font-thin">
                     <h2 className="text-3xl md:text-[64px] font-extralight mb-6">
                         {data.title}
@@ -83,98 +83,24 @@ export default function CollectionSection({
                             {data.subDescription}
                         </p>
                     )}
-                </div>
+                </div> */}
             </div>
 
             {/* RIGHT (carousel + button) */}
-            <div className="flex flex-col justify-between bg-white p-4 md:p-6">
-                <div className="flex-1 flex flex-col justify-center items-center relative">
-                    <div className="flex flex-col items-center text-center mb-6">
-                        <p className="font-light text-lg text-secondary max-w-lg leading-relaxed">
-                            {data.quote}
+            <div className="flex flex-col justify-between bg-white p-6 md:mb-0">
+                <div className="flex-1 flex flex-col justify-center items-center relative mb-10">
+                    <div className="relative z-10 font-light text-secondary text-center">
+                        <h2 className="text-3xl md:text-[48px] font-extralight mb-6">
+                            {data.title}
+                        </h2>
+                        <p className="text-xs leading-relaxed max-w-xl  md:mx-auto">
+                            {data.description}
                         </p>
-                    </div>
-
-                    <div className="w-full max-w-[230px] relative">
-                        {/* Arrows */}
-                        <button
-                            onClick={() => swiperRef.current?.slidePrev()}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 text-secondary hover:text-[#6B5435] transition-colors z-10 hidden md:block"
-                            aria-label="Previous image"
-                        >
-                            <Image
-                                src="/arrow-left.svg"
-                                alt="left arrow"
-                                width={36}
-                                height={36}
-                            />
-                        </button>
-                        <button
-                            onClick={() => swiperRef.current?.slideNext()}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 text-secondary hover:text-[#6B5435] transition-colors z-10 hidden md:block"
-                            aria-label="Next image"
-                        >
-                            <Image
-                                src="/arrow-right.svg"
-                                alt="left arrow"
-                                width={36}
-                                height={36}
-                            />
-                        </button>
-
-                        {/* Swiper */}
-                        <Swiper
-                            modules={[Pagination]}
-                            spaceBetween={0}
-                            slidesPerView={1}
-                            onSwiper={(swiper) => {
-                                swiperRef.current = swiper
-                            }}
-                            pagination={{
-                                clickable: true,
-                                el: `#pagination-${data.id || index}`,
-                                bulletClass:
-                                    'inline-block w-6 h-[4px] rounded-sm bg-gray-400 mx-[1px] cursor-pointer transition-colors',
-                                bulletActiveClass: '!bg-secondary',
-                            }}
-                            loop={activeProducts.length > 1}
-                            className="aspect-[3/4] w-full relative overflow-hidden"
-                        >
-                            {activeProducts.length > 0 ? (
-                                activeProducts.flatMap((product) =>
-                                    (product.images?.length
-                                        ? product.images
-                                        : [{ imageUrl: product.imageUrl || '/placeholder.jpg' }]
-                                    ).map((img, j) => (
-                                        <SwiperSlide key={`${product.id}-${j}`}>
-                                            <div className="relative w-full h-full ">
-                                                <Image
-                                                    src={getImageUrl(img.imageUrl)}
-                                                    alt={product.title}
-                                                    fill
-                                                    className="object-cover pointer-events-none"
-                                                />
-                                            </div>
-                                        </SwiperSlide>
-                                    ))
-                                )
-                            ) : (
-                                <SwiperSlide>
-                                    <div className="relative w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-sm">
-                                        No product image
-                                    </div>
-                                </SwiperSlide>
-                            )}
-
-                        </Swiper>
-
-                        {/* Pagination dots */}
-                        <div
-                            id={`pagination-${data.id || index}`}
-                            className="flex justify-center gap-2 my-6"
-                        >
-
-                        </div>
+                        {data.subDescription && (
+                            <p className="text-xs leading-relaxed mt-4 max-w-xl mx-auto">
+                                {data.subDescription}
+                            </p>
+                        )}
                     </div>
                 </div>
 

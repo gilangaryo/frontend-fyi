@@ -59,25 +59,24 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 {/* Left - Images */}
                 <div className="flex gap-4">
                     {/* Thumbnail List */}
-                    <div className="flex flex-col gap-4 w-24">
-                        {(product.images ?? []).map((img, i) => {
+                    <div className="grid grid-rows-5 gap-4 aspect-[3/4] w-24">
+                        {(product.images ?? []).slice(0, 5).map((img, i) => {
                             const imgUrl = getImageUrl(img.imageUrl);
                             return (
-                                <button
-                                    key={img.id || i}
-                                    onClick={() => setMainImage(imgUrl)}
-                                    className={`relative aspect-[3/4] w-full border ${mainImage === imgUrl
-                                        ? "border-secondary"
-                                        : "border-gray-200"
-                                        }`}
-                                >
-                                    <Image
-                                        src={imgUrl}
-                                        alt={`${product.title} ${i + 1}`}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </button>
+                                <div key={img.id || i} className="flex items-center">
+                                    <button
+                                        onClick={() => setMainImage(imgUrl)}
+                                        className={`relative w-full h-full border ${mainImage === imgUrl ? "border-secondary" : "border-gray-200"
+                                            }`}
+                                    >
+                                        <Image
+                                            src={imgUrl}
+                                            alt={`${product.title} ${i + 1}`}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </button>
+                                </div>
                             );
                         })}
                     </div>
@@ -92,6 +91,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         />
                     </div>
                 </div>
+
+
 
                 {/* Right - Info */}
                 <div className="flex flex-col text-charcoal font-light">
@@ -273,7 +274,7 @@ function Accordion({
                 {title} <span>{open ? "−" : "+"}</span>
             </button>
             <div
-                className={`transition-all duration-500 overflow-hidden ${open ? "max-h-40 mt-2" : "max-h-0"
+                className={`transition-all duration-400 overflow-hidden ${open ? "max-h-50 mt-2" : "max-h-0"
                     }`}
             >
                 <p className="text-gray-600">{children}</p>

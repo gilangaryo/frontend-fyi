@@ -14,6 +14,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { getImageUrl } from "@/lib/utils";
 import Loading from '@/app/(site)/components/Loading'
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface Blog {
     id: number;
@@ -77,7 +78,7 @@ export default function Beyond() {
             )}
 
             {!loading && blogs.length > 0 && (
-                <section className="bg-white py-6 pr-4 md:pr-6 overflow-hidden">
+                <section className="bg-white py-6 pr-0 md:pr-6 overflow-hidden">
                     <div className="max-w-full mx-auto">
                         <Swiper
                             modules={[Navigation, Pagination, Autoplay]}
@@ -124,29 +125,21 @@ export default function Beyond() {
                                             <p className="text-3xl tracking-wider text-secondary mt-4 mb-6 italic font-light">
                                                 {blog.event}
                                             </p>
-
-                                            <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-secondary leading-tight tracking-tight">
+                                            <h2 className="ml-4 text-4xl md:text-5xl lg:text-6xl font-light text-secondary leading-tight tracking-tight">
                                                 {blog.title}
                                             </h2>
                                             <div className="flex-grow" />
-                                            <p className="text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify indent-33 place-self-end mt-20 md:mt-0">
+                                            <p className="ml-4 text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify  mt-20 md:mt-0">
                                                 {blog.description}
                                             </p>
-
-                                            <div className="mt-auto flex flex-col sm:flex-row items-stretch  justify-center gap-4 w-full">
-
+                                            <div className="ml-4 mt-auto flex flex-col sm:flex-row items-stretch  justify-center gap-4 w-full">
                                                 {/* Left: navigation arrows + index */}
                                                 <div className="flex w-full md:w-auto items-center justify-center border-2 border-secondary text-secondary px-6 py-3 flex-shrink-0">
                                                     <button
                                                         onClick={handlePrev}
                                                         className="opacity-60 hover:opacity-100 transition cursor-pointer mr-5 "
                                                     >
-                                                        <Image
-                                                            src="/arrow-left.svg"
-                                                            alt="Previous"
-                                                            width={32}
-                                                            height={32}
-                                                        />
+                                                        <ArrowLeft />
                                                     </button>
 
                                                     <span className="text-sm md:text-base lg:text-xl font-light min-w-[80px] text-center">
@@ -157,12 +150,7 @@ export default function Beyond() {
                                                         onClick={handleNext}
                                                         className="opacity-60 hover:opacity-100 transition cursor-pointer ml-5"
                                                     >
-                                                        <Image
-                                                            src="/arrow-right.svg"
-                                                            alt="Next"
-                                                            width={32}
-                                                            height={32}
-                                                        />
+                                                        <ArrowRight />
                                                     </button>
                                                 </div>
 
@@ -171,8 +159,9 @@ export default function Beyond() {
                                                     className="flex w-full md:w-10/15 h-full items-center bg-secondary text-white px-5 py-4 text-sm leading-relaxed tracking-wide font-light hover:bg-secondary/90 transition"
                                                 >
                                                     See Whats New in Our <br /> Beyond Gallery
-                                                    <span className="text-right ml-auto text-lg">
-                                                        <Image src="/arrow-right-white.svg" alt="left arrow" width={36} height={36} />
+                                                    <span className="text-right ml-auto mr-2 text-lg">
+                                                        {/* <Image src="/arrow-right-white.svg" alt="left arrow" width={36} height={36} /> */}
+                                                        <ArrowRight size={50} />
                                                     </span>
                                                 </Link>
                                             </div>

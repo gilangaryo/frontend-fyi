@@ -36,13 +36,15 @@ export default function ManageSalesPage() {
                 const mapped: OrderCardData[] = json.data.map((o: OrderApi) => ({
                     id: o.id,
                     customer: o.user?.name || "Guest",
-                    product: o.items?.[0]?.product?.title || "No Product",
+                    product: o.items?.[0]?.product?.title,
                     productImage: o.items?.[0]?.product?.imageUrl,
-                    location: o.user?.city || "Unknown City",
+                    location: o.shippingAddress?.city,
                     shipping: o.courierCompany?.toUpperCase() || "N/A",
                     createdAt: o.createdAt,
                     status: o.status,
                     paymentStatus: o.payments?.[0]?.status || "PENDING",
+                    trackingLink: Array.isArray(o.tracking) ? o.tracking[0]?.trackingLink || null : o.tracking?.trackingLink || null,
+
                 }))
 
                 setOrders(mapped)
@@ -88,7 +90,7 @@ export default function ManageSalesPage() {
     ]
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-2">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-semibold text-gray-800">Manage Sales</h1>
             </div>

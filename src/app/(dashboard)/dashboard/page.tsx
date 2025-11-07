@@ -6,6 +6,7 @@ import StatsCard from "../components/StatsCard";
 import DateFilter from "../components/DateFilter";
 import { API_BASE } from "@/lib/constants";
 import { getImageUrl } from "@/lib/utils";
+import MembershipTable from "../components/MembershipTable";
 
 interface Product {
     id: string;
@@ -27,7 +28,8 @@ interface Order {
 }
 
 export default function DashboardPage() {
-    const [activeTab, setActiveTab] = useState<"product" | "orders">("product");
+    const [activeTab, setActiveTab] = useState<"product" | "orders" | "membership">("product");
+
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -107,7 +109,7 @@ export default function DashboardPage() {
 
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen p-2">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-semibold">Good Morning, Moni!</h1>
@@ -147,19 +149,20 @@ export default function DashboardPage() {
             </div>
 
 
-            <DateFilter />
+            <div className="flex items-center justify-between py-5 rounded-lg">
+                <div className="flex items-center gap-6">
+                    <h2 className="text-2xl font-semibold">Activity</h2>
+                    <DateFilter />
+                </div>
+                <a href="#" className="text-primary-studio text-sm">
+                    Download Report →
+                </a>
+            </div>
 
             {/* Today Activity */}
-            <div className="mt-10">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Today Activity</h2>
-                    <a href="#" className="text-primary-studio text-sm">
-                        View Report Snapshot →
-                    </a>
-                </div>
-
+            <div >
                 {/* Tabs */}
-                <div className="flex gap-6 mt-4 border-b border-gray-200">
+                <div className="flex gap-8 mt-4 border-b border-gray-200">
                     <button
                         onClick={() => setActiveTab("product")}
                         className={`pb-2 ${activeTab === "product"
@@ -169,6 +172,7 @@ export default function DashboardPage() {
                     >
                         Add Product
                     </button>
+
                     <button
                         onClick={() => setActiveTab("orders")}
                         className={`pb-2 ${activeTab === "orders"
@@ -178,7 +182,18 @@ export default function DashboardPage() {
                     >
                         Orders
                     </button>
+
+                    <button
+                        onClick={() => setActiveTab("membership")}
+                        className={`pb-2 ${activeTab === "membership"
+                            ? "text-primary-studio font-medium border-b-2 border-primary-studio"
+                            : "text-gray-500"
+                            }`}
+                    >
+                        Membership
+                    </button>
                 </div>
+
 
                 {/* Table */}
                 <div className="overflow-x-auto mt-4">
@@ -235,7 +250,7 @@ export default function DashboardPage() {
                                 ))}
                             </tbody>
                         </table>
-                    ) : (
+                    ) : activeTab === "orders" ? (
                         <table className="w-full rounded-t-xl overflow-hidden">
                             <thead>
                                 <tr className="bg-sky-400 text-white text-left">
@@ -269,21 +284,30 @@ export default function DashboardPage() {
                                 ))}
                             </tbody>
                         </table>
+                    ) : (
+                        <MembershipTable />
                     )}
                 </div>
 
                 {/* Footer link */}
                 <div className="flex justify-end mt-4">
-                    <a
-                        href={
-                            activeTab === "orders"
-                                ? "/dashboard/manage-sales"
-                                : "/dashboard/product"
-                        }
-                        className="text-primary-studio text-sm flex items-center gap-1"
-                    >
-                        {activeTab === "orders" ? "See all Orders" : "View All Product"} →
-                    </a>
+
+                    {/* Footer link */}
+                    {activeTab !== "membership" && (
+                        <div className="flex justify-end mt-4">
+                            <a
+                                href={
+                                    activeTab === "orders"
+                                        ? "/dashboard/manage-sales"
+                                        : "/dashboard/product"
+                                }
+                                className="text-primary-studio text-sm flex items-center gap-1"
+                            >
+                                {activeTab === "orders" ? "See all Orders" : "View All Product"} →
+                            </a>
+                        </div>
+                    )}
+
                 </div>
             </div>
         </div>
