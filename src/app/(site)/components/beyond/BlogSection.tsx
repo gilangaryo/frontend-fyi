@@ -10,7 +10,9 @@ interface BlogSectionProps {
     subDescription?: string
     reverse?: boolean
     bg?: string
+    variant?: "default" | "third"
 }
+
 
 export default function BlogSection({
     image,
@@ -19,9 +21,10 @@ export default function BlogSection({
     subDescription,
     reverse = false,
     bg = "",
+    variant = "default",
 }: BlogSectionProps) {
     if (!image) return null
-
+    const isThird = variant === "third"
     return (
         <section className={` ${bg}`}>
             <div
@@ -43,20 +46,27 @@ export default function BlogSection({
 
                 {/* Text */}
 
+
                 <div
-                    className={`flex flex-col  ${subDescription ? "items-start" : "items-center"} justify-start text-left py-20 px-4 space-y-4 text-secondary max-w-md mx-auto ${reverse ? "order-2 md:order-1" : ""
-                        }`}
+                    className={`
+                    flex flex-col
+                    ${isThird ? " items-start justify-start text-left" : "py-20 px-4 items-center justify-center text-center"}
+                    text-secondary max-w-xl mx-auto
+                    ${reverse ? "order-2 md:order-1" : ""}
+                `}
                 >
+
                     {heading && (
-                        <h3 className="text-md md:text-xl font-light mb-3">{heading}</h3>
+                        <h3 className="text-md md:text-xl font-light mb-2">{heading}</h3>
                     )}
                     {description && (
-                        <p className="text-sm font-light leading-relaxed">{description}</p>
+                        <p className={` ${isThird ? "text-secondary-green italic mb-4" : ""} text-sm font-light leading-relaxed max-w-lg`}>{description}</p>
                     )}
                     {subDescription && (
-                        <p className="text-sm italic opacity-70">{subDescription}</p>
+                        <p className="text-sm font-light opacity-70">{subDescription}</p>
                     )}
                 </div>
+
 
             </div>
         </section>

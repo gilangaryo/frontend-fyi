@@ -110,27 +110,49 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                 className="w-full aspect-[3/1] object-cover my-30"
             />
 
-            {/* third blog section */}
-            <BlogSection
-                image={blog.thirdHeaderImage}
-                heading={blog.thirdHeading}
-                description={blog.thirdDescription}
-                subDescription={blog.thirdSubDescription}
-            />
+            <section >
+                <div
+                    className={`grid grid-cols-1 md:grid-cols-2  items-center `}
+                >
+                    {/* Image */}
+                    <div
+                        className={`relative w-full aspect-[3/4]`}
+                    >
+                        <Image
+                            src={getImageUrl(blog.thirdHeaderImage)}
+                            alt={blog.thirdHeading || "Blog section image"}
+                            fill
+                            className="object-cover"
+                        />
+                    </div>
+
+                    {/* Text */}
+
+
+                    <div
+                        className={` flex flex-col items-start justify-start text-left text-secondary max-w-xl mx-auto`}
+                    >
+
+                        {blog.thirdHeading && (
+                            <h3 className="text-md md:text-xl font-light mb-2">{blog.thirdHeading}</h3>
+                        )}
+                        {blog.thirdDescription && (
+                            <p className={` text-secondary-green italic mb-4 text-sm font-light leading-relaxed max-w-lg`}>{blog.thirdDescription}</p>
+                        )}
+                        {blog.thirdSubDescription && (
+                            <p className="text-sm font-light opacity-70">{blog.thirdSubDescription}</p>
+                        )}
+                    </div>
+
+
+                </div>
+            </section>
 
             {/* BARUU */}
-            <section className="relative max-w-5xl w-full mx-auto py-24 px-6 flex flex-col items-center justify-center text-center font-light text-lg md:text-2xl leading-relaxed text-gray-700">
+            <section className="relative max-w-5xl w-full mx-auto py-24 px-6 flex flex-col items-center justify-center text-center font-light text-lg md:text-2xl leading-relaxed text-secondary">
                 <h1>{blog.quote}</h1>
             </section>
 
-            {/* <BlogSection
-                image={blog.fourthHeaderImage}
-                heading={blog.fourthHeading}
-                description={blog.fourthDescription}
-                subDescription={blog.fourthSubDescription}
-                reverse
-                bg="bg-gray-50"
-            /> */}
 
             {/* BARU  */}
             <div className="grid grid-cols-1 md:grid-cols-2 mb-20">
