@@ -42,9 +42,8 @@ export default function Navbar() {
     const [openMenu, setOpenMenu] = useState(false)
     const [isClient, setIsClient] = useState(false)
     const [announcement, setAnnouncement] = useState<string | null>(null)
-    const [storeOpen, setStoreOpen] = useState<boolean>(true)
+    const [, setStoreOpen] = useState<boolean>(true)
     const [dropdownOpen, setDropdownOpen] = useState(false)
-
 
     const pathname = usePathname()
     const router = useRouter()
@@ -80,8 +79,7 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll)
     }, [lastScrollY])
 
-
-
+    // ✅ Updated: Fetch announcement with custom closed message
     useEffect(() => {
         async function fetchData() {
             try {
@@ -94,10 +92,13 @@ export default function Navbar() {
                 const store = await storeRes.json()
 
                 const isOpen = store?.data?.isOpen ?? true
+                const closedMessage = store?.data?.closedMessage || "Our store is currently closed — orders are temporarily unavailable."
+
                 setStoreOpen(isOpen)
 
                 if (!isOpen) {
-                    setAnnouncement("Our store is currently closed — orders are temporarily unavailable.")
+                    // ✅ Use custom closed message
+                    setAnnouncement(closedMessage)
                 } else if (ann?.success && ann?.data?.isActive) {
                     setAnnouncement(ann.data.value || "Free shipping all over Indonesia")
                 } else {
@@ -129,16 +130,6 @@ export default function Navbar() {
         }
         fetchCollections()
     }, [])
-
-    useEffect(() => setIsClient(true), [])
-    useEffect(() => {
-        document.body.style.overflow = openMenu ? "hidden" : ""
-    }, [openMenu])
-
-    useEffect(() => setIsClient(true), [])
-    useEffect(() => {
-        document.body.style.overflow = openMenu ? "hidden" : ""
-    }, [openMenu])
 
     // === Debounced search ===
     useEffect(() => {
@@ -195,8 +186,7 @@ export default function Navbar() {
             >
                 {/* Announcement Bar */}
                 <div
-                    className={`h-[40px] flex items-center justify-center text-center text-sm font-medium
-                    ${storeOpen ? "bg-primary-muted text-secondary" : "bg-primary-muted text-secondary"}`}
+                    className="h-[40px] flex items-center justify-center text-center text-sm font-medium bg-primary-muted text-secondary z-50"
                 >
                     {announcement ? (
                         <h2>{announcement}</h2>
@@ -233,7 +223,10 @@ export default function Navbar() {
                                             <div
                                                 onMouseEnter={() => setDropdownOpen(true)}
                                                 onMouseLeave={() => setDropdownOpen(false)}
-                                                className={`absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md transition-all duration-200 ${dropdownOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}
+                                                className={`absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md transition-all duration-200 ${dropdownOpen
+                                                    ? "opacity-100 visible translate-y-0"
+                                                    : "opacity-0 invisible -translate-y-2"
+                                                    }`}
                                             >
                                                 <ul className="py-2 min-w-[180px]">
                                                     {collections.length > 0 ? (
@@ -275,8 +268,8 @@ export default function Navbar() {
                             onClick={() => setOpenMenu((prev) => !prev)}
                             className="lg:hidden relative w-7 h-7"
                         >
-                            <Menu className={`absolute w-7 h-7 text-charcoal transition-all ${openMenu ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"}`} />
-                            <X className={`absolute w-7 h-7 text-charcoal transition-all ${openMenu ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"}`} />
+                            <Menu className={`absolute w-7 h-7 bottom-0 text-charcoal transition-all ${openMenu ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"}`} />
+                            <X className={`absolute w-7 h-7 bottom-0 text-charcoal transition-all ${openMenu ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"}`} />
                         </button>
                     </div>
                     {/* Center Logo */}

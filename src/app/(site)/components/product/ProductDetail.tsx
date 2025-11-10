@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Ruler, X } from "lucide-react";
 import { useDispatch } from "react-redux";
@@ -23,9 +23,26 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     })
 
 
-    const [selectedVariantId, setSelectedVariantId] = useState<string>(
-        product.variants?.[0]?.id
-    );
+    const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(() => {
+        const firstInStock = product.variants?.find((v) => v.stock > 0);
+        return firstInStock?.id || product.variants?.[0]?.id;
+    });
+
+
+    useEffect(() => {
+        // Kalau varian yang dipilih habis, ganti ke varian lain yang masih ada stok
+        const selectedVariant = product.variants?.find((v) => v.id === selectedVariantId);
+
+        if (selectedVariant?.stock === 0) {
+            const nextInStock = product.variants?.find((v) => v.stock > 0);
+            if (nextInStock) {
+                setSelectedVariantId(nextInStock.id);
+            } else {
+                // Kalau semua habis, kosongkan
+                setSelectedVariantId(undefined);
+            }
+        }
+    }, [product.variants, selectedVariantId]);
 
     const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
     // const [isAddCartModalOpen, setIsAddCartModalOpen] = useState(false);
@@ -37,6 +54,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         const primary = product.images?.find((img) => img.isPrimary)?.imageUrl
         const fallback = product.imageUrl || product.images?.[0]?.imageUrl
         const finalImage = getImageUrl(primary || fallback)
+
         dispatch(
             addToCart({
                 id: product.id,
@@ -52,6 +70,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         window.dispatchEvent(new Event("open-cart"));
         // setIsAddCartModalOpen(true);
     };
+    const hasStock = product.variants?.some((v) => v.stock > 0)
+    const selectedVariant = product.variants?.find((v) => v.id === selectedVariantId)
+    const isSelectedOutOfStock = selectedVariant?.stock === 0
 
     return (
         <>
@@ -122,28 +143,53 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         </div>
 
                         <div className="flex gap-2 flex-wrap">
-                            {(product.variants ?? []).map((v) => (
-                                <button
-                                    key={v.id}
-                                    onClick={() => setSelectedVariantId(v.id)}
-                                    className={`border px-5 py-2 text-base transition ${selectedVariantId === v.id
-                                        ? "bg-primary-muted text-black border-secondary"
-                                        : "hover:border-secondary"
-                                        }`}
-                                >
-                                    {v.size}
-                                </button>
-                            ))}
+                            {(product.variants ?? []).map((v) => {
+                                const isOutOfStock = v.stock === 0;
+                                const isSelected = selectedVariantId === v.id;
+
+                                return (
+                                    <button
+                                        key={v.id}
+                                        onClick={() => !isOutOfStock && setSelectedVariantId(v.id)}
+                                        disabled={isOutOfStock}
+                                        className={`
+                border px-5 py-2 text-base transition
+                ${isOutOfStock
+                                                ? "opacity-40 cursor-not-allowed bg-gray-100 text-gray-400"
+                                                : isSelected
+                                                    ? "bg-primary-muted text-black border-secondary"
+                                                    : "hover:border-secondary"
+                                            }
+            `}
+                                        title={isOutOfStock ? "Out of stock" : ""}
+                                    >
+                                        {v.size}
+                                    </button>
+                                );
+                            })}
+
                         </div>
                     </div>
 
                     {/* Add to Cart */}
                     <button
                         onClick={handleAddToCart}
-                        className="py-3 font-medium mb-6 bg-secondary text-white transition hover:bg-secondary/80"
+                        disabled={!hasStock || isSelectedOutOfStock}
+                        className={`
+    py-3 font-medium mb-6 transition
+    ${!hasStock || isSelectedOutOfStock
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-secondary text-white hover:bg-secondary/80"}
+  `}
                     >
-                        Add to Bag
+                        {!hasStock
+                            ? "Out of Stock"
+                            : isSelectedOutOfStock
+                                ? "Selected Size Out of Stock"
+                                : "Add to Bag"
+                        }
                     </button>
+
 
                     <p className="text-sm text-charcoal leading-relaxed mb-6">
                         {product.description}

@@ -17,6 +17,9 @@ export default function CatalogSection() {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
     const [kains, setKains] = useState<string[]>([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 12;
 
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get("category");
@@ -30,17 +33,26 @@ export default function CatalogSection() {
     useEffect(() => {
         async function fetchProducts() {
             try {
-                const res = await fetch(`${API_BASE}/products?status=true`, { cache: "no-store" });
+                const res = await fetch(`${API_BASE}/products?status=true&page=${page}&limit=${limit}`, {
+                    cache: "no-store",
+                });
                 const json = await res.json();
                 if (json.success) {
                     setProducts(json.data);
+                    setTotalPages(json.pagination.totalPages);
                 }
             } catch (error) {
                 console.error("❌ Failed to fetch products:", error);
             }
         }
+
         fetchProducts();
-    }, []);
+
+        window.scrollTo({ top: 130, behavior: "smooth" });
+    }, [page]);
+
+
+
     useEffect(() => {
         async function fetchKains() {
             try {
@@ -96,7 +108,7 @@ export default function CatalogSection() {
 
             {/* Filters */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-10">
-                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-2 md:gap-6 text-lg w-full md:w-auto flex-grow">
+                <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6 text-lg w-full md:w-auto flex-grow">
                     <FilterDropdown
                         label="Collection"
                         options={collections}
@@ -186,6 +198,28 @@ export default function CatalogSection() {
                     })}
                 </div>
             )}
+            <div className="flex justify-center items-center mt-8 gap-4">
+                <button
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${page === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                    Prev
+                </button>
+
+                <span className="text-sm text-gray-600">
+                    Page {page} of {totalPages}
+                </span>
+
+                <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${page === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                    Next
+                </button>
+            </div>
+
         </section>
     );
 }

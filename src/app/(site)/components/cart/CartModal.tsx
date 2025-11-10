@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { AnimatePresence, motion } from "framer-motion"
 import Image from "next/image"
-import Link from "next/link"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/store"
 import { removeFromCart, updateQuantity, setGiftNote } from "@/store/cartSlice"
 import { Gift } from "lucide-react"
 import { useEffect, useState } from "react"
-import { API_BASE } from '@/lib/constants'
+import { API_BASE } from "@/lib/constants"
+import toast from "react-hot-toast"
 
 interface CartModalProps {
     open: boolean
@@ -35,7 +36,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                     setStoreOpen(true)
                 }
             } catch (err) {
-                console.error('Failed to fetch store status:', err)
+                console.error("Failed to fetch store status:", err)
                 setStoreOpen(true)
             }
         })()
@@ -45,11 +46,58 @@ export default function CartModal({ open, onClose }: CartModalProps) {
         dispatch(setGiftNote(value))
     }
 
+    const handleCheckout = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/cart/validate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    items: cartItems.map((item) => ({
+                        productId: item.id,
+                        variantId: item.variantId,
+                        quantity: item.quantity,
+                    })),
+                }),
+            })
+
+            const data = await res.json()
+
+            if (!data.success) {
+                toast.error(data.message || "Failed to validate cart.")
+                return
+            }
+
+            if (data.invalid.length > 0) {
+                data.invalid.forEach((inv: any) => {
+                    dispatch(removeFromCart({ id: "", variantId: inv.variantId }))
+                })
+
+                toast.error(
+                    `Some products are no longer available:\n${data.invalid
+                        .map((i: any) => `- ${i.productName}`)
+                        .join("\n")}`,
+                    { duration: 5000 }
+                )
+
+                return
+            }
+
+            toast.success("Proceeding to checkout!")
+            onClose()
+            setTimeout(() => {
+                window.location.href = "/checkout"
+            }, 1000)
+        } catch (err) {
+            console.error("❌ Error validating cart:", err)
+            toast.error("An error occurred while validating your cart.")
+        }
+    }
+
     return (
         <AnimatePresence>
             {open && (
                 <>
-                    {/* Background Overlay */}
+                    {/* Overlay */}
                     <motion.div
                         className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
                         initial={{ opacity: 0 }}
@@ -61,14 +109,14 @@ export default function CartModal({ open, onClose }: CartModalProps) {
 
                     {/* Side Drawer */}
                     <motion.div
-                        className="fixed top-0 right-0 h-full w-[85%] max-w-2xl bg-white shadow-xl z-50 flex flex-col "
+                        className="fixed top-0 right-0 h-full w-[92%] md:w-[85%] max-w-2xl bg-white shadow-xl z-50 flex flex-col"
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "tween", ease: "easeOut", duration: 0.35 }}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 bg-primary-muted border-b border-gray-200 ">
+                        <div className="flex items-center justify-between p-6 bg-primary-muted border-b border-gray-200">
                             <div>
                                 <h2 className="text-2xl font-semibold mb-1">Your Bag</h2>
                                 <p className="text-sm text-gray-500">
@@ -85,7 +133,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                             </button>
                         </div>
 
-                        {/* Items */}
+                        {/* Cart Items */}
                         <div className="p-6 flex-1 overflow-y-auto space-y-4">
                             {cartItems.map((item) => (
                                 <div
@@ -93,7 +141,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                     className="flex gap-6 border-b border-gray-200 pb-6 last:border-none"
                                 >
                                     {/* Product Image */}
-                                    <div className="relative w-40 h-52 flex-shrink-0">
+                                    <div className="relative w-20 aspect-auto md:w-40 md:h-52 flex-shrink-0">
                                         <Image
                                             src={item.imageUrl}
                                             alt={item.title}
@@ -102,10 +150,10 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                         />
                                     </div>
 
-                                    {/* Info Section */}
+                                    {/* Product Info */}
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
-                                            <h3 className="text-[17px] font-medium tracking-tight leading-snug text-gray-900 mb-1">
+                                            <h3 className="text-[17px] font-medium leading-snug text-gray-900 mb-1">
                                                 {item.title}
                                             </h3>
                                             <p className="text-sm text-gray-500 mb-1">
@@ -123,9 +171,9 @@ export default function CartModal({ open, onClose }: CartModalProps) {
 
                                         {/* Quantity & Remove */}
                                         <div className="flex items-center justify-between mt-4">
-                                            <div className="flex items-center border border-gray-400 divide-x divide-gray-400">
+                                            <div className="flex items-center border border-gray-400 divide-x divide-gray-400 text-xs md:text-base">
                                                 <button
-                                                    className="px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
+                                                    className="px-3 md:px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
                                                     onClick={() =>
                                                         dispatch(
                                                             updateQuantity({
@@ -143,7 +191,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                     {item.quantity}
                                                 </span>
                                                 <button
-                                                    className="px-4 py-2 hover:bg-gray-100 transition"
+                                                    className="px-3 md:px-4 py-2 hover:bg-gray-100 transition"
                                                     onClick={() =>
                                                         dispatch(
                                                             updateQuantity({
@@ -167,7 +215,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                         })
                                                     )
                                                 }
-                                                className="text-sm text-gray-800 underline hover:text-black transition"
+                                                className="text-xs md:text-sm text-gray-800 underline hover:text-black transition"
                                             >
                                                 Remove
                                             </button>
@@ -197,13 +245,18 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                             <span className="text-sm font-medium">Add gift note</span>
                                         </div>
                                         <svg
-                                            className={`w-5 h-5 text-gray-500 transition-transform ${giftNoteOpen ? 'rotate-180' : ''
+                                            className={`w-5 h-5 text-gray-500 transition-transform ${giftNoteOpen ? "rotate-180" : ""
                                                 }`}
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
                                         >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M19 9l-7 7-7-7"
+                                            />
                                         </svg>
                                     </button>
 
@@ -224,6 +277,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                     )}
                                 </div>
 
+                                {/* Summary */}
                                 <div className="flex justify-between text-gray-700 font-medium">
                                     <span>
                                         Subtotal{" "}
@@ -235,17 +289,16 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                     <span>Rp {total.toLocaleString("id-ID")}</span>
                                 </div>
                                 <p className="text-gray-500 text-sm">
-                                    Shipping and tax calculated at checkout
+                                    Shipping and tax will be calculated at checkout.
                                 </p>
 
                                 {storeOpen ? (
-                                    <Link
-                                        href="/checkout"
-                                        onClick={onClose}
+                                    <button
+                                        onClick={handleCheckout}
                                         className="block w-full text-center bg-secondary text-white py-3 rounded font-semibold hover:bg-secondary/90 transition"
                                     >
                                         Checkout Now
-                                    </Link>
+                                    </button>
                                 ) : (
                                     <button
                                         onClick={onClose}
@@ -254,11 +307,6 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                         Store Closed
                                     </button>
                                 )}
-
-                                {/* {storeOpen
-                                    ? 'Checkout Now'
-                                    : 'Store Closed'} */}
-
                             </motion.div>
                         )}
                     </motion.div>

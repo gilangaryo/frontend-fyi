@@ -20,12 +20,17 @@ export default function CTA() {
     useEffect(() => {
         async function fetchSuggested() {
             try {
-                const res = await fetch(`${API_BASE}/products/suggested?limit=12`, {
+                const res = await fetch(`${API_BASE}/suggested-products`, {
                     cache: "no-store",
                 });
                 const json = await res.json();
-                if (json.success) {
-                    setProducts(json.data);
+                if (json.status === "success") {
+                    if (json.status === "success") {
+                        setProducts(
+                            (json.data as { product: Product }[]).map((s) => s.product)
+                        );
+                    }
+
                 }
             } catch (err) {
                 console.error("Error fetching suggested products:", err);
@@ -54,7 +59,7 @@ export default function CTA() {
     if (!products.length) {
         return (
             <div className="text-center text-gray-500 py-10">
-                No suggested products available.
+                {/* No suggested products available. */}
             </div>
         );
     }
@@ -82,7 +87,7 @@ export default function CTA() {
                                     <div className="aspect-[3/4] relative bg-gray-100 mb-4 overflow-hidden">
                                         {/* Image utama */}
                                         <Image
-                                            src={getImageUrl(primary || "/placeholder.jpg")}
+                                            src={getImageUrl(primary)}
                                             alt={product.title}
                                             fill
                                             className="object-cover transition-opacity duration-500 group-hover:opacity-0"

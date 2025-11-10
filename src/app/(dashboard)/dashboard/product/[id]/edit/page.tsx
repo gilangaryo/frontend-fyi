@@ -6,12 +6,14 @@ import { API_BASE } from '@/lib/constants'
 import PhotoUploadGrid from '@/app/(dashboard)/components/PhotoUploadGrid'
 import { formatRupiah } from '@/lib/utils'
 import { Trash } from 'lucide-react'
+
 type ProductImage = {
     imageUrl: string
     isPrimary: boolean
 }
 
 type ProductVariant = {
+    id?: string
     size: string
     bust: string
     waist: string
@@ -33,12 +35,12 @@ export default function EditProductPage() {
     const [categories, setCategories] = useState<{ id: string; title: string }[]>([])
     const [fabrics, setFabrics] = useState<{ id: string; name: string }[]>([])
     const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([])
-    const [variants, setVariants] = useState([
-        { size: '', bust: '', waist: '', length: '', sleeve: '', height: '', stock: '', sku: '' },
-    ])
+    const [variants, setVariants] = useState<ProductVariant[]>([])
 
     const [fabricInput, setFabricInput] = useState('')
     const [showFabricSuggestions, setShowFabricSuggestions] = useState(false)
+    const [categoryInput, setCategoryInput] = useState('')
+    const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
 
     const [form, setForm] = useState({
         title: '',
@@ -71,12 +73,7 @@ export default function EditProductPage() {
                 ])
 
                 if (!prodRes.ok) throw new Error(prodData.message || 'Failed to fetch product')
-
                 const product = prodData.data
-
-                console.log('🔍 Product data:', product)
-                console.log('🔍 Kain data:', product.kain)
-                console.log('🔍 KainId:', product.kainId)
 
                 setForm({
                     title: product.title,
@@ -89,7 +86,7 @@ export default function EditProductPage() {
                 })
 
                 setImages(
-                    (product.images as ProductImage[] || []).map((img) => ({
+                    (product.images || []).map((img: ProductImage) => ({
                         url: img.imageUrl,
                         isPrimary: img.isPrimary,
                     }))
@@ -97,6 +94,7 @@ export default function EditProductPage() {
 
                 setVariants(
                     (product.variants as ProductVariant[] || []).map((v) => ({
+                        id: v.id,
                         size: v.size || '',
                         bust: v.bust || '',
                         waist: v.waist || '',
@@ -112,17 +110,24 @@ export default function EditProductPage() {
                 setCategories(catData.data || [])
                 setFabrics(fabData.data || [])
 
+                // Set fabric input
                 if (product.kain?.name) {
                     setFabricInput(product.kain.name)
                 } else if (product.kainId && fabData.data) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const kainFromList = fabData.data.find((f: any) => f.id === product.kainId)
-                    if (kainFromList) {
-                        console.log('✅ Setting fabric from kainId lookup:', kainFromList.name)
-                        setFabricInput(kainFromList.name)
-                    } else {
-                        console.log('⚠️ KainId exists but fabric not found in list')
-                    }
+                    const kainFromList = (fabData.data as { id: string; name: string }[]).find(
+                        (f) => f.id === product.kainId
+                    )
+                    if (kainFromList) setFabricInput(kainFromList.name)
+                }
+
+                // Set category input
+                if (product.category?.title) {
+                    setCategoryInput(product.category.title)
+                } else if (product.categoryId && catData.data) {
+                    const categoryFromList = (catData.data as { id: string; title: string }[]).find(
+                        (c) => c.id === product.categoryId
+                    )
+                    if (categoryFromList) setCategoryInput(categoryFromList.title)
                 }
             } catch (err) {
                 console.error('❌ Error fetching product:', err)
@@ -135,12 +140,14 @@ export default function EditProductPage() {
         fetchProduct()
     }, [id])
 
+    // 🔹 Generic form handler
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
+    // 🔹 Variant Handlers
     const handleVariantChange = (index: number, field: string, value: string) => {
         const updated = [...variants]
         updated[index] = { ...updated[index], [field]: value }
@@ -150,7 +157,7 @@ export default function EditProductPage() {
     const addVariant = () => {
         setVariants([
             ...variants,
-            { size: '', bust: '', waist: '', length: '', sleeve: '', height: '', stock: '', sku: '' },
+            { id: undefined, size: '', bust: '', waist: '', length: '', sleeve: '', height: '', stock: '', sku: '' },
         ])
     }
 
@@ -160,31 +167,18 @@ export default function EditProductPage() {
 
     const findOrCreateFabric = async (fabricName: string): Promise<string | null> => {
         if (!fabricName.trim()) return null
-
         try {
             const token = localStorage.getItem('token')
-            if (!token) throw new Error('Unauthorized')
-
-            const existingFabric = fabrics.find(
-                f => f.name.toLowerCase() === fabricName.trim().toLowerCase()
-            )
-
-            if (existingFabric) {
-                return existingFabric.id
-            }
+            const existing = fabrics.find((f) => f.name.toLowerCase() === fabricName.trim().toLowerCase())
+            if (existing) return existing.id
 
             const res = await fetch(`${API_BASE}/kain`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ name: fabricName.trim() }),
             })
-
             const data = await res.json()
             if (!res.ok) throw new Error(data.message || 'Failed to create fabric')
-
             return data.data.id
         } catch (err) {
             console.error('❌ Error with fabric:', err)
@@ -192,24 +186,66 @@ export default function EditProductPage() {
         }
     }
 
+    // Function to find or create category
+    const findOrCreateCategory = async (categoryTitle: string): Promise<string | null> => {
+        if (!categoryTitle.trim()) return null
+
+        try {
+            const token = localStorage.getItem('token')
+            if (!token) throw new Error('Unauthorized')
+
+            // Backend will automatically return existing category if found
+            const res = await fetch(`${API_BASE}/categories`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ title: categoryTitle.trim() }),
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to create category')
+            }
+
+            // Update categories list if it's a new category
+            const existingCategory = categories.find(c => c.id === data.data.id)
+            if (!existingCategory) {
+                setCategories([...categories, data.data])
+            }
+
+            return data.data.id
+        } catch (err) {
+            console.error('❌ Error with category:', err)
+            return null
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (uploadingImages) {
-            alert('Please wait until all images are uploaded!')
-            return
-        }
+        if (uploadingImages) return alert('Please wait until all images are uploaded!')
         setSubmitting(true)
 
         try {
             const token = localStorage.getItem('token')
             if (!token) throw new Error('Unauthorized')
 
-            if (!form.title || !form.collectionId || !form.categoryId) {
+            if (!form.title || !form.collectionId || !categoryInput) {
                 alert('Please fill required fields!')
+                setSubmitting(false)
                 return
             }
 
             const kainId = await findOrCreateFabric(fabricInput)
+            const categoryId = await findOrCreateCategory(categoryInput)
+
+            if (!categoryId) {
+                alert('Failed to create or find category!')
+                setSubmitting(false)
+                return
+            }
 
             const body = {
                 title: form.title.trim(),
@@ -218,7 +254,7 @@ export default function EditProductPage() {
                 delivery: form.delivery.trim() || null,
                 price: Number(form.price),
                 imageUrl: images.find((i) => i.isPrimary)?.url || images[0]?.url || '',
-                categoryId: form.categoryId,
+                categoryId: categoryId,
                 collectionId: form.collectionId,
                 kainId: kainId || null,
                 images: images.map((img) => ({
@@ -226,6 +262,7 @@ export default function EditProductPage() {
                     isPrimary: img.isPrimary,
                 })),
                 variants: variants.map((v) => ({
+                    id: v.id,
                     size: v.size,
                     color: null,
                     stock: Number(v.stock) || 0,
@@ -240,10 +277,7 @@ export default function EditProductPage() {
 
             const res = await fetch(`${API_BASE}/products/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(body),
             })
 
@@ -274,23 +308,165 @@ export default function EditProductPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <PhotoUploadGrid onChange={setImages} onUploadingChange={setUploadingImages} initialImages={images} />
 
-                {/* Collection */}
-                <div>
-                    <label className="block text-sm font-medium mb-1">Collection*</label>
-                    <select
-                        name="collectionId"
-                        value={form.collectionId}
-                        onChange={handleChange}
-                        required
-                        className="w-full border border-gray-300 rounded-lg p-2"
-                    >
-                        <option value="">Select collection</option>
-                        {collections.map((col) => (
-                            <option key={col.id} value={col.id}>
-                                {col.title}
-                            </option>
-                        ))}
-                    </select>
+                <div className='grid grid-cols-3 gap-8'>
+                    {/* Collection */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Collection*</label>
+                        <select
+                            name="collectionId"
+                            value={form.collectionId}
+                            onChange={handleChange}
+                            required
+                            className="w-full border-b border-gray-300 p-2"
+                        >
+                            <option value="">Select collection</option>
+                            {collections.map((col) => (
+                                <option key={col.id} value={col.id}>
+                                    {col.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Category - Now with Autocomplete */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Category*</label>
+                        <div className="flex gap-2 items-center">
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={categoryInput}
+                                    onChange={(e) => {
+                                        setCategoryInput(e.target.value)
+                                        setShowCategorySuggestions(true)
+                                    }}
+                                    onFocus={() => setShowCategorySuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            setShowCategorySuggestions(false)
+                                        }
+                                    }}
+                                    placeholder="Select or type category..."
+                                    className="w-full border-b border-gray-300 p-2 pr-8"
+                                    required
+                                />
+                                <svg
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+
+                                {showCategorySuggestions && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 shadow-lg max-h-60 overflow-auto">
+                                        {categories
+                                            .filter(c => c.title.toLowerCase().includes(categoryInput.toLowerCase()))
+                                            .map((category) => (
+                                                <div
+                                                    key={category.id}
+                                                    onClick={() => {
+                                                        setCategoryInput(category.title)
+                                                        setShowCategorySuggestions(false)
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                >
+                                                    {category.title}
+                                                </div>
+                                            ))}
+                                        {categories.filter(c => c.title.toLowerCase().includes(categoryInput.toLowerCase())).length === 0 && categoryInput && (
+                                            <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                                No matching category. Press Enter to add {categoryInput} as new category.
+                                            </div>
+                                        )}
+                                        {!categoryInput && (
+                                            <div className="px-3 py-2 text-sm text-gray-400 italic">
+                                                Start typing to see suggestions or add new category
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            {categoryInput && !categories.find(c => c.title.toLowerCase() === categoryInput.toLowerCase()) && (
+                                <span className="flex items-center px-3 py-2 bg-green-50 text-green-700 text-sm border border-green-200 whitespace-nowrap">
+                                    New: {categoryInput}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Fabric Section - Combobox Style */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Fabric / Kain</label>
+                        <div className="flex gap-2 items-center">
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={fabricInput}
+                                    onChange={(e) => {
+                                        setFabricInput(e.target.value)
+                                        setShowFabricSuggestions(true)
+                                    }}
+                                    onFocus={() => setShowFabricSuggestions(true)}
+                                    onBlur={() => setTimeout(() => setShowFabricSuggestions(false), 200)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            setShowFabricSuggestions(false)
+                                        }
+                                    }}
+                                    placeholder="Select or type fabric name..."
+                                    className="w-full border-b border-gray-300 p-2 pr-8"
+                                />
+                                <svg
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+
+                                {/* Suggestions Dropdown */}
+                                {showFabricSuggestions && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 shadow-lg max-h-60 overflow-auto">
+                                        {fabrics
+                                            .filter(f => f.name.toLowerCase().includes(fabricInput.toLowerCase()))
+                                            .map((fabric) => (
+                                                <div
+                                                    key={fabric.id}
+                                                    onClick={() => {
+                                                        setFabricInput(fabric.name)
+                                                        setShowFabricSuggestions(false)
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                >
+                                                    {fabric.name}
+                                                </div>
+                                            ))}
+                                        {fabrics.filter(f => f.name.toLowerCase().includes(fabricInput.toLowerCase())).length === 0 && fabricInput && (
+                                            <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                                No matching fabric. Press Enter to add {fabricInput} as new fabric.
+                                            </div>
+                                        )}
+                                        {!fabricInput && (
+                                            <div className="px-3 py-2 text-sm text-gray-400 italic">
+                                                Start typing to see suggestions or add new fabric
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            {fabricInput && !fabrics.find(f => f.name.toLowerCase() === fabricInput.toLowerCase()) && (
+                                <span className="flex items-center px-3 py-2 bg-green-50 text-green-700 text-sm border border-green-200 whitespace-nowrap">
+                                    New: {fabricInput}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Product Name */}
@@ -301,7 +477,7 @@ export default function EditProductPage() {
                         value={form.title}
                         onChange={handleChange}
                         required
-                        className="w-full border border-gray-300 rounded-lg p-2"
+                        className="w-full border-b border-gray-300 p-2"
                     />
                 </div>
 
@@ -313,7 +489,7 @@ export default function EditProductPage() {
                         value={form.description}
                         onChange={handleChange}
                         rows={2}
-                        className="w-full border border-gray-300 rounded-lg p-2"
+                        className="w-full border-b border-gray-300 p-2"
                     />
                 </div>
 
@@ -325,7 +501,7 @@ export default function EditProductPage() {
                         value={form.details}
                         onChange={handleChange}
                         rows={4}
-                        className="w-full border border-gray-300 rounded-lg p-2"
+                        className="w-full border-b border-gray-300 p-2"
                     />
                 </div>
 
@@ -337,7 +513,7 @@ export default function EditProductPage() {
                         value={form.delivery}
                         onChange={handleChange}
                         rows={3}
-                        className="w-full border border-gray-300 rounded-lg p-2"
+                        className="w-full border-b border-gray-300 p-2"
                     />
                 </div>
 
@@ -353,226 +529,133 @@ export default function EditProductPage() {
                             setForm({ ...form, price: raw })
                         }}
                         required
-                        className="w-full border border-gray-300 rounded-lg p-2"
+                        className="w-full border-b border-gray-300 p-2"
                     />
                 </div>
 
-                {/* Category */}
-                <div>
-                    <label className="block text-sm font-medium mb-1">Category*</label>
-                    <select
-                        name="categoryId"
-                        value={form.categoryId}
-                        onChange={handleChange}
-                        required
-                        className="w-full border border-gray-300 rounded-lg p-2"
-                    >
-                        <option value="">Select category</option>
-                        {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                                {cat.title}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Fabric Section - Combobox Style */}
-                <div>
-                    <label className="block text-sm font-medium mb-1">Fabric / Kain</label>
-                    <div className="flex gap-2 items-center">
-                        <div className="flex-1 relative">
-                            <input
-                                type="text"
-                                value={fabricInput}
-                                onChange={(e) => {
-                                    setFabricInput(e.target.value)
-                                    setShowFabricSuggestions(true)
-                                }}
-                                onFocus={() => setShowFabricSuggestions(true)}
-                                onBlur={() => setTimeout(() => setShowFabricSuggestions(false), 200)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault()
-                                        setShowFabricSuggestions(false)
-                                    }
-                                }}
-                                placeholder="Select or type fabric name..."
-                                className="w-full border border-gray-300 rounded-lg p-2 pr-8"
-                            />
-                            <svg
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-
-                            {/* Suggestions Dropdown */}
-                            {showFabricSuggestions && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                                    {fabrics
-                                        .filter(f => f.name.toLowerCase().includes(fabricInput.toLowerCase()))
-                                        .map((fabric) => (
-                                            <div
-                                                key={fabric.id}
-                                                onClick={() => {
-                                                    setFabricInput(fabric.name)
-                                                    setShowFabricSuggestions(false)
-                                                }}
-                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                            >
-                                                {fabric.name}
-                                            </div>
-                                        ))}
-                                    {fabrics.filter(f => f.name.toLowerCase().includes(fabricInput.toLowerCase())).length === 0 && fabricInput && (
-                                        <div className="px-3 py-2 text-sm text-gray-500 italic">
-                                            No matching fabric. Press Enter to add {fabricInput} as new fabric.
-                                        </div>
-                                    )}
-                                    {!fabricInput && (
-                                        <div className="px-3 py-2 text-sm text-gray-400 italic">
-                                            Start typing to see suggestions or add new fabric
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        {fabricInput && !fabrics.find(f => f.name.toLowerCase() === fabricInput.toLowerCase()) && (
-                            <span className="flex items-center px-3 py-2 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200 whitespace-nowrap">
-                                New: {fabricInput}
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Click to see options or type directly. New fabrics will be created automatically when you submit.
-                    </p>
-                </div>
-
                 {/* Variants */}
-                <div>
-                    <label className="block text-sm font-medium mb-2">Product Variants</label>
+                <div className="space-y-6">
+                    {/* Size & Stock Table */}
+                    <div>
+                        <label className="block text-base font-medium mb-3">Size & Stock*</label>
+                        <div className="">
+                            {/* Header */}
+                            <div className="grid grid-cols-9 gap-4 p-3 bg-white font-normal text-sm text-gray-500 ">
+                                <div className="col-span-4">Size</div>
+                                <div className="col-span-4">Stock</div>
+                                <div className="col-span-1"></div>
+                            </div>
 
-                    <div className="space-y-4">
-                        {variants.map((v, i) => (
-                            <div
-                                key={i}
-                                className="relative border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
-                            >
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                                    {/* Size */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Size</label>
+                            {/* Rows */}
+                            {variants.map((v, i) => (
+                                <div key={i} className="grid grid-cols-9 gap-4 p-3 items-center ">
+                                    <div className="col-span-4">
                                         <input
                                             type="text"
-                                            placeholder="Size"
+                                            placeholder="Add Size"
                                             value={v.size}
                                             onChange={(e) => handleVariantChange(i, 'size', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
                                         />
                                     </div>
-
-                                    {/* Bust */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Bust</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Bust"
-                                            value={v.bust}
-                                            onChange={(e) => handleVariantChange(i, 'bust', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
-                                        />
-                                    </div>
-
-                                    {/* Waist */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Waist</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Waist"
-                                            value={v.waist}
-                                            onChange={(e) => handleVariantChange(i, 'waist', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
-                                        />
-                                    </div>
-
-                                    {/* Length */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Length</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Length"
-                                            value={v.length}
-                                            onChange={(e) => handleVariantChange(i, 'length', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
-                                        />
-                                    </div>
-
-                                    {/* Sleeve */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Sleeve</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Sleeve"
-                                            value={v.sleeve}
-                                            onChange={(e) => handleVariantChange(i, 'sleeve', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
-                                        />
-                                    </div>
-
-                                    {/* Height */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Height</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Height"
-                                            value={v.height}
-                                            onChange={(e) => handleVariantChange(i, 'height', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
-                                        />
-                                    </div>
-
-                                    {/* Stock */}
-                                    <div>
-                                        <label className="block text-xs text-gray-600 mb-1">Stock</label>
+                                    <div className="col-span-4">
                                         <input
                                             type="number"
-                                            placeholder="0"
+                                            placeholder="add stock"
                                             value={v.stock}
                                             onChange={(e) => handleVariantChange(i, 'stock', e.target.value)}
-                                            className="w-full border rounded-md p-2 text-sm focus:ring focus:ring-gray-200"
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
                                         />
                                     </div>
+                                    <div className="col-span-1 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeVariant(i)}
+                                            className="text-gray-400 hover:text-gray-600 transition"
+                                        >
+                                            <Trash size={18} />
+                                        </button>
+                                    </div>
                                 </div>
+                            ))}
 
-                                {/* Remove button */}
-                                <button
-                                    type="button"
-                                    onClick={() => removeVariant(i)}
-                                    className="absolute top-1/2 -translate-y-1/2 right-5 text-red-500 hover:bg-red-600 hover:text-white rounded-full w-9 h-9 flex items-center justify-center  transition"
-                                    title="Remove variant"
-                                >
-                                    <Trash />
-                                </button>
-                            </div>
-                        ))}
+                            {/* Add Column Button */}
+                            <button
+                                type="button"
+                                onClick={addVariant}
+                                className="w-full p-3 text-sm text-gray-500 bg-gray-200 hover:bg-gray-300 transition border-t border-gray-200"
+                            >
+                                + add Column
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Add variant button */}
-                    <button
-                        type="button"
-                        onClick={addVariant}
-                        className="mt-4 text-sm bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md border border-gray-300 transition"
-                    >
-                        + Add Variant
-                    </button>
+                    {/* Size Chart Table */}
+                    <div>
+                        <label className="block text-base font-medium mb-3">Size Chart</label>
+                        <div className="border border-gray-200">
+                            {/* Rows */}
+                            {variants.map((v, i) => (
+                                <div key={i} className={`grid grid-cols-12 gap-4 p-3 items-center ${i > 0 ? 'border-t border-gray-200' : ''}`}>
+                                    <div className="col-span-1">
+                                        <div className="text-sm font-normal text-gray-700">{v.size || '-'}</div>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <input
+                                            type="text"
+                                            placeholder="[Waist] Add Size in cm"
+                                            value={v.waist}
+                                            onChange={(e) => handleVariantChange(i, 'waist', e.target.value)}
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <input
+                                            type="text"
+                                            placeholder="[Length] Add Size in cm"
+                                            value={v.length}
+                                            onChange={(e) => handleVariantChange(i, 'length', e.target.value)}
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <input
+                                            type="text"
+                                            placeholder="[Hip] Add Size in cm"
+                                            value={v.height}
+                                            onChange={(e) => handleVariantChange(i, 'height', e.target.value)}
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <input
+                                            type="text"
+                                            placeholder="[Bust] Add Size in cm"
+                                            value={v.bust}
+                                            onChange={(e) => handleVariantChange(i, 'bust', e.target.value)}
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <input
+                                            type="text"
+                                            placeholder="[Sleeve] Add Size in cm"
+                                            value={v.sleeve}
+                                            onChange={(e) => handleVariantChange(i, 'sleeve', e.target.value)}
+                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
+                                        />
+                                    </div>
+                                    <div className="col-span-1"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-
 
                 <button
                     type="submit"
                     disabled={submitting || uploadingImages}
-                    className={`w-full py-3 rounded-lg transition text-white ${submitting || uploadingImages
+                    className={`w-full py-3 transition text-white ${submitting || uploadingImages
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-primary-studio hover:bg-secondary-studio'
                         }`}

@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import NavItem from '../components/NavItem'
 import HelpCard from '../components/HelpCard'
+import AvatarImage from '../components/AvatarImage'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false)
@@ -78,12 +80,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             iconDefault: '/dashboard/icons/beyond-black.svg',
             iconActive: '/dashboard/icons/beyond-white.svg',
         },
-        // {
-        //     name: 'Shipping',
-        //     href: '/dashboard/shipping',
-        //     iconDefault: '/dashboard/icons/shipping-black.svg',
-        //     iconActive: '/dashboard/icons/shipping-white.svg',
-        // },
         {
             name: 'Store Settings',
             href: '/dashboard/settings',
@@ -113,7 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex min-h-screen">
             <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg"
+                className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 shadow-lg"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {mobileOpen ? (
@@ -180,44 +176,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     />
                                 )
                             })}
-
-                            {!collapsed && (
-                                <>
-                                    <hr className="my-4 border-gray-300" />
-                                    <h2 className="text-base text-gray-500 mb-2">Account</h2>
-                                </>
-                            )}
-
-                            <div>
-                                <div className={`flex items-center gap-2 p-3 ${collapsed ? 'justify-center' : ''}`}>
-                                    <Image
-                                        src="https://placehold.co/400x400.webp"
-                                        alt="Admin"
-                                        width={32}
-                                        height={32}
-                                        className="rounded-full"
-                                    />
-                                    {!collapsed && (
-                                        <div>
-                                            <p className="text-sm font-medium">{user?.name || 'Admin User'}</p>
-                                            <p className="text-xs text-gray-400">{user?.role || 'Admin'}</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <button
-                                    onClick={handleLogout}
-                                    className={`flex items-center gap-3 text-sm hover:underline w-full p-3 hover:bg-gray-100 transition
-                    ${collapsed ? 'justify-center' : ''}`}
-                                >
-                                    <Image src="/dashboard/icons/logout.svg" alt="logout" width={16} height={16} />
-                                    {!collapsed && 'Log Out'}
-                                </button>
-                            </div>
                         </nav>
                     </div>
 
-                    {!collapsed && <HelpCard />}
+                    {/* Account Section */}
+                    <div className={`flex flex-col ${collapsed ? 'items-center' : ''}`}>
+                        {!collapsed && (
+                            <>
+                                <hr className="my-4 border-gray-300" />
+                                <h2 className="text-base text-gray-500 mb-2">Account</h2>
+                            </>
+                        )}
+
+                        {/* Profile Link */}
+                        <Link
+                            href="/dashboard/profile"
+                            onClick={closeMobileMenu}
+                            className={`flex items-center gap-3 p-3 transition ${pathname.startsWith('/dashboard/profile')
+                                ? 'bg-primary-studio text-white hover:bg-primary-studio/90 border-l-4 border-secondary-studio'
+                                : 'hover:bg-gray-100'
+                                } ${collapsed ? 'justify-center' : ''}`}
+                        >
+                            <AvatarImage
+                                src={null}
+                                username={user?.name || 'Admin User'}
+                                size={30}
+                            />
+                            {!collapsed && (
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">{user?.name || 'Admin User'}</p>
+                                    <p className="text-xs opacity-70">{user?.role || 'Admin'}</p>
+                                </div>
+                            )}
+                        </Link>
+
+                        {/* Logout Button */}
+                        <button
+                            onClick={handleLogout}
+                            className={`flex items-center gap-3 text-sm hover:underline w-full p-3 hover:bg-gray-100 transition  mt-2
+                    ${collapsed ? 'justify-center' : ''}`}
+                        >
+                            <Image src="/dashboard/icons/logout.svg" alt="logout" width={16} height={16} />
+                            {!collapsed && 'Log Out'}
+                        </button>
+
+                        {!collapsed && <HelpCard />}
+                    </div>
                 </div>
             </aside>
 

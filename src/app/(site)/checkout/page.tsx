@@ -9,6 +9,7 @@ import { API_BASE } from '@/lib/constants'
 import { getImageUrl } from '@/lib/utils'
 import AddressSelector from '../components/checkout/AddressSelector'
 import { Gift } from 'lucide-react'
+import toast from "react-hot-toast"
 
 export default function CheckoutPage() {
     const dispatch = useDispatch()
@@ -126,11 +127,12 @@ export default function CheckoutPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!isFormValid) {
-            alert('⚠️ Please complete all required fields before checkout.')
+            toast.error('Please complete all required fields before checkout.')
+            // alert('⚠️ Please complete all required fields before checkout.')
             return
         }
         if (storeOpen === false) {
-            alert('🚫 The store is currently closed. You cannot place an order right now.')
+            toast.error('The store is currently closed. You cannot place an order right now.')
             return
         }
 
@@ -195,23 +197,29 @@ export default function CheckoutPage() {
             })
 
             const data = await res.json()
-            console.log('✅ Order Response:', data)
 
             if (!res.ok) throw new Error(data.message || 'Failed to create order')
 
             if (data.data?.payment_link) {
                 window.location.href = data.data.payment_link
             } else {
-                alert('Order berhasil dibuat, tetapi tidak ada payment link.')
+                toast.error('Error creating order. Please try again.')
             }
 
             dispatch(clearCart())
         } catch (err) {
-            console.error('❌ Checkout error:', err)
-            alert('Failed to complete checkout. Please try again.')
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === 'string'
+                        ? err
+                        : 'Failed to checkout'
+
+            toast.error(message)
         } finally {
             setLoading(false)
         }
+
     }
 
     if (!mounted)
@@ -230,7 +238,7 @@ export default function CheckoutPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            <div className="max-w-full mx-auto px-15 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="max-w-full mx-auto px-6 py-4 md:px-15 md:py-10 grid grid-cols-1 lg:grid-cols-2 gap-10 ">
                 {/* LEFT SIDE */}
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Contact */}
@@ -361,7 +369,7 @@ export default function CheckoutPage() {
                 </form>
 
                 {/* RIGHT SIDE (order summary) */}
-                <div className="border-t lg:border-t-0 lg:border-l border-gray-200 pt-8 lg:pt-0 lg:pl-8">
+                <div className="border-t lg:border-t-0 lg:border-l border-gray-200 pt-8 lg:pt-0 lg:pl-8 order-first md:order-last">
                     <div className="space-y-6">
                         {cartItems.map((item) => (
                             <div key={`${item.id}-${item.variantId}`} className="flex justify-between items-start gap-4">

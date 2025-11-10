@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
                 const [summaryRes, prodRes, orderRes] = await Promise.all([
                     fetch(`${API_BASE}/dashboard/summary`, { headers, cache: "no-store" }),
-                    fetch(`${API_BASE}/products?limit=5`, { headers, cache: "no-store" }),
+                    fetch(`${API_BASE}/products?limit=10&sortBy=stock&sortOrder=asc`, { headers, cache: "no-store" }),
                     fetch(`${API_BASE}/orders?page=1&limit=5`, { headers, cache: "no-store" }),
                 ]);
 
@@ -206,6 +206,7 @@ export default function DashboardPage() {
                                     <th className="p-3">Product</th>
                                     <th className="p-3">Price</th>
                                     <th className="p-3">Stock</th>
+                                    <th className="p-3">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white">
@@ -231,20 +232,22 @@ export default function DashboardPage() {
                                         </td>
                                         <td className="p-3">
                                             {p.stock}
-                                            {/* {p.stock > 10 ? (
+
+                                        </td>
+                                        <td>
+                                            {p.stock > 10 ? (
                                                 <span className="bg-green-100 text-green-600 px-3 py-1 text-xs rounded-full">
                                                     Enough Stock
-                                                    {p.stock}
                                                 </span>
                                             ) : p.stock > 0 ? (
-                                                <span className="bg-yellow-100 text-yellow-600 px-3 py-1 text-xs rounded-full">
+                                                <span className="bg-orange-100 text-orange-600 px-3 py-1 text-xs rounded-full">
                                                     Almost Out
                                                 </span>
                                             ) : (
                                                 <span className="bg-red-100 text-red-600 px-3 py-1 text-xs rounded-full">
                                                     Out of Stock
                                                 </span>
-                                            )} */}
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

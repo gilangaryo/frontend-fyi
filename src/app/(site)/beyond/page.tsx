@@ -78,7 +78,7 @@ export default function Beyond() {
             )}
 
             {!loading && blogs.length > 0 && (
-                <section className="bg-white py-6 pr-0 md:pr-6 overflow-hidden">
+                <section className="bg-white pl-0 md:px-0 py-6 pr-0 md:pr-6 overflow-hidden">
                     <div className="max-w-full mx-auto">
                         <Swiper
                             modules={[Navigation, Pagination, Autoplay]}
@@ -121,50 +121,56 @@ export default function Beyond() {
                                             />
                                         </div>
 
-                                        <div className="flex flex-col justify-between h-full">
+                                        <div className="flex flex-col justify-between h-full mx-6 md:mx-0">
                                             <p className="text-3xl tracking-wider text-secondary mt-4 mb-6 italic font-light">
                                                 {blog.event}
                                             </p>
-                                            <h2 className="ml-4 text-4xl md:text-5xl lg:text-6xl font-light text-secondary leading-tight tracking-tight">
+                                            <h2 className=" text-4xl md:text-5xl lg:text-6xl font-light text-secondary leading-tight tracking-tight">
                                                 {blog.title}
                                             </h2>
                                             <div className="flex-grow" />
-                                            <p className="ml-4 text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify  mt-20 md:mt-0">
+                                            <p className=" text-secondary leading-relaxed mb-20 text-base lg:text-lg font-light text-justify  mt-20 md:mt-0">
                                                 {blog.description}
                                             </p>
-                                            <div className="ml-4 mt-auto flex flex-col sm:flex-row items-stretch  justify-center gap-4 w-full">
-                                                {/* Left: navigation arrows + index */}
-                                                <div className="flex w-full md:w-auto items-center justify-center border-2 border-secondary text-secondary px-6 py-3 flex-shrink-0">
-                                                    <button
-                                                        onClick={handlePrev}
-                                                        className="opacity-60 hover:opacity-100 transition cursor-pointer mr-5 "
+
+                                            {/* navigation buttons */}
+                                            <div className="mt-auto w-full">
+                                                <div className="flex flex-col md:flex-row w-full items-stretch justify-between gap-4">
+                                                    {/* Left: navigation arrows + index (centered) */}
+                                                    <div className="flex items-center justify-center border-2 border-secondary text-secondary px-6 py-3 md:w-1/2 lg:w-2/7">
+                                                        <button
+                                                            onClick={handlePrev}
+                                                            className="opacity-60 hover:opacity-100 transition cursor-pointer mr-5"
+                                                        >
+                                                            <ArrowLeft />
+                                                        </button>
+
+                                                        <span className="text-sm md:text-base lg:text-xl font-light min-w-[80px] text-center">
+                                                            {currentIndex + 1} – {blogs.length}
+                                                        </span>
+
+                                                        <button
+                                                            onClick={handleNext}
+                                                            className="opacity-60 hover:opacity-100 transition cursor-pointer ml-5"
+                                                        >
+                                                            <ArrowRight />
+                                                        </button>
+                                                    </div>
+
+
+                                                    {/* Right: link button */}
+                                                    <Link
+                                                        href={`/beyond/${blog.slug}`}
+                                                        className="flex items-center justify-between bg-secondary text-white px-6 py-4 text-sm leading-relaxed tracking-wide font-light hover:bg-secondary/90 transition w-full md:w-1/2 lg:w-5/7"
                                                     >
-                                                        <ArrowLeft />
-                                                    </button>
-
-                                                    <span className="text-sm md:text-base lg:text-xl font-light min-w-[80px] text-center">
-                                                        {currentIndex + 1} – {blogs.length}
-                                                    </span>
-
-                                                    <button
-                                                        onClick={handleNext}
-                                                        className="opacity-60 hover:opacity-100 transition cursor-pointer ml-5"
-                                                    >
-                                                        <ArrowRight />
-                                                    </button>
-                                                </div>
-
-                                                <Link
-                                                    href={`/beyond/${blog.slug}`}
-                                                    className="flex w-full md:w-10/15 h-full items-center bg-secondary text-white px-5 py-4 text-sm leading-relaxed tracking-wide font-light hover:bg-secondary/90 transition"
-                                                >
-                                                    See Whats New in Our <br /> Beyond Gallery
-                                                    <span className="text-right ml-auto mr-2 text-lg">
-                                                        {/* <Image src="/arrow-right-white.svg" alt="left arrow" width={36} height={36} /> */}
+                                                        <span>
+                                                            See What’s New in Our <br /> Beyond Gallery
+                                                        </span>
                                                         <ArrowRight size={50} />
-                                                    </span>
-                                                </Link>
+                                                    </Link>
+                                                </div>
                                             </div>
+
                                         </div>
 
                                     </div>

@@ -119,7 +119,7 @@ export default function ManageSalesPage() {
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {orders.map(order => (
-                            <div key={order.id} onClick={() => handleOpenOrder(order.id)}>
+                            <div key={order.id} onClick={() => handleOpenOrder(order.id)} className="h-full" >
                                 <OrderCard order={order} onAccepted={handleOrderAccepted} />
 
                             </div>

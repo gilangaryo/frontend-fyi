@@ -83,7 +83,7 @@ export default function AcceptOrderButton({
                     if (onClose) {
                         onClose()
                     }
-                }, 2000)
+                }, 5000)
             } else {
                 setErrorMessage(json.message || 'Failed to accept order')
                 setShowError(true)
