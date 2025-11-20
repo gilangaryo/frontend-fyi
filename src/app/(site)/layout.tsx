@@ -3,7 +3,11 @@ import Footer from "./components/Footer";
 import Providers from "./providers";
 import HelpButton from "./components/HelpButton";
 
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default function SiteLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <Providers>
       <Navbar />

@@ -15,12 +15,24 @@ interface UserProfile {
     email: string;
     role: string;
 }
+const hashToTab: Record<string, TabType> = {
+    "#profile": "profile",
+    "#business": "business",
+    "#reports": "reports",
+    "#role": "role",
+};
 
 export default function ProfilePage() {
     const [activeTab, setActiveTab] = useState<TabType>("profile");
     const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash && hashToTab[hash]) {
+            setActiveTab(hashToTab[hash]);
+        }
+    }, [user]);
 
     useEffect(() => {
         async function fetchUserProfile() {
@@ -84,43 +96,52 @@ export default function ProfilePage() {
             <div className="flex gap-8 border-b-2 border-gray-200 mb-8">
                 <button
                     onClick={() => setActiveTab("profile")}
-                    className={`pb-3 text-lg font-medium transition-colors ${activeTab === "profile"
-                        ? "text-primary-studio border-b-2 border-primary-studio"
-                        : "text-gray-400 hover:text-gray-600"
-                        }`}
+                    className={`pb-3 text-lg font-medium transition-colors ${
+                        activeTab === "profile"
+                            ? "text-primary-studio border-b-2 border-primary-studio"
+                            : "text-gray-400 hover:text-gray-600"
+                    }`}
                 >
                     Profile
                 </button>
-                <button
-                    onClick={() => setActiveTab("business")}
-                    className={`pb-3 text-lg font-medium transition-colors ${activeTab === "business"
-                        ? "text-primary-studio border-b-2 border-primary-studio"
-                        : "text-gray-400 hover:text-gray-600"
-                        }`}
-                >
-                    Business
-                </button>
-                <button
-                    onClick={() => setActiveTab("reports")}
-                    className={`pb-3 text-lg font-medium transition-colors ${activeTab === "reports"
-                        ? "text-primary-studio border-b-2 border-primary-studio"
-                        : "text-gray-400 hover:text-gray-600"
-                        }`}
-                >
-                    Reports
-                </button>
-                <button
-                    onClick={() => setActiveTab("role")}
-                    className={`pb-3 text-lg font-medium transition-colors ${activeTab === "role"
-                        ? "text-primary-studio border-b-2 border-primary-studio"
-                        : "text-gray-400 hover:text-gray-600"
-                        }`}
-                >
-                    Role
-                </button>
+
+                {user.role === "ADMIN" && (
+                    <>
+                        <button
+                            onClick={() => setActiveTab("business")}
+                            className={`pb-3 text-lg font-medium transition-colors ${
+                                activeTab === "business"
+                                    ? "text-primary-studio border-b-2 border-primary-studio"
+                                    : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        >
+                            Business
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab("reports")}
+                            className={`pb-3 text-lg font-medium transition-colors ${
+                                activeTab === "reports"
+                                    ? "text-primary-studio border-b-2 border-primary-studio"
+                                    : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        >
+                            Reports
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab("role")}
+                            className={`pb-3 text-lg font-medium transition-colors ${
+                                activeTab === "role"
+                                    ? "text-primary-studio border-b-2 border-primary-studio"
+                                    : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        >
+                            Role
+                        </button>
+                    </>
+                )}
             </div>
-
-
 
             {/* Tab Content */}
             <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">

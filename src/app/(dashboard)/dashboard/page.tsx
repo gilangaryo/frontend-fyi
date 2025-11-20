@@ -28,7 +28,9 @@ interface Order {
 }
 
 export default function DashboardPage() {
-    const [activeTab, setActiveTab] = useState<"product" | "orders" | "membership">("product");
+    const [activeTab, setActiveTab] = useState<
+        "product" | "orders" | "membership"
+    >("product");
 
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -56,13 +58,24 @@ export default function DashboardPage() {
                 };
 
                 const [summaryRes, prodRes, orderRes] = await Promise.all([
-                    fetch(`${API_BASE}/dashboard/summary`, { headers, cache: "no-store" }),
-                    fetch(`${API_BASE}/products?limit=10&sortBy=stock&sortOrder=asc`, { headers, cache: "no-store" }),
-                    fetch(`${API_BASE}/orders?page=1&limit=5`, { headers, cache: "no-store" }),
+                    fetch(`${API_BASE}/dashboard/summary`, {
+                        headers,
+                        cache: "no-store",
+                    }),
+                    fetch(
+                        `${API_BASE}/products?limit=10&sortBy=stock&sortOrder=asc`,
+                        { headers, cache: "no-store" }
+                    ),
+                    fetch(`${API_BASE}/orders?page=1&limit=5`, {
+                        headers,
+                        cache: "no-store",
+                    }),
                 ]);
 
                 if (summaryRes.status === 401) {
-                    console.warn("⚠️ Token invalid — redirect to login");
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    document.cookie = "token=; path=/; max-age=0;";
                     window.location.href = "/login";
                     return;
                 }
@@ -73,7 +86,8 @@ export default function DashboardPage() {
                     orderRes.json(),
                 ]);
 
-                if (summaryJson.success && summaryJson.data) setSummary(summaryJson.data);
+                if (summaryJson.success && summaryJson.data)
+                    setSummary(summaryJson.data);
 
                 if (prodJson.success && Array.isArray(prodJson.data)) {
                     const mappedProducts = prodJson.data.map((p: Product) => ({
@@ -106,8 +120,6 @@ export default function DashboardPage() {
         fetchDashboardData();
     }, []);
 
-
-
     return (
         <div className="min-h-screen p-2">
             {/* Header */}
@@ -124,7 +136,9 @@ export default function DashboardPage() {
                     title="Total Order"
                     subtitle="Last 30 days"
                     value={summary.totalOrders.toString()}
-                    change={`${summary.orderChange > 0 ? "+" : ""}${summary.orderChange}%`}
+                    change={`${summary.orderChange > 0 ? "+" : ""}${
+                        summary.orderChange
+                    }%`}
                     changeType={summary.orderChange >= 0 ? "up" : "down"}
                     icon="/dashboard/home/total-order.svg"
                 />
@@ -132,9 +146,14 @@ export default function DashboardPage() {
                     title="Total Revenue"
                     subtitle="Last 30 days"
                     value={
-                        "Rp " + Number(summary.totalRevenue || 0).toLocaleString("id-ID")
+                        "Rp " +
+                        Number(summary.totalRevenue || 0).toLocaleString(
+                            "id-ID"
+                        )
                     }
-                    change={`${summary.revenueChange > 0 ? "+" : ""}${summary.revenueChange}%`}
+                    change={`${summary.revenueChange > 0 ? "+" : ""}${
+                        summary.revenueChange
+                    }%`}
                     changeType={summary.revenueChange >= 0 ? "up" : "down"}
                     icon="/dashboard/home/total-revenue.svg"
                 />
@@ -142,63 +161,71 @@ export default function DashboardPage() {
                     title="Total Product"
                     subtitle="Active inventory"
                     value={summary.totalProducts.toString()}
-                    change={`${summary.productChange > 0 ? "+" : ""}${summary.productChange}%`}
+                    change={`${summary.productChange > 0 ? "+" : ""}${
+                        summary.productChange
+                    }%`}
                     changeType={summary.productChange >= 0 ? "up" : "down"}
                     icon="/dashboard/home/total-reservation.svg"
                 />
             </div>
-
 
             <div className="flex items-center justify-between py-5 rounded-lg">
                 <div className="flex items-center gap-6">
                     <h2 className="text-2xl font-semibold">Activity</h2>
                     <DateFilter />
                 </div>
-                <a href="#" className="text-primary-studio text-sm">
+                <a
+                    href="/dashboard/profile#reports"
+                    className="text-primary-studio text-sm"
+                >
                     Download Report →
                 </a>
             </div>
 
             {/* Today Activity */}
-            <div >
+            <div>
                 {/* Tabs */}
                 <div className="flex gap-8 mt-4 border-b border-gray-200">
                     <button
                         onClick={() => setActiveTab("product")}
-                        className={`pb-2 ${activeTab === "product"
-                            ? "text-primary-studio font-medium border-b-2 border-primary-studio"
-                            : "text-gray-500"
-                            }`}
+                        className={`pb-2 ${
+                            activeTab === "product"
+                                ? "text-primary-studio font-medium border-b-2 border-primary-studio"
+                                : "text-gray-500"
+                        }`}
                     >
                         Add Product
                     </button>
 
                     <button
                         onClick={() => setActiveTab("orders")}
-                        className={`pb-2 ${activeTab === "orders"
-                            ? "text-primary-studio font-medium border-b-2 border-primary-studio"
-                            : "text-gray-500"
-                            }`}
+                        className={`pb-2 ${
+                            activeTab === "orders"
+                                ? "text-primary-studio font-medium border-b-2 border-primary-studio"
+                                : "text-gray-500"
+                        }`}
                     >
                         Orders
                     </button>
 
                     <button
                         onClick={() => setActiveTab("membership")}
-                        className={`pb-2 ${activeTab === "membership"
-                            ? "text-primary-studio font-medium border-b-2 border-primary-studio"
-                            : "text-gray-500"
-                            }`}
+                        className={`pb-2 ${
+                            activeTab === "membership"
+                                ? "text-primary-studio font-medium border-b-2 border-primary-studio"
+                                : "text-gray-500"
+                        }`}
                     >
                         Membership
                     </button>
                 </div>
 
-
                 {/* Table */}
                 <div className="overflow-x-auto mt-4">
                     {loading ? (
-                        <div className="text-center text-gray-400 py-16">Loading data...</div>
+                        <div className="text-center text-gray-400 py-16">
+                            Loading data...
+                        </div>
                     ) : activeTab === "product" ? (
                         <table className="w-full rounded-t-xl overflow-hidden">
                             <thead>
@@ -221,19 +248,21 @@ export default function DashboardPage() {
                                                 className=" object-cover"
                                             />
                                             <div>
-                                                <p className="font-medium">{p.title}</p>
+                                                <p className="font-medium">
+                                                    {p.title}
+                                                </p>
                                                 <p className="text-sm text-gray-500">
                                                     {p.collection?.title || "-"}
                                                 </p>
                                             </div>
                                         </td>
                                         <td className="p-3">
-                                            Rp {Number(p.price).toLocaleString("id-ID")}
+                                            Rp{" "}
+                                            {Number(p.price).toLocaleString(
+                                                "id-ID"
+                                            )}
                                         </td>
-                                        <td className="p-3">
-                                            {p.stock}
-
-                                        </td>
+                                        <td className="p-3">{p.stock}</td>
                                         <td>
                                             {p.stock > 10 ? (
                                                 <span className="bg-green-100 text-green-600 px-3 py-1 text-xs rounded-full">
@@ -269,16 +298,20 @@ export default function DashboardPage() {
                                         <td className="p-3">{o.id}</td>
                                         <td className="p-3">{o.customer}</td>
                                         <td className="p-3">
-                                            Rp {Number(o.total).toLocaleString("id-ID")}
+                                            Rp{" "}
+                                            {Number(o.total).toLocaleString(
+                                                "id-ID"
+                                            )}
                                         </td>
                                         <td className="p-3">
                                             <span
-                                                className={`text-sm ${o.status === "NEW"
-                                                    ? "text-green-600"
-                                                    : o.status === "SHIPPED"
+                                                className={`text-sm ${
+                                                    o.status === "NEW"
+                                                        ? "text-green-600"
+                                                        : o.status === "SHIPPED"
                                                         ? "text-sky-500"
                                                         : "text-gray-600"
-                                                    }`}
+                                                }`}
                                             >
                                                 ● {o.status}
                                             </span>
@@ -294,7 +327,6 @@ export default function DashboardPage() {
 
                 {/* Footer link */}
                 <div className="flex justify-end mt-4">
-
                     {/* Footer link */}
                     {activeTab !== "membership" && (
                         <div className="flex justify-end mt-4">
@@ -306,11 +338,13 @@ export default function DashboardPage() {
                                 }
                                 className="text-primary-studio text-sm flex items-center gap-1"
                             >
-                                {activeTab === "orders" ? "See all Orders" : "View All Product"} →
+                                {activeTab === "orders"
+                                    ? "See all Orders"
+                                    : "View All Product"}{" "}
+                                →
                             </a>
                         </div>
                     )}
-
                 </div>
             </div>
         </div>

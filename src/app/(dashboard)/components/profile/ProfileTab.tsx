@@ -29,14 +29,17 @@ export default function ProfileTab({ user }: ProfileTabProps) {
                             size={120}
                         />
                         <div>
-                            <p className="text-sm text-gray-500 mb-1">{user.role}</p>
+                            <p className="text-sm text-gray-500 mb-1">
+                                {user.role}
+                            </p>
                             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                {displayName.charAt(0).toUpperCase() + displayName.slice(1)}
+                                {displayName.charAt(0).toUpperCase() +
+                                    displayName.slice(1)}
                             </h2>
                             <p className="text-gray-600">{user.email}</p>
                         </div>
                     </div>
-                    <button
+                    {/* <button
                         className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                         <svg
@@ -53,10 +56,9 @@ export default function ProfileTab({ user }: ProfileTabProps) {
                             />
                         </svg>
                         <span className="text-gray-600">Profile</span>
-                    </button>
+                    </button> */}
                 </div>
             </div>
-
 
             <div className="space-y-6">
                 {/* User ID */}
@@ -100,7 +102,6 @@ export default function ProfileTab({ user }: ProfileTabProps) {
                         </span>
                     </div>
                 </div>
-
             </div>
         </div>
     );

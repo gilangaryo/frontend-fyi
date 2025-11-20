@@ -38,7 +38,9 @@ interface BlogDetail {
 
 async function getBlogDetail(slug: string): Promise<BlogDetail | null> {
     try {
-        const res = await fetch(`${API_BASE}/blog/slug/${slug}`, { cache: "no-store" });
+        const res = await fetch(`${API_BASE}/blog/slug/${slug}`, {
+            cache: "no-store",
+        });
         if (!res.ok) return null;
         const json = await res.json();
         return json.data;
@@ -47,14 +49,15 @@ async function getBlogDetail(slug: string): Promise<BlogDetail | null> {
     }
 }
 
-export default async function BeyondDetailPage(props: { params: Promise<{ slug: string }> }) {
+export default async function BeyondDetailPage(props: {
+    params: Promise<{ slug: string }>;
+}) {
     const { slug } = await props.params;
     const blog = await getBlogDetail(slug);
     if (!blog) return notFound();
 
     return (
         <>
-
             <section className="relative w-full h-[80vh] md:h-[90vh] overflow-hidden">
                 <Image
                     src={getImageUrl(blog.heroImage)}
@@ -65,7 +68,10 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                 />
                 <div className="absolute inset-0 bg-black/20 flex flex-col justify-center items-center text-center text-white px-6 ">
                     <div className="-translate-y-8">
-                        <Link href="/beyond" className="text-sm md:text-base mb-6 hover:underline ">
+                        <Link
+                            href="/beyond"
+                            className="text-sm md:text-base mb-6 hover:underline "
+                        >
                             ← Back to Beyond
                         </Link>
                         <h2 className="text-4xl md:text-5xl font-extralight  mt-4">
@@ -75,7 +81,6 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                             {blog.title}
                         </h1>
                     </div>
-
                 </div>
             </section>
             <section className="relative w-full py-24 flex flex-col items-center justify-center text-center font-light text-md md:text-2xl">
@@ -110,14 +115,12 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                 className="w-full aspect-[3/1] object-cover my-30"
             />
 
-            <section >
+            <section>
                 <div
                     className={`grid grid-cols-1 md:grid-cols-2  items-center `}
                 >
                     {/* Image */}
-                    <div
-                        className={`relative w-full aspect-[3/4]`}
-                    >
+                    <div className={`relative w-full aspect-[3/4]`}>
                         <Image
                             src={getImageUrl(blog.thirdHeaderImage)}
                             alt={blog.thirdHeading || "Blog section image"}
@@ -128,23 +131,27 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
 
                     {/* Text */}
 
-
                     <div
-                        className={` flex flex-col items-start justify-start text-left text-secondary max-w-xl mx-auto`}
+                        className={` flex flex-col items-start justify-center md:justify-start text-center md:text-left  px-4 text-secondary max-w-xl mx-auto`}
                     >
-
                         {blog.thirdHeading && (
-                            <h3 className="text-md md:text-xl font-light mb-2">{blog.thirdHeading}</h3>
+                            <h3 className="text-md md:text-xl font-light mb-2">
+                                {blog.thirdHeading}
+                            </h3>
                         )}
                         {blog.thirdDescription && (
-                            <p className={` text-secondary-green italic mb-4 text-sm font-light leading-relaxed max-w-lg`}>{blog.thirdDescription}</p>
+                            <p
+                                className={` text-secondary-green italic mb-4 text-sm font-light leading-relaxed max-w-lg`}
+                            >
+                                {blog.thirdDescription}
+                            </p>
                         )}
                         {blog.thirdSubDescription && (
-                            <p className="text-sm font-light opacity-70">{blog.thirdSubDescription}</p>
+                            <p className="text-sm font-light opacity-70">
+                                {blog.thirdSubDescription}
+                            </p>
                         )}
                     </div>
-
-
                 </div>
             </section>
 
@@ -153,11 +160,14 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                 <h1>{blog.quote}</h1>
             </section>
 
-
             {/* BARU  */}
             <div className="grid grid-cols-1 md:grid-cols-2 mb-20">
                 <Image
-                    src={getImageUrl(blog.firstFooterImage) || getImageUrl(blog.firstFooterImage) || ''}
+                    src={
+                        getImageUrl(blog.firstFooterImage) ||
+                        getImageUrl(blog.firstFooterImage) ||
+                        ""
+                    }
                     alt="firstFooterImage"
                     width={800}
                     height={400}
@@ -165,7 +175,11 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                     className="w-full aspect-[1/1] object-cover"
                 />
                 <Image
-                    src={getImageUrl(blog.secondFooterImage) || getImageUrl(blog.secondFooterImage) || ''}
+                    src={
+                        getImageUrl(blog.secondFooterImage) ||
+                        getImageUrl(blog.secondFooterImage) ||
+                        ""
+                    }
                     alt="secondFooterImage"
                     width={800}
                     height={400}
@@ -173,10 +187,6 @@ export default async function BeyondDetailPage(props: { params: Promise<{ slug: 
                     className="w-full aspect-[1/1] object-cover"
                 />
             </div>
-
-
-
-
         </>
     );
 }
