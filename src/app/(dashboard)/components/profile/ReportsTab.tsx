@@ -132,7 +132,6 @@ export default function ReportsTab() {
                         <option value="last7days">Last 7 Days</option>
                         <option value="last30days">Last 30 Days</option>
                         <option value="thisMonth">This Month</option>
-                        <option value="lastMonth">Last Month</option>
                         <option value="custom">Custom Range</option>
                     </select>
 

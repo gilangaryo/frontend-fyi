@@ -18,13 +18,13 @@
   --color-primary-studio: #00ADF0;
   --color-secondary-studio: #0A7594;
 
-  --font-sans: var(--font-poppins);
+  --font-sans: var(--font-poppins); 
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #0a0a0a;
   }
 }
 
