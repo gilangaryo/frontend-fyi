@@ -212,7 +212,7 @@ export default function ReportsTab() {
 
                     {/* Expense */}
                     <div className="flex justify-between items-center py-4 border-b border-gray-200 mt-4">
-                        <span className="text-gray-600">Expense</span>
+                        <span className="text-gray-600">Couries Service</span>
                         <span className="font-medium">
                             {formatCurrency(report.expense)}
                         </span>

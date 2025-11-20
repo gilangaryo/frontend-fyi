@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash } from "lucide-react";
+import { Trash } from "lucide-react";
 import { API_BASE } from "@/lib/constants";
 import StatusDropdown from "../StatusDropdown";
-import Image from "next/image";
 interface Discount {
     id: string;
     title: string;
@@ -22,8 +21,10 @@ interface DiscountTabProps {
     onExternalOpenChange?: (open: boolean) => void;
 }
 
-export default function DiscountTab({ externalOpen, onExternalOpenChange }: DiscountTabProps) {
-
+export default function DiscountTab({
+    externalOpen,
+    onExternalOpenChange,
+}: DiscountTabProps) {
     const [discounts, setDiscounts] = useState<Discount[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -83,9 +84,6 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
         fetchDiscounts();
     }, [token, fetchDiscounts]);
 
-
-
-
     const openModal = (discount?: Discount) => {
         if (discount) {
             setEditingId(discount.id);
@@ -94,8 +92,11 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
                 code: discount.code,
                 type: discount.type,
                 value: discount.value.toString(),
-                expiresAt: new Date(discount.expiresAt).toISOString().slice(0, 16),
-                minimumOrderAmount: discount.minimumOrderAmount?.toString() || "",
+                expiresAt: new Date(discount.expiresAt)
+                    .toISOString()
+                    .slice(0, 16),
+                minimumOrderAmount:
+                    discount.minimumOrderAmount?.toString() || "",
             });
         } else {
             setEditingId(null);
@@ -117,7 +118,6 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
         setEditingId(null);
         onExternalOpenChange?.(false);
     };
-
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -185,7 +185,6 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
         }
     }
 
-
     async function handleDelete(id: string) {
         if (!confirm("Delete this discount?")) return;
 
@@ -207,7 +206,6 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
         }
     }
 
-
     const formatDate = (date: string) =>
         new Date(date).toLocaleDateString("id-ID", {
             day: "numeric",
@@ -216,7 +214,6 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
             hour: "2-digit",
             minute: "2-digit",
         });
-
 
     if (!token) {
         return (
@@ -228,9 +225,10 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
 
     return (
         <div className="bg-white rounded-lg shadow-sm p-6 overflow-visible">
-
             {loading && (
-                <div className="text-center py-10 text-gray-400">Loading...</div>
+                <div className="text-center py-10 text-gray-400">
+                    Loading...
+                </div>
             )}
 
             {!loading && discounts.length === 0 && (
@@ -243,11 +241,12 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
             {!loading && discounts.length > 0 && (
                 <div className="rounded-lg bg-white overflow-visible">
                     <div className="min-w-[900px]">
-
                         {/* HEADER */}
                         <div className="grid grid-cols-[1fr_15rem_12rem_10rem_8rem] bg-sky-500 text-white font-medium text-sm rounded-t-md">
                             <div className="px-4 py-2">Code Name</div>
-                            <div className="px-4 py-2 text-center">Time Period</div>
+                            <div className="px-4 py-2 text-center">
+                                Time Period
+                            </div>
                             <div className="px-4 py-2 text-center">Status</div>
                             <div className="px-4 py-2 text-center">Used</div>
                             <div className="px-4 py-2 text-center">Action</div>
@@ -269,17 +268,24 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
 
                                     {/* Time Period */}
                                     <div className="px-4 py-3 text-center text-gray-700">
-                                        {formatDate(d.createdAt).split(",")[0]} —{" "}
+                                        {formatDate(d.createdAt).split(",")[0]}{" "}
+                                        —{" "}
                                         {formatDate(d.expiresAt).split(",")[0]}
                                     </div>
 
                                     {/* Status */}
                                     <div className="flex justify-center">
                                         <StatusDropdown
-                                            initial={d.status ? "Active" : "Inactive"}
-                                            onChange={(value) => updateStatus(d.id, value === "Active")}
+                                            initial={
+                                                d.status ? "Active" : "Inactive"
+                                            }
+                                            onChange={(value) =>
+                                                updateStatus(
+                                                    d.id,
+                                                    value === "Active"
+                                                )
+                                            }
                                         />
-
                                     </div>
 
                                     {/* Used */}
@@ -310,19 +316,22 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
                 </div>
             )}
 
-
-
             {/* Modal */}
             {modalOpen && (
                 <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl w-full max-w-md shadow-lg overflow-hidden">
                         <div className="px-6 py-4 border-b">
                             <h2 className="text-xl font-bold">
-                                {editingId ? "Edit Discount" : "Create Discount"}
+                                {editingId
+                                    ? "Edit Discount"
+                                    : "Create Discount"}
                             </h2>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+                        <form
+                            onSubmit={handleSubmit}
+                            className="px-6 py-4 space-y-4"
+                        >
                             {/* Title */}
                             <div>
                                 <label className="block mb-1 text-sm font-medium">
@@ -332,7 +341,10 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
                                     required
                                     value={form.title}
                                     onChange={(e) =>
-                                        setForm({ ...form, title: e.target.value })
+                                        setForm({
+                                            ...form,
+                                            title: e.target.value,
+                                        })
                                     }
                                     className="w-full border px-3 py-2 rounded"
                                 />
@@ -365,22 +377,31 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => setForm({ ...form, type: "PERCENT" })}
-                                        className={`py-2 rounded border ${form.type === "PERCENT"
-                                            ? "border-primary-studio bg-primary-studio/10 text-primary-studio"
-                                            : "border-gray-300"
-                                            }`}
+                                        onClick={() =>
+                                            setForm({
+                                                ...form,
+                                                type: "PERCENT",
+                                            })
+                                        }
+                                        className={`py-2 rounded border ${
+                                            form.type === "PERCENT"
+                                                ? "border-primary-studio bg-primary-studio/10 text-primary-studio"
+                                                : "border-gray-300"
+                                        }`}
                                     >
                                         Percentage
                                     </button>
 
                                     <button
                                         type="button"
-                                        onClick={() => setForm({ ...form, type: "VALUE" })}
-                                        className={`py-2 rounded border ${form.type === "VALUE"
-                                            ? "border-primary-studio bg-primary-studio/10 text-primary-studio"
-                                            : "border-gray-300"
-                                            }`}
+                                        onClick={() =>
+                                            setForm({ ...form, type: "VALUE" })
+                                        }
+                                        className={`py-2 rounded border ${
+                                            form.type === "VALUE"
+                                                ? "border-primary-studio bg-primary-studio/10 text-primary-studio"
+                                                : "border-gray-300"
+                                        }`}
                                     >
                                         Fixed
                                     </button>
@@ -398,10 +419,17 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
                                     required
                                     type="number"
                                     min="0"
-                                    max={form.type === "PERCENT" ? 100 : undefined}
+                                    max={
+                                        form.type === "PERCENT"
+                                            ? 100
+                                            : undefined
+                                    }
                                     value={form.value}
                                     onChange={(e) =>
-                                        setForm({ ...form, value: e.target.value })
+                                        setForm({
+                                            ...form,
+                                            value: e.target.value,
+                                        })
                                     }
                                     className="w-full border px-3 py-2 rounded"
                                 />
@@ -417,7 +445,10 @@ export default function DiscountTab({ externalOpen, onExternalOpenChange }: Disc
                                     type="datetime-local"
                                     value={form.expiresAt}
                                     onChange={(e) =>
-                                        setForm({ ...form, expiresAt: e.target.value })
+                                        setForm({
+                                            ...form,
+                                            expiresAt: e.target.value,
+                                        })
                                     }
                                     className="w-full border px-3 py-2 rounded"
                                 />

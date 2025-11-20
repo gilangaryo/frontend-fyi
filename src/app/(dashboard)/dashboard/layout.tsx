@@ -210,8 +210,8 @@ export default function DashboardLayout({
                                         height={45}
                                     />
                                     <span className="leading-normal">
-                                        Tumbuhin <br />
-                                        <span>POS Management</span>
+                                        Tumbuhin
+                                        <br /> E-commerce
                                     </span>
                                 </div>
                             )}
