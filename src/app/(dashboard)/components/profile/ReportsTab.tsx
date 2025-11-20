@@ -31,7 +31,11 @@ export default function ReportsTab() {
 
             let url = `${API_BASE}/reports/sales?period=${period}`;
 
-            if (period === "custom" && customDateRange.startDate && customDateRange.endDate) {
+            if (
+                period === "custom" &&
+                customDateRange.startDate &&
+                customDateRange.endDate
+            ) {
                 url = `${API_BASE}/reports/sales?startDate=${customDateRange.startDate}&endDate=${customDateRange.endDate}`;
             }
 
@@ -64,7 +68,11 @@ export default function ReportsTab() {
 
             let url = `${API_BASE}/reports/sales/pdf?period=${period}`;
 
-            if (period === "custom" && customDateRange.startDate && customDateRange.endDate) {
+            if (
+                period === "custom" &&
+                customDateRange.startDate &&
+                customDateRange.endDate
+            ) {
                 url = `${API_BASE}/reports/sales/pdf?startDate=${customDateRange.startDate}&endDate=${customDateRange.endDate}`;
             }
 
@@ -80,7 +88,9 @@ export default function ReportsTab() {
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = downloadUrl;
-            link.download = `sales-report-${new Date().toISOString().split("T")[0]}.pdf`;
+            link.download = `sales-report-${
+                new Date().toISOString().split("T")[0]
+            }.pdf`;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -133,7 +143,10 @@ export default function ReportsTab() {
                                 type="date"
                                 value={customDateRange.startDate}
                                 onChange={(e) =>
-                                    setCustomDateRange({ ...customDateRange, startDate: e.target.value })
+                                    setCustomDateRange({
+                                        ...customDateRange,
+                                        startDate: e.target.value,
+                                    })
                                 }
                                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio"
                             />
@@ -142,7 +155,10 @@ export default function ReportsTab() {
                                 type="date"
                                 value={customDateRange.endDate}
                                 onChange={(e) =>
-                                    setCustomDateRange({ ...customDateRange, endDate: e.target.value })
+                                    setCustomDateRange({
+                                        ...customDateRange,
+                                        endDate: e.target.value,
+                                    })
                                 }
                                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio"
                             />
@@ -165,48 +181,48 @@ export default function ReportsTab() {
                     {/* Gross Sales */}
                     <div className="flex justify-between items-center py-4 border-b border-gray-200">
                         <span className="text-gray-600">Gross Sales</span>
-                        <span className="font-medium">{formatCurrency(report.grossSales)}</span>
+                        <span className="font-medium">
+                            {formatCurrency(report.grossSales)}
+                        </span>
                     </div>
 
                     {/* Discount */}
                     <div className="flex justify-between items-center py-4 border-b border-gray-200">
                         <span className="text-gray-600">Discount</span>
-                        <span className="text-red-600">({formatCurrency(report.discount)})</span>
+                        <span className="text-red-600">
+                            ({formatCurrency(report.discount)})
+                        </span>
                     </div>
 
                     {/* Refunds */}
                     <div className="flex justify-between items-center py-4 border-b border-gray-200">
                         <span className="text-gray-600">Refunds</span>
-                        <span className="text-gray-600">({report.refunds})</span>
+                        <span className="text-gray-600">
+                            ({report.refunds})
+                        </span>
                     </div>
 
                     {/* NET SALES */}
                     <div className="flex justify-between items-center py-4 border-b-2 border-gray-300 bg-gray-50 px-4 -mx-4">
                         <span className="font-bold text-lg">NET SALES</span>
-                        <span className="font-bold text-lg">{formatCurrency(report.netSales)}</span>
+                        <span className="font-bold text-lg">
+                            {formatCurrency(report.netSales)}
+                        </span>
                     </div>
 
                     {/* Expense */}
                     <div className="flex justify-between items-center py-4 border-b border-gray-200 mt-4">
                         <span className="text-gray-600">Expense</span>
-                        <span className="font-medium">{formatCurrency(report.expense)}</span>
-                    </div>
-
-                    {/* Operasional */}
-                    <div className="flex justify-between items-center py-4 border-b border-gray-200">
-                        <span className="text-gray-600">Operasional</span>
-                        <span className="font-medium">{formatCurrency(report.operational)}</span>
-                    </div>
-
-                    {/* TAX */}
-                    <div className="flex justify-between items-center py-4 border-b-2 border-gray-300">
-                        <span className="text-gray-600">TAX</span>
-                        <span className="font-medium">{formatCurrency(report.tax)}</span>
+                        <span className="font-medium">
+                            {formatCurrency(report.expense)}
+                        </span>
                     </div>
 
                     {/* Total Collected */}
                     <div className="flex justify-between items-center py-6 bg-cyan-50 px-4 -mx-4 mt-4 rounded-lg">
-                        <span className="font-bold text-xl">Total Collected</span>
+                        <span className="font-bold text-xl">
+                            Total Collected
+                        </span>
                         <span className="font-bold text-xl text-cyan-700">
                             {formatCurrency(report.totalCollected)}
                         </span>
