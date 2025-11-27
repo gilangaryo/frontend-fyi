@@ -6,25 +6,25 @@ import ScrollReveal from "./components/ScrollReveal";
 import FloatingEmail from "./components/FloatingEmail";
 
 export default function Home() {
-  return (
-    <>
-      <Hero />
-      <FloatingEmail />
+    return (
+        <>
+            <Hero />
+            <FloatingEmail />
 
-      <ScrollReveal>
-        <h2 className="text-secondary text-base md:text-xl font-light text-center mx-auto px-4 md:px-0 py-20 leading-relaxed my-0">
-          Welcome to FYI Couture
-        </h2>
-      </ScrollReveal>
-      <ScrollReveal>
-        <Features />
-      </ScrollReveal>
-      <ScrollReveal>
-        <About />
-      </ScrollReveal>
-      <ScrollReveal>
-        <CTA />
-      </ScrollReveal>
-    </>
-  );
+            <ScrollReveal>
+                <h2 className="relative text-secondary text-base md:text-xl font-light text-center mx-auto px-4 md:px-0 pt-20 md:pt-0 pb-20 leading-relaxed my-0">
+                    Welcome to FYI Couture
+                </h2>
+            </ScrollReveal>
+            <ScrollReveal>
+                <Features />
+            </ScrollReveal>
+            <ScrollReveal>
+                <About />
+            </ScrollReveal>
+            <ScrollReveal>
+                <CTA />
+            </ScrollReveal>
+        </>
+    );
 }

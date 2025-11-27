@@ -35,6 +35,7 @@ export interface ProductImage {
     id: string;
     imageUrl: string;
     isPrimary: boolean;
+    isSecondary: boolean;
     createdAt: string;
     updatedAt: string;
 }

@@ -13,7 +13,9 @@ import { getImageUrl } from "@/lib/utils";
 export default function CatalogSection() {
     const [openFilter, setOpenFilter] = useState<string | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
-    const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+    const [selectedCollections, setSelectedCollections] = useState<string[]>(
+        []
+    );
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
     const [kains, setKains] = useState<string[]>([]);
@@ -33,9 +35,12 @@ export default function CatalogSection() {
     useEffect(() => {
         async function fetchProducts() {
             try {
-                const res = await fetch(`${API_BASE}/products?status=true&page=${page}&limit=${limit}`, {
-                    cache: "no-store",
-                });
+                const res = await fetch(
+                    `${API_BASE}/products?status=true&page=${page}&limit=${limit}`,
+                    {
+                        cache: "no-store",
+                    }
+                );
                 const json = await res.json();
                 if (json.success) {
                     setProducts(json.data);
@@ -51,12 +56,12 @@ export default function CatalogSection() {
         window.scrollTo({ top: 130, behavior: "smooth" });
     }, [page]);
 
-
-
     useEffect(() => {
         async function fetchKains() {
             try {
-                const res = await fetch(`${API_BASE}/kain`, { cache: "no-store" });
+                const res = await fetch(`${API_BASE}/kain`, {
+                    cache: "no-store",
+                });
                 const json = await res.json();
                 if (json.success) {
                     setKains(json.data.map((k: Kain) => k.name));
@@ -68,32 +73,44 @@ export default function CatalogSection() {
         fetchKains();
     }, []);
 
-    const getUniqueValues = (items: Product[], key: "collection" | "category") =>
+    const getUniqueValues = (
+        items: Product[],
+        key: "collection" | "category"
+    ) =>
         Array.from(
             new Set(
                 items
                     .map((item) =>
-                        key === "collection" ? item.collection?.slug : item.category?.slug
+                        key === "collection"
+                            ? item.collection?.slug
+                            : item.category?.slug
                     )
                     .filter((v): v is string => Boolean(v))
             )
         );
 
-    const collections = useMemo(() => getUniqueValues(products, "collection"), [products]);
-    const categories = useMemo(() => getUniqueValues(products, "category"), [products]);
+    const collections = useMemo(
+        () => getUniqueValues(products, "collection"),
+        [products]
+    );
+    const categories = useMemo(
+        () => getUniqueValues(products, "category"),
+        [products]
+    );
 
     const filteredProducts = useMemo(() => {
         return products.filter((product) => {
             return (
                 (selectedCollections.length === 0 ||
-                    selectedCollections.includes(product.collection?.slug ?? "")) &&
-
+                    selectedCollections.includes(
+                        product.collection?.slug ?? ""
+                    )) &&
                 (selectedCategories.length === 0 ||
-                    selectedCategories.includes(product.category?.slug ?? "")) &&
-
+                    selectedCategories.includes(
+                        product.category?.slug ?? ""
+                    )) &&
                 (selectedKains.length === 0 ||
                     (product.kain && selectedKains.includes(product.kain.name)))
-
             );
         });
     }, [products, selectedCollections, selectedCategories, selectedKains]);
@@ -136,7 +153,6 @@ export default function CatalogSection() {
                         setOpenFilter={setOpenFilter}
                         filterKey="kain"
                     />
-
                 </div>
 
                 <ActiveFilters
@@ -156,10 +172,18 @@ export default function CatalogSection() {
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {filteredProducts.map((product) => {
                         const primaryImg = getImageUrl(
-                            product.images?.find((img) => img.isPrimary)?.imageUrl
+                            product.images?.find((img) => img.isPrimary)
+                                ?.imageUrl
+                        );
+
+                        const secondaryImage = product.images?.find(
+                            (img) => img.isSecondary
+                        );
+                        const fallbackImage = product.images?.find(
+                            (img) => !img.isPrimary
                         );
                         const hoverImg = getImageUrl(
-                            product.images?.find((img) => !img.isPrimary)?.imageUrl
+                            secondaryImage?.imageUrl || fallbackImage?.imageUrl
                         );
 
                         return (
@@ -185,14 +209,17 @@ export default function CatalogSection() {
                                         className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition duration-300"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            console.log("🛒 Add to cart:", product.title);
+                                            console.log(
+                                                "🛒 Add to cart:",
+                                                product.title
+                                            );
                                         }}
-                                    >
-                                    </button>
+                                    ></button>
                                 </div>
 
-                                <p className="text-sm md:text-base font-light">{product.title}</p>
-
+                                <p className="text-sm md:text-base font-light">
+                                    {product.title}
+                                </p>
                             </Link>
                         );
                     })}
@@ -202,7 +229,9 @@ export default function CatalogSection() {
                 <button
                     disabled={page === 1}
                     onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${page === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${
+                        page === 1 ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                 >
                     Prev
                 </button>
@@ -214,12 +243,15 @@ export default function CatalogSection() {
                 <button
                     disabled={page === totalPages}
                     onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${page === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${
+                        page === totalPages
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                    }`}
                 >
                     Next
                 </button>
             </div>
-
         </section>
     );
 }

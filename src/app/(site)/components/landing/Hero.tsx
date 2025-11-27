@@ -2,9 +2,9 @@
 
 export default function Hero() {
     return (
-        <section className="relative w-full h-[80vh] md:h-[100vh] flex items-center justify-center overflow-hidden bg-white">
+        <section className="relative top-0 md:-top-30  w-full h-[80vh] md:h-svh flex items-center justify-center overflow-hidden bg-white">
             {/* Background video */}
-            {/* <video
+            <video
                 autoPlay
                 loop
                 muted
@@ -15,7 +15,7 @@ export default function Hero() {
                     src="https://cdn.fyicouture.com/videos/fyi-cover.mp4"
                     type="video/mp4"
                 />
-            </video> */}
+            </video>
         </section>
     );
 }
