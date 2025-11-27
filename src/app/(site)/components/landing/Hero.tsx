@@ -11,9 +11,11 @@ export default function Hero() {
                 playsInline
                 className="absolute top-0 left-0 w-full h-full object-cover"
             >
-                <source src="https://cdn.fyicouture.com/videos/hero-section-video-stream.mp4" type="video/mp4" />
+                <source
+                    src="https://cdn.fyicouture.com/videos/fyi-cover.mp4"
+                    type="video/mp4"
+                />
             </video>
-
         </section>
     );
 }
