@@ -1,50 +1,53 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { API_BASE } from '@/lib/constants'
-import Image from 'next/image'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { API_BASE } from "@/lib/constants";
+import Image from "next/image";
 export default function LoginPage() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
-    const router = useRouter()
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const router = useRouter();
 
     async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault()
-        setError('')
-        setLoading(true)
+        e.preventDefault();
+        setError("");
+        setLoading(true);
 
         try {
             const res = await fetch(`${API_BASE}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({ email, password }),
-            })
+            });
 
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.message || 'Login failed')
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Login failed");
 
-            localStorage.setItem('token', data.token)
-            localStorage.setItem('user', JSON.stringify(data.user))
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
 
+            document.cookie = `token=${data.token}; path=/; max-age=86400; secure; samesite=lax`;
 
-            document.cookie = `token=${data.token}; path=/; max-age=86400; secure; samesite=lax`
-
-            router.replace('/dashboard')
+            router.replace("/dashboard");
         } catch (err) {
-            console.error('Login error:', err)
+            console.error("Login error:", err);
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Login gagal. Silakan coba lagi.");
+            }
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-200">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-
                 <Image
                     src="/logo-fyi.png"
                     alt="Logo"
@@ -72,21 +75,24 @@ export default function LoginPage() {
                     />
 
                     {error && (
-                        <p className="text-red-500 text-sm text-center">{error}</p>
+                        <p className="text-red-500 text-sm text-center">
+                            {error}
+                        </p>
                     )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full font-medium py-2 rounded transition ${loading
-                            ? 'bg-sky-400 cursor-not-allowed'
-                            : 'bg-sky-500 hover:bg-sky-600 text-white'
-                            }`}
+                        className={`w-full font-medium py-2 rounded transition ${
+                            loading
+                                ? "bg-sky-400 cursor-not-allowed"
+                                : "bg-sky-500 hover:bg-sky-600 text-white"
+                        }`}
                     >
-                        {loading ? 'Logging in...' : 'Login'}
+                        {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>
             </div>
         </div>
-    )
+    );
 }

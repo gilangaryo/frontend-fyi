@@ -1,6 +1,6 @@
 "use client";
 
-import AvatarImage from "../AvatarImage";
+// import AvatarImage from "../AvatarImage";
 
 interface User {
     id: string;
@@ -23,11 +23,11 @@ export default function ProfileTab({ user }: ProfileTabProps) {
             <div className="mb-8">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
-                        <AvatarImage
+                        {/* <AvatarImage
                             src={null}
                             username={displayName}
                             size={120}
-                        />
+                        /> */}
                         <div>
                             <p className="text-sm text-gray-500 mb-1">
                                 {user.role}

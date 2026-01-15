@@ -33,6 +33,8 @@ interface Order {
     courierCompany: string | null;
     user: { name: string; email: string; phone: string };
     items: OrderItem[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 interface Payment {
@@ -54,7 +56,12 @@ interface Session {
 interface OrderResponse {
     success: boolean;
     message: string;
-    data: { session: Session; payment: Payment; order: Order };
+    data: {
+        session: Session;
+        payment: Payment;
+        order: Order;
+        provider?: string;
+    };
 }
 
 function SuccessContent() {
@@ -68,7 +75,9 @@ function SuccessContent() {
         if (!order_id) return;
         (async () => {
             try {
-                const res = await fetch(`${API_BASE}/orders/session/${order_id}`);
+                const res = await fetch(
+                    `${API_BASE}/orders/session/${order_id}`
+                );
                 const json: OrderResponse = await res.json();
                 if (json.success) setData(json.data);
             } catch (err) {
@@ -96,7 +105,7 @@ function SuccessContent() {
             </div>
         );
 
-    const { session, order, payment } = data;
+    const { session, order, payment, provider } = data;
     const customer = order.user;
     const items = order.items ?? [];
     const total = Number(order.total || session.amount || 0);
@@ -106,7 +115,12 @@ function SuccessContent() {
             {/* Header */}
             <header className="sticky top-0 bg-white z-10 flex items-center justify-between px-10 py-6 shadow-sm">
                 <Link href="/">
-                    <Image src="/logo-fyi.png" alt="FYI Logo" width={80} height={60} />
+                    <Image
+                        src="/logo-fyi.png"
+                        alt="FYI Logo"
+                        width={80}
+                        height={60}
+                    />
                 </Link>
             </header>
 
@@ -124,15 +138,22 @@ function SuccessContent() {
                                 stroke="currentColor"
                                 strokeWidth={1.5}
                             >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 14l4 4L19 7" />
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M6 14l4 4L19 7"
+                                />
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                <h2 className="text-3xl font-light mb-2">Payment Successful!</h2>
+                <h2 className="text-3xl font-light mb-2">
+                    Payment Successful!
+                </h2>
                 <p className="text-gray-600 mb-8">
-                    The order confirmation has been sent to <strong>{customer.email}</strong>
+                    The order confirmation has been sent to{" "}
+                    <strong>{customer.email}</strong>
                 </p>
 
                 {/* Order Summary */}
@@ -149,9 +170,14 @@ function SuccessContent() {
                                     />
                                 </div>
                                 <div>
-                                    <p className="font-medium">{it.product?.title}</p>
+                                    <p className="font-medium">
+                                        {it.product?.title}
+                                    </p>
                                     <p className="text-gray-500 text-sm">
-                                        x{it.quantity} — IDR {Number(it.priceAtPurchase).toLocaleString("id-ID")}
+                                        x{it.quantity} — IDR{" "}
+                                        {Number(
+                                            it.priceAtPurchase
+                                        ).toLocaleString("id-ID")}
                                     </p>
                                 </div>
                             </div>
@@ -171,14 +197,14 @@ function SuccessContent() {
                                     second: "2-digit",
                                     hour12: true,
                                     timeZone: "Asia/Jakarta",
-                                }).format(new Date(payment.paid_at || session.updated))}{" "}
+                                }).format(new Date(order.updatedAt))}{" "}
                                 WIB
                             </span>
                         </div>
 
                         <div className="flex justify-between">
                             <span>Payment Method</span>
-                            <span>{payment.channel || "Xendit Payment Link"}</span>
+                            <span>{provider || "Xendit Payment Link"}</span>
                         </div>
 
                         <div className="flex justify-between font-medium border-t border-gray-300 pt-3">
@@ -201,7 +227,13 @@ function SuccessContent() {
 
 export default function SuccessPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <Suspense
+            fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                    Loading...
+                </div>
+            }
+        >
             <SuccessContent />
         </Suspense>
     );

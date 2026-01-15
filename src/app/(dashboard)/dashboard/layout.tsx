@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import NavItem from "../components/NavItem";
 import HelpCard from "../components/HelpCard";
-import AvatarImage from "../components/AvatarImage";
+// import AvatarImage from "../components/AvatarImage";
 
 export default function DashboardLayout({
     children,
@@ -288,11 +288,6 @@ export default function DashboardLayout({
                                     : "hover:bg-gray-100"
                             } ${collapsed ? "justify-center" : ""}`}
                         >
-                            <AvatarImage
-                                src={null}
-                                username={user?.name || "Admin User"}
-                                size={30}
-                            />
                             {!collapsed && (
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">

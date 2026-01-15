@@ -124,6 +124,13 @@ export default function Navbar() {
         document.body.style.overflow = openMenu ? "hidden" : "";
     }, [openMenu]);
 
+    // Listen for open-cart event from AddToCart
+    useEffect(() => {
+        const handleOpenCart = () => setOpenCart(true);
+        window.addEventListener("open-cart", handleOpenCart);
+        return () => window.removeEventListener("open-cart", handleOpenCart);
+    }, []);
+
     useEffect(() => {
         async function fetchCollections() {
             try {

@@ -47,7 +47,8 @@ export default function AddToCartModal({
                             Added to your bag
                         </h2>
                         <p className="text-sm text-gray-600 mb-6">
-                            <strong>{productTitle}</strong> has been added to your cart.
+                            <strong>{productTitle}</strong> has been added to
+                            your cart.
                         </p>
 
                         <div className="flex gap-3 justify-center">
@@ -61,7 +62,9 @@ export default function AddToCartModal({
                             <button
                                 onClick={() => {
                                     onClose();
-                                    window.dispatchEvent(new Event("open-cart"));
+                                    window.dispatchEvent(
+                                        new Event("open-cart")
+                                    );
                                 }}
                                 className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
                             >

@@ -1,50 +1,93 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
-import { AnimatePresence, motion } from "framer-motion"
-import Image from "next/image"
-import { useSelector, useDispatch } from "react-redux"
-import { RootState } from "@/store"
-import { removeFromCart, updateQuantity, setGiftNote } from "@/store/cartSlice"
-import { Gift } from "lucide-react"
-import { useEffect, useState } from "react"
-import { API_BASE } from "@/lib/constants"
-import toast from "react-hot-toast"
+import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store";
+import { removeFromCart, updateQuantity, setGiftNote } from "@/store/cartSlice";
+import { Gift } from "lucide-react";
+import { useEffect, useState } from "react";
+import { API_BASE } from "@/lib/constants";
+import toast from "react-hot-toast";
 
 interface CartModalProps {
-    open: boolean
-    onClose: () => void
+    open: boolean;
+    onClose: () => void;
 }
 
 export default function CartModal({ open, onClose }: CartModalProps) {
-    const dispatch = useDispatch()
-    const cartItems = useSelector((state: RootState) => state.cart.items)
-    const giftNote = useSelector((state: RootState) => state.cart.giftNote)
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const dispatch = useDispatch();
+    const cartItems = useSelector((state: RootState) => state.cart.items);
+    const giftNote = useSelector((state: RootState) => state.cart.giftNote);
+    const total = cartItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+    );
 
-    const [storeOpen, setStoreOpen] = useState<boolean | null>(null)
-    const [giftNoteOpen, setGiftNoteOpen] = useState(false)
+    const [storeOpen, setStoreOpen] = useState<boolean | null>(null);
+    const [giftNoteOpen, setGiftNoteOpen] = useState(false);
+    const [variantStocks, setVariantStocks] = useState<Record<string, number>>(
+        {}
+    );
 
     useEffect(() => {
         (async () => {
             try {
-                const res = await fetch(`${API_BASE}/setting/store-status`)
-                const json = await res.json()
+                const res = await fetch(`${API_BASE}/setting/store-status`);
+                const json = await res.json();
                 if (json.success) {
-                    setStoreOpen(json.data.isOpen)
+                    setStoreOpen(json.data.isOpen);
                 } else {
-                    setStoreOpen(true)
+                    setStoreOpen(true);
                 }
             } catch (err) {
-                console.error("Failed to fetch store status:", err)
-                setStoreOpen(true)
+                console.error("Failed to fetch store status:", err);
+                setStoreOpen(true);
             }
-        })()
-    }, [])
+        })();
+    }, []);
+
+    // Fetch variant stocks for all cart items
+    useEffect(() => {
+        if (!open || cartItems.length === 0) return;
+
+        const fetchStocks = async () => {
+            const stocks: Record<string, number> = {};
+            const uniqueProductIds = [
+                ...new Set(cartItems.map((item) => item.id)),
+            ];
+
+            await Promise.all(
+                uniqueProductIds.map(async (productId) => {
+                    try {
+                        const res = await fetch(
+                            `${API_BASE}/products/${productId}`
+                        );
+                        const json = await res.json();
+                        if (json.success && json.data?.variants) {
+                            json.data.variants.forEach((variant: any) => {
+                                stocks[variant.id] = variant.stock;
+                            });
+                        }
+                    } catch (err) {
+                        console.error(
+                            `Failed to fetch product ${productId}:`,
+                            err
+                        );
+                    }
+                })
+            );
+
+            setVariantStocks(stocks);
+        };
+
+        fetchStocks();
+    }, [open, cartItems]);
 
     const handleGiftNoteChange = (value: string) => {
-        dispatch(setGiftNote(value))
-    }
+        dispatch(setGiftNote(value));
+    };
 
     const handleCheckout = async () => {
         try {
@@ -58,40 +101,42 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                         quantity: item.quantity,
                     })),
                 }),
-            })
+            });
 
-            const data = await res.json()
+            const data = await res.json();
 
             if (!data.success) {
-                toast.error(data.message || "Failed to validate cart.")
-                return
+                toast.error(data.message || "Failed to validate cart.");
+                return;
             }
 
             if (data.invalid.length > 0) {
                 data.invalid.forEach((inv: any) => {
-                    dispatch(removeFromCart({ id: "", variantId: inv.variantId }))
-                })
+                    dispatch(
+                        removeFromCart({ id: "", variantId: inv.variantId })
+                    );
+                });
 
                 toast.error(
                     `Some products are no longer available:\n${data.invalid
                         .map((i: any) => `- ${i.productName}`)
                         .join("\n")}`,
                     { duration: 5000 }
-                )
+                );
 
-                return
+                return;
             }
 
-            toast.success("Proceeding to checkout!")
-            onClose()
+            toast.success("Proceeding to checkout!");
+            onClose();
             setTimeout(() => {
-                window.location.href = "/checkout"
-            }, 1000)
+                window.location.href = "/checkout";
+            }, 1000);
         } catch (err) {
-            console.error("❌ Error validating cart:", err)
-            toast.error("An error occurred while validating your cart.")
+            console.error("❌ Error validating cart:", err);
+            toast.error("An error occurred while validating your cart.");
         }
-    }
+    };
 
     return (
         <AnimatePresence>
@@ -113,12 +158,18 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
-                        transition={{ type: "tween", ease: "easeOut", duration: 0.35 }}
+                        transition={{
+                            type: "tween",
+                            ease: "easeOut",
+                            duration: 0.35,
+                        }}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 bg-primary-muted border-b border-gray-200">
                             <div>
-                                <h2 className="text-2xl font-semibold mb-1">Your Bag</h2>
+                                <h2 className="text-2xl font-semibold mb-1">
+                                    Your Bag
+                                </h2>
                                 <p className="text-sm text-gray-500">
                                     {cartItems.length > 0
                                         ? "Your order qualifies for free shipping!"
@@ -137,7 +188,9 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                         <div className="p-6 flex-1 overflow-y-auto space-y-4">
                             {cartItems.map((item) => (
                                 <div
-                                    key={`${item.id}-${item.variantId || "default"}`}
+                                    key={`${item.id}-${
+                                        item.variantId || "default"
+                                    }`}
                                     className="flex gap-6 border-b border-gray-200 pb-6 last:border-none"
                                 >
                                     {/* Product Image */}
@@ -165,7 +218,10 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                 </p>
                                             )}
                                             <p className="text-[16px] font-semibold text-gray-900">
-                                                IDR {item.price.toLocaleString("id-ID")}
+                                                IDR{" "}
+                                                {item.price.toLocaleString(
+                                                    "id-ID"
+                                                )}
                                             </p>
                                         </div>
 
@@ -178,12 +234,17 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                         dispatch(
                                                             updateQuantity({
                                                                 id: item.id,
-                                                                variantId: item.variantId,
-                                                                quantity: item.quantity - 1,
+                                                                variantId:
+                                                                    item.variantId,
+                                                                quantity:
+                                                                    item.quantity -
+                                                                    1,
                                                             })
                                                         )
                                                     }
-                                                    disabled={item.quantity <= 1}
+                                                    disabled={
+                                                        item.quantity <= 1
+                                                    }
                                                 >
                                                     −
                                                 </button>
@@ -191,15 +252,26 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                     {item.quantity}
                                                 </span>
                                                 <button
-                                                    className="px-3 md:px-4 py-2 hover:bg-gray-100 transition"
+                                                    className="px-3 md:px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
                                                     onClick={() =>
                                                         dispatch(
                                                             updateQuantity({
                                                                 id: item.id,
-                                                                variantId: item.variantId,
-                                                                quantity: item.quantity + 1,
+                                                                variantId:
+                                                                    item.variantId,
+                                                                quantity:
+                                                                    item.quantity +
+                                                                    1,
                                                             })
                                                         )
+                                                    }
+                                                    disabled={
+                                                        item.quantity >=
+                                                        (item.variantId
+                                                            ? variantStocks[
+                                                                  item.variantId
+                                                              ] ?? 999
+                                                            : 999)
                                                     }
                                                 >
                                                     +
@@ -211,7 +283,8 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                     dispatch(
                                                         removeFromCart({
                                                             id: item.id,
-                                                            variantId: item.variantId,
+                                                            variantId:
+                                                                item.variantId,
                                                         })
                                                     )
                                                 }
@@ -237,16 +310,21 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                 <div className="border border-gray-200 rounded-md">
                                     <button
                                         type="button"
-                                        onClick={() => setGiftNoteOpen(!giftNoteOpen)}
+                                        onClick={() =>
+                                            setGiftNoteOpen(!giftNoteOpen)
+                                        }
                                         className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition"
                                     >
                                         <div className="flex items-center gap-2 text-gray-700">
                                             <Gift size={18} />
-                                            <span className="text-sm font-medium">Add gift note</span>
+                                            <span className="text-sm font-medium">
+                                                Add gift note
+                                            </span>
                                         </div>
                                         <svg
-                                            className={`w-5 h-5 text-gray-500 transition-transform ${giftNoteOpen ? "rotate-180" : ""
-                                                }`}
+                                            className={`w-5 h-5 text-gray-500 transition-transform ${
+                                                giftNoteOpen ? "rotate-180" : ""
+                                            }`}
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
@@ -264,7 +342,11 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                         <div className="px-4 pb-4 space-y-2">
                                             <textarea
                                                 value={giftNote}
-                                                onChange={(e) => handleGiftNoteChange(e.target.value)}
+                                                onChange={(e) =>
+                                                    handleGiftNoteChange(
+                                                        e.target.value
+                                                    )
+                                                }
                                                 placeholder="Write your gift message here..."
                                                 rows={3}
                                                 maxLength={200}
@@ -283,13 +365,19 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                         Subtotal{" "}
                                         <span className="text-gray-500 font-normal text-sm">
                                             ({cartItems.length}{" "}
-                                            {cartItems.length > 1 ? "items" : "item"})
+                                            {cartItems.length > 1
+                                                ? "items"
+                                                : "item"}
+                                            )
                                         </span>
                                     </span>
-                                    <span>Rp {total.toLocaleString("id-ID")}</span>
+                                    <span>
+                                        Rp {total.toLocaleString("id-ID")}
+                                    </span>
                                 </div>
                                 <p className="text-gray-500 text-sm">
-                                    Shipping and tax will be calculated at checkout.
+                                    Shipping and tax will be calculated at
+                                    checkout.
                                 </p>
 
                                 {storeOpen ? (
@@ -313,5 +401,5 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                 </>
             )}
         </AnimatePresence>
-    )
+    );
 }
