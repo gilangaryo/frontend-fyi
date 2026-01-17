@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import StatsCard from "../components/StatsCard";
-import DateFilter from "../components/DateFilter";
+import DateFilter, { DateFilterOption } from "../components/DateFilter";
 import { API_BASE } from "@/lib/constants";
 import { getImageUrl } from "@/lib/utils";
 import MembershipTable from "../components/MembershipTable";
@@ -31,6 +31,7 @@ export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState<
         "product" | "orders" | "membership"
     >("product");
+    const [dateFilter, setDateFilter] = useState<DateFilterOption>("today");
 
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -43,88 +44,122 @@ export default function DashboardPage() {
         revenueChange: 0,
         productChange: 0,
     });
+    const [userName, setUserName] = useState<string | null>(null);
+
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            setLoading(true);
+
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("Unauthorized — token not found");
+
+            const headers = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            };
+
+            const [summaryRes, prodRes, orderRes] = await Promise.all([
+                fetch(`${API_BASE}/dashboard/summary?period=${dateFilter}`, {
+                    headers,
+                    cache: "no-store",
+                }),
+                fetch(
+                    `${API_BASE}/products?limit=10&sortBy=stock&sortOrder=asc`,
+                    {
+                        headers,
+                        cache: "no-store",
+                    }
+                ),
+                fetch(
+                    `${API_BASE}/orders?page=1&limit=5&period=${dateFilter}`,
+                    {
+                        headers,
+                        cache: "no-store",
+                    }
+                ),
+            ]);
+
+            if (summaryRes.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                document.cookie = "token=; path=/; max-age=0;";
+                window.location.href = "/login";
+                return;
+            }
+
+            const [summaryJson, prodJson, orderJson] = await Promise.all([
+                summaryRes.json(),
+                prodRes.json(),
+                orderRes.json(),
+            ]);
+
+            if (summaryJson.success && summaryJson.data)
+                setSummary(summaryJson.data);
+
+            if (prodJson.success && Array.isArray(prodJson.data)) {
+                const mappedProducts = prodJson.data.map((p: Product) => ({
+                    id: p.id,
+                    title: p.title,
+                    collection: p.collection,
+                    price: p.price,
+                    stock: p.stock,
+                    imageUrl: `${API_BASE}${p.imageUrl}`,
+                }));
+                setProducts(mappedProducts);
+            }
+
+            if (orderJson.success && Array.isArray(orderJson.data)) {
+                const mappedOrders = orderJson.data.map((o: Order) => ({
+                    id: o.id,
+                    customer: o.user.name,
+                    total: o.total,
+                    status: o.status,
+                }));
+                setOrders(mappedOrders);
+            }
+        } catch (err) {
+            console.error("⚠️ Failed to fetch dashboard data:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [dateFilter]);
 
     useEffect(() => {
-        async function fetchDashboardData() {
-            try {
-                setLoading(true);
-
-                const token = localStorage.getItem("token");
-                if (!token) throw new Error("Unauthorized — token not found");
-
-                const headers = {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                };
-
-                const [summaryRes, prodRes, orderRes] = await Promise.all([
-                    fetch(`${API_BASE}/dashboard/summary`, {
-                        headers,
-                        cache: "no-store",
-                    }),
-                    fetch(
-                        `${API_BASE}/products?limit=10&sortBy=stock&sortOrder=asc`,
-                        { headers, cache: "no-store" }
-                    ),
-                    fetch(`${API_BASE}/orders?page=1&limit=5`, {
-                        headers,
-                        cache: "no-store",
-                    }),
-                ]);
-
-                if (summaryRes.status === 401) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-                    document.cookie = "token=; path=/; max-age=0;";
-                    window.location.href = "/login";
-                    return;
-                }
-
-                const [summaryJson, prodJson, orderJson] = await Promise.all([
-                    summaryRes.json(),
-                    prodRes.json(),
-                    orderRes.json(),
-                ]);
-
-                if (summaryJson.success && summaryJson.data)
-                    setSummary(summaryJson.data);
-
-                if (prodJson.success && Array.isArray(prodJson.data)) {
-                    const mappedProducts = prodJson.data.map((p: Product) => ({
-                        id: p.id,
-                        title: p.title,
-                        collection: p.collection,
-                        price: p.price,
-                        stock: p.stock,
-                        imageUrl: `${API_BASE}${p.imageUrl}`,
-                    }));
-                    setProducts(mappedProducts);
-                }
-
-                if (orderJson.success && Array.isArray(orderJson.data)) {
-                    const mappedOrders = orderJson.data.map((o: Order) => ({
-                        id: o.id,
-                        customer: o.user.name,
-                        total: o.total,
-                        status: o.status,
-                    }));
-                    setOrders(mappedOrders);
-                }
-            } catch (err) {
-                console.error("⚠️ Failed to fetch dashboard data:", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
         fetchDashboardData();
+    }, [fetchDashboardData]);
+
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem("user");
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setUserName(parsed?.name || null);
+            }
+        } catch (e) {
+            // ignore
+        }
     }, []);
+
+    // Helper untuk mendapatkan label subtitle berdasarkan filter
+    const getSubtitleLabel = () => {
+        const labels: Record<DateFilterOption, string> = {
+            today: "Today",
+            yesterday: "Yesterday",
+            this_week: "This week",
+            last_week: "Last week",
+            last_30_days: "Last 30 days",
+            last_60_days: "Last 60 days",
+        };
+        return labels[dateFilter];
+    };
 
     return (
         <div className="min-h-screen p-2">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-semibold">Good Morning, Moni!</h1>
+                <h1 className="text-2xl font-semibold">
+                    Good Morning, {userName || "Moni"}!
+                </h1>
                 <p className="text-gray-500">
                     Start your daily by checking today&apos;s tasks and updates.
                 </p>
@@ -134,7 +169,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 <StatsCard
                     title="Total Order"
-                    subtitle="Last 30 days"
+                    subtitle={getSubtitleLabel()}
                     value={summary.totalOrders.toString()}
                     change={`${summary.orderChange > 0 ? "+" : ""}${
                         summary.orderChange
@@ -144,7 +179,7 @@ export default function DashboardPage() {
                 />
                 <StatsCard
                     title="Total Revenue"
-                    subtitle="Last 30 days"
+                    subtitle={getSubtitleLabel()}
                     value={
                         "Rp " +
                         Number(summary.totalRevenue || 0).toLocaleString(
@@ -172,7 +207,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between py-5 rounded-lg">
                 <div className="flex items-center gap-6">
                     <h2 className="text-2xl font-semibold">Activity</h2>
-                    <DateFilter />
+                    <DateFilter value={dateFilter} onChange={setDateFilter} />
                 </div>
                 <a
                     href="/dashboard/profile#reports"
@@ -182,6 +217,7 @@ export default function DashboardPage() {
                 </a>
             </div>
 
+            {/* Rest of the component remains the same... */}
             {/* Today Activity */}
             <div>
                 {/* Tabs */}
@@ -196,7 +232,6 @@ export default function DashboardPage() {
                     >
                         Add Product
                     </button>
-
                     <button
                         onClick={() => setActiveTab("orders")}
                         className={`pb-2 ${
@@ -207,7 +242,6 @@ export default function DashboardPage() {
                     >
                         Orders
                     </button>
-
                     <button
                         onClick={() => setActiveTab("membership")}
                         className={`pb-2 ${
@@ -220,7 +254,7 @@ export default function DashboardPage() {
                     </button>
                 </div>
 
-                {/* Table */}
+                {/* Table content... sama seperti sebelumnya */}
                 <div className="overflow-x-auto mt-4">
                     {loading ? (
                         <div className="text-center text-gray-400 py-16">
@@ -228,6 +262,7 @@ export default function DashboardPage() {
                         </div>
                     ) : activeTab === "product" ? (
                         <table className="w-full rounded-t-xl overflow-hidden">
+                            {/* ... product table content */}
                             <thead>
                                 <tr className="bg-primary-studio text-white text-left">
                                     <th className="p-3">Product</th>
@@ -245,7 +280,7 @@ export default function DashboardPage() {
                                                 alt={p.title}
                                                 width={40}
                                                 height={40}
-                                                className=" object-cover"
+                                                className="object-cover"
                                             />
                                             <div>
                                                 <p className="font-medium">
@@ -284,6 +319,7 @@ export default function DashboardPage() {
                         </table>
                     ) : activeTab === "orders" ? (
                         <table className="w-full rounded-t-xl overflow-hidden">
+                            {/* ... orders table content */}
                             <thead>
                                 <tr className="bg-sky-400 text-white text-left">
                                     <th className="p-3">Order No</th>
@@ -327,7 +363,6 @@ export default function DashboardPage() {
 
                 {/* Footer link */}
                 <div className="flex justify-end mt-4">
-                    {/* Footer link */}
                     {activeTab !== "membership" && (
                         <div className="flex justify-end mt-4">
                             <a

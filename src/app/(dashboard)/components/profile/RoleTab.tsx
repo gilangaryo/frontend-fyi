@@ -89,22 +89,35 @@ export default function RoleTab({ user }: RoleTabProps) {
             }
 
             if (data.success) {
-                toast.success("Employee added successfully!", { id: loadingToast });
+                toast.success("Employee added successfully!", {
+                    id: loadingToast,
+                });
                 setShowAddModal(false);
-                setNewEmployee({ name: "", email: "", password: "", role: "EMPLOYEE" });
+                setNewEmployee({
+                    name: "",
+                    email: "",
+                    password: "",
+                    role: "EMPLOYEE",
+                });
                 fetchEmployees();
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("❌ Error adding employee:", error);
-            toast.error(error.message || "Failed to add employee", { id: loadingToast });
+            toast.error(error.message || "Failed to add employee", {
+                id: loadingToast,
+            });
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleDeleteEmployee = async (userId: string, employeeName: string) => {
-        if (!confirm(`Are you sure you want to delete ${employeeName}?`)) return;
+    const handleDeleteEmployee = async (
+        userId: string,
+        employeeName: string
+    ) => {
+        if (!confirm(`Are you sure you want to delete ${employeeName}?`))
+            return;
 
         const loadingToast = toast.loading("Deleting employee...");
 
@@ -122,7 +135,9 @@ export default function RoleTab({ user }: RoleTabProps) {
 
             const data = await res.json();
             if (data.success) {
-                toast.success("Employee deleted successfully!", { id: loadingToast });
+                toast.success("Employee deleted successfully!", {
+                    id: loadingToast,
+                });
                 fetchEmployees();
             }
         } catch (error) {
@@ -135,7 +150,9 @@ export default function RoleTab({ user }: RoleTabProps) {
     if (user.role !== "ADMIN") {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500">You don`t have permission to access this page.</p>
+                <p className="text-gray-500">
+                    You don`t have permission to access this page.
+                </p>
             </div>
         );
     }
@@ -154,7 +171,9 @@ export default function RoleTab({ user }: RoleTabProps) {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h2 className="text-2xl font-bold">Employee List</h2>
-                    <p className="text-sm text-gray-500 mt-1">Manage your employees</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Manage your employees
+                    </p>
                 </div>
                 <button
                     onClick={() => setShowAddModal(true)}
@@ -168,7 +187,9 @@ export default function RoleTab({ user }: RoleTabProps) {
             {/* Employee List */}
             {employees.length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500">No employees found. Add your first employee!</p>
+                    <p className="text-gray-500">
+                        No employees found. Add your first employee!
+                    </p>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -178,10 +199,18 @@ export default function RoleTab({ user }: RoleTabProps) {
                             className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                         >
                             <div className="flex items-center gap-4">
-                                <AvatarImage src={null} username={employee.name} size={48} />
+                                <AvatarImage
+                                    src={null}
+                                    username={employee.name}
+                                    size={48}
+                                />
                                 <div>
-                                    <h3 className="font-semibold text-lg">{employee.name}</h3>
-                                    <p className="text-sm text-gray-500">{employee.email}</p>
+                                    <h3 className="font-semibold text-lg">
+                                        {employee.name}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {employee.email}
+                                    </p>
                                 </div>
                             </div>
 
@@ -191,7 +220,12 @@ export default function RoleTab({ user }: RoleTabProps) {
                                 </span>
 
                                 <button
-                                    onClick={() => handleDeleteEmployee(employee.id, employee.name)}
+                                    onClick={() =>
+                                        handleDeleteEmployee(
+                                            employee.id,
+                                            employee.name
+                                        )
+                                    }
                                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                     title="Delete employee"
                                 >
@@ -207,11 +241,18 @@ export default function RoleTab({ user }: RoleTabProps) {
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-2xl font-bold mb-6">Add Employee</h2>
+                        <h2 className="text-2xl font-bold mb-6">
+                            Add Employee
+                        </h2>
 
-                        <form onSubmit={handleAddEmployee} className="space-y-6">
+                        <form
+                            onSubmit={handleAddEmployee}
+                            className="space-y-6"
+                        >
                             <div>
-                                <h3 className="text-lg font-medium mb-4">Input Employee Information</h3>
+                                <h3 className="text-lg font-medium mb-4">
+                                    Input Employee Information
+                                </h3>
 
                                 <div className="space-y-4">
                                     {/* Name */}
@@ -224,7 +265,10 @@ export default function RoleTab({ user }: RoleTabProps) {
                                             placeholder="John Doe"
                                             value={newEmployee.name}
                                             onChange={(e) =>
-                                                setNewEmployee({ ...newEmployee, name: e.target.value })
+                                                setNewEmployee({
+                                                    ...newEmployee,
+                                                    name: e.target.value,
+                                                })
                                             }
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent"
                                             required
@@ -242,7 +286,10 @@ export default function RoleTab({ user }: RoleTabProps) {
                                             placeholder="john@example.com"
                                             value={newEmployee.email}
                                             onChange={(e) =>
-                                                setNewEmployee({ ...newEmployee, email: e.target.value })
+                                                setNewEmployee({
+                                                    ...newEmployee,
+                                                    email: e.target.value,
+                                                })
                                             }
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent"
                                             required
@@ -260,7 +307,10 @@ export default function RoleTab({ user }: RoleTabProps) {
                                             placeholder="Minimum 6 characters"
                                             value={newEmployee.password}
                                             onChange={(e) =>
-                                                setNewEmployee({ ...newEmployee, password: e.target.value })
+                                                setNewEmployee({
+                                                    ...newEmployee,
+                                                    password: e.target.value,
+                                                })
                                             }
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent"
                                             required
@@ -268,7 +318,6 @@ export default function RoleTab({ user }: RoleTabProps) {
                                             disabled={submitting}
                                         />
                                     </div>
-
                                 </div>
                             </div>
 
@@ -278,7 +327,12 @@ export default function RoleTab({ user }: RoleTabProps) {
                                     type="button"
                                     onClick={() => {
                                         setShowAddModal(false);
-                                        setNewEmployee({ name: "", email: "", password: "", role: "EMPLOYEE" });
+                                        setNewEmployee({
+                                            name: "",
+                                            email: "",
+                                            password: "",
+                                            role: "EMPLOYEE",
+                                        });
                                     }}
                                     className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                                     disabled={submitting}

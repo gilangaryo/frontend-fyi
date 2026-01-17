@@ -34,21 +34,21 @@ export default function StatsCard({
             <hr className="my-3 border-gray-200" />
 
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-brown-800">{value}</h2>
+                <h2 className="text-2xl font-semibold text-brown-800">
+                    {value}
+                </h2>
                 {change && changeType && (
                     <span
-                        className={`text-sm inline-flex items-center gap-1 px-2 py-0.5 rounded ${changeType === "up"
-                            ? "bg-green-100 text-green-600"
-                            : "bg-red-100 text-red-600"
-                            }`}
+                        className={`text-sm inline-flex items-center gap-1 px-2 py-0.5 rounded ${
+                            changeType === "up"
+                                ? "bg-green-100 text-green-600"
+                                : "bg-red-100 text-red-600"
+                        }`}
                     >
                         {changeType === "up" ? "↗" : "↘"} {change}
                     </span>
                 )}
             </div>
-
-
-
         </div>
     );
 }

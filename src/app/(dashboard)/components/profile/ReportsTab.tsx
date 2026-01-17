@@ -18,7 +18,7 @@ interface SalesReport {
 export default function ReportsTab() {
     const [report, setReport] = useState<SalesReport | null>(null);
     const [loading, setLoading] = useState(true);
-    const [period, setPeriod] = useState("last30days");
+    const [period, setPeriod] = useState("today");
     const [customDateRange, setCustomDateRange] = useState({
         startDate: "",
         endDate: "",

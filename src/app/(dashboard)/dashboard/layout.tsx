@@ -107,6 +107,12 @@ export default function DashboardLayout({
             iconDefault: "/dashboard/icons/beyond-black.svg",
             iconActive: "/dashboard/icons/beyond-white.svg",
         },
+        {
+            name: "Membership",
+            href: "/dashboard/member",
+            iconDefault: "/dashboard/icons/beyond-black.svg",
+            iconActive: "/dashboard/icons/beyond-white.svg",
+        },
     ];
 
     // MENU EMPLOYEE (lebih sedikit)
