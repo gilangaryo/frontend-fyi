@@ -1,7 +1,6 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { Users, Mail, Search, RefreshCw } from "lucide-react";
+import { Users, Search, RefreshCw, Download } from "lucide-react";
 import { API_BASE } from "@/lib/constants";
 
 interface Membership {
@@ -25,6 +24,7 @@ export default function MemberPage() {
     const [members, setMembers] = useState<Membership[]>([]);
     const [filteredMembers, setFilteredMembers] = useState<Membership[]>([]);
     const [loading, setLoading] = useState(true);
+    const [downloading, setDownloading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [stats, setStats] = useState<MembershipStats>({
         total: 0,
@@ -36,7 +36,6 @@ export default function MemberPage() {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-
             if (!token) {
                 window.location.href = "/login";
                 return;
@@ -56,19 +55,18 @@ export default function MemberPage() {
             }
 
             const json = await res.json();
-
             if (json.success) {
                 const data = json.data || [];
                 setMembers(data);
                 setFilteredMembers(data);
 
-                // Calculate stats
                 const active = data.filter(
-                    (m: Membership) => m.status === "ACTIVE"
+                    (m: Membership) => m.status === "ACTIVE",
                 ).length;
                 const unsubscribed = data.filter(
-                    (m: Membership) => m.status === "UNSUBSCRIBED"
+                    (m: Membership) => m.status === "UNSUBSCRIBED",
                 ).length;
+
                 setStats({
                     total: data.length,
                     active,
@@ -82,22 +80,67 @@ export default function MemberPage() {
         }
     };
 
+    const downloadCSV = async () => {
+        try {
+            setDownloading(true);
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/subscribe/export/csv`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (res.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                window.location.href = "/login";
+                return;
+            }
+
+            if (!res.ok) {
+                throw new Error("Failed to download CSV");
+            }
+
+            // Get blob data
+            const blob = await res.blob();
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `subscribers-${new Date().toISOString().split("T")[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error("Failed to download CSV:", err);
+            alert("Gagal mengunduh file CSV");
+        } finally {
+            setDownloading(false);
+        }
+    };
+
     useEffect(() => {
         fetchMembers();
     }, []);
 
-    // Filter members based on search and status
     useEffect(() => {
         let result = members;
-
         if (searchQuery) {
             result = result.filter(
                 (m) =>
                     m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    m.name?.toLowerCase().includes(searchQuery.toLowerCase())
+                    m.name?.toLowerCase().includes(searchQuery.toLowerCase()),
             );
         }
-
         setFilteredMembers(result);
     }, [searchQuery, members]);
 
@@ -111,136 +154,125 @@ export default function MemberPage() {
         });
 
     return (
-        <div className="p-6">
+        <div className="p-6 space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-2xl font-bold text-gray-900">
                         Membership
                     </h1>
-                    <p className="text-gray-500 text-sm">
-                        Kelola daftar subscriber email
+                    <p className="text-gray-600 mt-1">
+                        Manage email Membership subscribers
                     </p>
                 </div>
-                <button
-                    onClick={fetchMembers}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary-studio text-white rounded-lg hover:bg-primary-studio/90 transition-colors"
-                >
-                    <RefreshCw size={18} />
-                    Refresh
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={downloadCSV}
+                        disabled={downloading || loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Download className="w-4 h-4" />
+                        {downloading ? "Downloading..." : "Download CSV"}
+                    </button>
+                    <button
+                        onClick={fetchMembers}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-studio text-white rounded-lg hover:bg-primary-studio/80 transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw
+                            className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                        />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-blue-100 rounded-lg">
-                            <Users className="text-blue-600" size={24} />
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Stats Cards */}
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-600">
                                 Total Subscriber
                             </p>
-                            <p className="text-2xl font-bold text-gray-800">
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {stats.total}
                             </p>
                         </div>
+                        <Users className="w-8 h-8 text-primary-studio" />
                     </div>
                 </div>
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 col-span-2">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        {/* Search */}
-                        <div className="flex-1 relative">
-                            <Search
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={20}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Cari email atau nama..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-studio/50"
-                            />
-                        </div>
+                {/* Search */}
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 col-span-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search email or name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-studio/50"
+                        />
                     </div>
                 </div>
             </div>
 
-            {/* Filters */}
-
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-8 h-8 border-4 border-primary-studio border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-gray-500">Memuat data...</p>
-                        </div>
+                    <div className="p-8 text-center text-gray-500">
+                        Loading data...
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead>
-                                <tr className="bg-primary-studio text-white text-left">
-                                    <th className="p-4 font-medium">Email</th>
-                                    <th className="p-4 font-medium">Nama</th>
-                                    <th className="p-4 font-medium">Source</th>
-                                    <th className="p-4 font-medium">
+                            <thead className="bg-primary-studio border-b border-gray-200 text-left text-xs text-white   uppercase tracking-wider ">
+                                <tr>
+                                    <th className="px-6 py-3 ">Email</th>
+                                    <th className="px-6 py-3 ">Name</th>
+                                    <th className="px-6 py-3 ">Source</th>
+                                    <th className="px-6 py-3 ">
                                         Subscribed At
                                     </th>
-                                    <th className="p-4 font-medium">Status</th>
+                                    <th className="px-6 py-3 ">Status</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {filteredMembers.map((member, index) => (
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredMembers.map((member) => (
                                     <tr
                                         key={member.id}
-                                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                                            index % 2 === 0
-                                                ? "bg-white"
-                                                : "bg-gray-50/50"
-                                        }`}
+                                        className="hover:bg-gray-50"
                                     >
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <Mail
-                                                    size={16}
-                                                    className="text-gray-400"
-                                                />
-                                                <span className="font-medium text-gray-800">
-                                                    {member.email}
-                                                </span>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">
+                                                {member.email}
                                             </div>
                                         </td>
-                                        <td className="p-4 text-gray-600">
-                                            {member.name || "-"}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">
+                                                {member.name || "-"}
+                                            </div>
                                         </td>
-                                        <td className="p-4">
-                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-500">
                                                 {member.source}
-                                            </span>
+                                            </div>
                                         </td>
-                                        <td className="p-4 text-gray-600">
-                                            {formatDate(member.subscribedAt)}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-500">
+                                                {formatDate(
+                                                    member.subscribedAt,
+                                                )}
+                                            </div>
                                         </td>
-                                        <td className="p-4">
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <span
-                                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+                                                className={`px-2 py-1 text-xs rounded-full ${
                                                     member.status === "ACTIVE"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-red-100 text-red-700"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
                                                 }`}
                                             >
-                                                <span
-                                                    className={`w-2 h-2 rounded-full ${
-                                                        member.status ===
-                                                        "ACTIVE"
-                                                            ? "bg-green-500"
-                                                            : "bg-red-500"
-                                                    }`}
-                                                ></span>
                                                 {member.status}
                                             </span>
                                         </td>
@@ -248,16 +280,6 @@ export default function MemberPage() {
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-                )}
-
-                {/* Footer */}
-                {!loading && filteredMembers.length > 0 && (
-                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Menampilkan {filteredMembers.length} dari{" "}
-                            {members.length} subscriber
-                        </p>
                     </div>
                 )}
             </div>
