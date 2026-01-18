@@ -14,13 +14,15 @@ export default function CatalogSection() {
     const [openFilter, setOpenFilter] = useState<string | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [selectedCollections, setSelectedCollections] = useState<string[]>(
-        []
+        [],
     );
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
     const [kains, setKains] = useState<string[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [kainsLoading, setKainsLoading] = useState(true);
     const limit = 12;
 
     const searchParams = useSearchParams();
@@ -35,11 +37,12 @@ export default function CatalogSection() {
     useEffect(() => {
         async function fetchProducts() {
             try {
+                setLoading(true);
                 const res = await fetch(
                     `${API_BASE}/products?status=true&page=${page}&limit=${limit}`,
                     {
                         cache: "no-store",
-                    }
+                    },
                 );
                 const json = await res.json();
                 if (json.success) {
@@ -48,6 +51,8 @@ export default function CatalogSection() {
                 }
             } catch (error) {
                 console.error("❌ Failed to fetch products:", error);
+            } finally {
+                setLoading(false);
             }
         }
 
@@ -59,6 +64,7 @@ export default function CatalogSection() {
     useEffect(() => {
         async function fetchKains() {
             try {
+                setKainsLoading(true);
                 const res = await fetch(`${API_BASE}/kain`, {
                     cache: "no-store",
                 });
@@ -68,6 +74,8 @@ export default function CatalogSection() {
                 }
             } catch (err) {
                 console.error("❌ Failed to fetch kain:", err);
+            } finally {
+                setKainsLoading(false);
             }
         }
         fetchKains();
@@ -75,7 +83,7 @@ export default function CatalogSection() {
 
     const getUniqueValues = (
         items: Product[],
-        key: "collection" | "category"
+        key: "collection" | "category",
     ) =>
         Array.from(
             new Set(
@@ -83,19 +91,19 @@ export default function CatalogSection() {
                     .map((item) =>
                         key === "collection"
                             ? item.collection?.slug
-                            : item.category?.slug
+                            : item.category?.slug,
                     )
-                    .filter((v): v is string => Boolean(v))
-            )
+                    .filter((v): v is string => Boolean(v)),
+            ),
         );
 
     const collections = useMemo(
         () => getUniqueValues(products, "collection"),
-        [products]
+        [products],
     );
     const categories = useMemo(
         () => getUniqueValues(products, "category"),
-        [products]
+        [products],
     );
 
     const filteredProducts = useMemo(() => {
@@ -103,17 +111,25 @@ export default function CatalogSection() {
             return (
                 (selectedCollections.length === 0 ||
                     selectedCollections.includes(
-                        product.collection?.slug ?? ""
+                        product.collection?.slug ?? "",
                     )) &&
                 (selectedCategories.length === 0 ||
                     selectedCategories.includes(
-                        product.category?.slug ?? ""
+                        product.category?.slug ?? "",
                     )) &&
                 (selectedKains.length === 0 ||
                     (product.kain && selectedKains.includes(product.kain.name)))
             );
         });
     }, [products, selectedCollections, selectedCategories, selectedKains]);
+
+    // Skeleton Loader Component
+    const ProductSkeleton = () => (
+        <div className="text-center group block mb-8 animate-pulse">
+            <div className="aspect-[3/4] relative mb-4 bg-gray-200 rounded-lg"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+        </div>
+    );
 
     return (
         <section className="px-6 md:px-10 pb-8">
@@ -166,24 +182,41 @@ export default function CatalogSection() {
             </div>
 
             {/* Product Grid */}
-            {filteredProducts.length === 0 ? (
-                <p className="text-center text-gray-500">No products found.</p>
+            {loading ? (
+                // Loading State - Skeleton
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: limit }).map((_, index) => (
+                        <ProductSkeleton key={index} />
+                    ))}
+                </div>
+            ) : filteredProducts.length === 0 ? (
+                // Empty State
+                <div className="text-center py-16">
+                    <div className="text-gray-400 mb-4"></div>
+                    <p className="text-xl text-gray-500 mb-2">
+                        No products found
+                    </p>
+                    <p className="text-sm text-gray-400">
+                        Try adjusting your filters
+                    </p>
+                </div>
             ) : (
+                // Products Grid
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {filteredProducts.map((product) => {
                         const primaryImg = getImageUrl(
                             product.images?.find((img) => img.isPrimary)
-                                ?.imageUrl
+                                ?.imageUrl,
                         );
 
                         const secondaryImage = product.images?.find(
-                            (img) => img.isSecondary
+                            (img) => img.isSecondary,
                         );
                         const fallbackImage = product.images?.find(
-                            (img) => !img.isPrimary
+                            (img) => !img.isPrimary,
                         );
                         const hoverImg = getImageUrl(
-                            secondaryImage?.imageUrl || fallbackImage?.imageUrl
+                            secondaryImage?.imageUrl || fallbackImage?.imageUrl,
                         );
 
                         return (
@@ -192,18 +225,24 @@ export default function CatalogSection() {
                                 href={`/product/${product.slug}`}
                                 className="text-center group block mb-8"
                             >
-                                <div className="aspect-[3/4] relative mb-4 overflow-hidden group">
+                                <div className="aspect-[3/4] relative mb-4 overflow-hidden group bg-gray-100">
                                     <Image
                                         src={primaryImg}
                                         alt={product.title}
                                         fill
+                                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                                         className="object-cover transition-opacity duration-300 group-hover:opacity-0"
+                                        loading="lazy"
+                                        placeholder="blur"
+                                        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
                                     />
                                     <Image
                                         src={hoverImg}
                                         alt={product.title}
                                         fill
+                                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                                         className="object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+                                        loading="lazy"
                                     />
                                     <button
                                         className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition duration-300"
@@ -211,7 +250,7 @@ export default function CatalogSection() {
                                             e.preventDefault();
                                             console.log(
                                                 "🛒 Add to cart:",
-                                                product.title
+                                                product.title,
                                             );
                                         }}
                                     ></button>
@@ -225,33 +264,39 @@ export default function CatalogSection() {
                     })}
                 </div>
             )}
-            <div className="flex justify-center items-center mt-8 gap-4">
-                <button
-                    disabled={page === 1}
-                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${
-                        page === 1 ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                >
-                    Prev
-                </button>
 
-                <span className="text-sm text-gray-600">
-                    Page {page} of {totalPages}
-                </span>
+            {/* Pagination */}
+            {!loading && filteredProducts.length > 0 && (
+                <div className="flex justify-center items-center mt-8 gap-4">
+                    <button
+                        disabled={page === 1}
+                        onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                        className={`px-4 py-2 border rounded hover:bg-gray-200 transition-colors ${
+                            page === 1 ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                    >
+                        Prev
+                    </button>
 
-                <button
-                    disabled={page === totalPages}
-                    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                    className={`px-4 py-2 border rounded hover:bg-gray-200 ${
-                        page === totalPages
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                    }`}
-                >
-                    Next
-                </button>
-            </div>
+                    <span className="text-sm text-gray-600">
+                        Page {page} of {totalPages}
+                    </span>
+
+                    <button
+                        disabled={page === totalPages}
+                        onClick={() =>
+                            setPage((p) => Math.min(p + 1, totalPages))
+                        }
+                        className={`px-4 py-2 border rounded hover:bg-gray-200 transition-colors ${
+                            page === totalPages
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                        }`}
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
         </section>
     );
 }
