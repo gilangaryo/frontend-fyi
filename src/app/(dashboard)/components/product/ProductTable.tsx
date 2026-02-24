@@ -1,11 +1,14 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import StatusDropdown from '../StatusDropdown'
+import DeleteConfirmModal from '../DeleteConfirmModal'
 import { getImageUrl } from '@/lib/utils'
 import { API_BASE } from '@/lib/constants'
-import { Trash } from 'lucide-react'
+import { Trash, ImageOff } from 'lucide-react'
 
 interface ProductItem {
     id: string
@@ -18,7 +21,50 @@ interface ProductItem {
     isActive: boolean
 }
 
-export default function ProductTable({ products }: { products: ProductItem[] }) {
+interface ProductTableProps {
+    products: ProductItem[]
+    onDelete?: () => void
+}
+
+function ProductImage({ src, alt }: { src: string; alt: string }) {
+    const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+
+    const handleLoad = useCallback(() => setStatus('loaded'), [])
+    const handleError = useCallback(() => setStatus('error'), [])
+
+    if (status === 'error' || !src) {
+        return (
+            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                <ImageOff size={16} className="text-gray-300" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="relative w-10 h-10 shrink-0">
+            {status === 'loading' && (
+                <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+            )}
+            <Image
+                src={getImageUrl(src)}
+                alt={alt}
+                width={40}
+                height={40}
+                sizes="40px"
+                className={`w-10 h-10 object-cover rounded-lg transition-opacity duration-300 ${
+                    status === 'loaded' ? 'opacity-100' : 'opacity-0'
+                }`}
+                onLoad={handleLoad}
+                onError={handleError}
+            />
+        </div>
+    )
+}
+
+export default function ProductTable({ products, onDelete }: ProductTableProps) {
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+
     async function updateStatus(id: string, isActive: boolean) {
         try {
             const token = localStorage.getItem('token')
@@ -31,18 +77,20 @@ export default function ProductTable({ products }: { products: ProductItem[] }) 
                 body: JSON.stringify({ status: isActive }),
             })
             if (!res.ok) throw new Error('Failed to update status')
+            toast.success(`Status updated to ${isActive ? 'Active' : 'Inactive'}`)
         } catch (err) {
             console.error(err)
+            toast.error('Failed to update status. Please try again.')
         }
     }
 
-    // 🧹 Fungsi hapus produk
-    async function handleDelete(id: string, title: string) {
-        if (!window.confirm(`Delete "${title}"?`)) return
+    async function handleDelete() {
+        if (!deleteTarget) return
+        setDeletingId(deleteTarget.id)
 
         try {
             const token = localStorage.getItem('token')
-            const res = await fetch(`${API_BASE}/products/${id}`, {
+            const res = await fetch(`${API_BASE}/products/${deleteTarget.id}`, {
                 method: 'DELETE',
                 headers: {
                     Authorization: token ? `Bearer ${token}` : '',
@@ -54,15 +102,14 @@ export default function ProductTable({ products }: { products: ProductItem[] }) 
                 throw new Error(errText || 'Failed to delete product')
             }
 
-            alert(`"${title}" has been deleted.`)
-            // Cara cepat: reload halaman
-            window.location.reload()
-
-            // 🔹 (Opsional) Kalau kamu ingin tanpa reload:
-            // setProducts((prev) => prev.filter((p) => p.id !== id))
+            toast.success(`"${deleteTarget.title}" has been deleted.`)
+            setDeleteTarget(null)
+            onDelete?.()
         } catch (err) {
             console.error(err)
-            alert('Failed to delete product. See console for details.')
+            toast.error('Failed to delete product. See console for details.')
+        } finally {
+            setDeletingId(null)
         }
     }
 
@@ -94,15 +141,7 @@ export default function ProductTable({ products }: { products: ProductItem[] }) 
                     >
                         {/* Product Info */}
                         <div className="flex items-center gap-3 px-4 py-3">
-                            {item.imageUrl && (
-                                <Image
-                                    src={getImageUrl(item.imageUrl)}
-                                    alt={item.title}
-                                    width={40}
-                                    height={40}
-                                    className="w-10 h-10 object-cover"
-                                />
-                            )}
+                            <ProductImage src={item.imageUrl} alt={item.title} />
                             <div>
                                 <p className="text-gray-800 text-sm font-medium">{item.title}</p>
                                 <p className="text-xs text-gray-400">{item.subLabel || '-'}</p>
@@ -126,9 +165,10 @@ export default function ProductTable({ products }: { products: ProductItem[] }) 
                             >
                                 Edit
                             </Link>
+
                             <button
-                                onClick={() => handleDelete(item.id, item.title)}
-                                className="px-2 py-2  text-red-500 border rounded text-xs hover:text-white hover:bg-red-500  transition"
+                                onClick={() => setDeleteTarget({ id: item.id, title: item.title })}
+                                className="px-2 py-2 text-red-500 border rounded text-xs hover:text-white hover:bg-red-500 transition"
                             >
                                 <Trash size={16} />
                             </button>
@@ -136,6 +176,16 @@ export default function ProductTable({ products }: { products: ProductItem[] }) 
                     </div>
                 ))}
             </div>
+
+            <DeleteConfirmModal
+                open={!!deleteTarget}
+                itemName={deleteTarget?.title}
+                loading={!!deletingId}
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    if (!deletingId) setDeleteTarget(null)
+                }}
+            />
         </div>
     )
 }

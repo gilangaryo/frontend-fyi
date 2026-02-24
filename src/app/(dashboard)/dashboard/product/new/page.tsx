@@ -1,11 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/constants";
 import PhotoUploadGrid from "@/app/(dashboard)/components/PhotoUploadGrid";
 import { formatRupiah } from "@/lib/utils";
 import { Trash } from "lucide-react";
+
+function AutoResizeTextarea({
+    value,
+    onChange,
+    name,
+    rows = 2,
+    placeholder,
+    className = "",
+    required = false,
+}: {
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    name: string;
+    rows?: number;
+    placeholder?: string;
+    className?: string;
+    required?: boolean;
+}) {
+    const handleRef = useCallback((el: HTMLTextAreaElement | null) => {
+        if (el) {
+            el.style.height = "auto";
+            el.style.height = el.scrollHeight + "px";
+        }
+    }, []);
+
+    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const el = e.target;
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+        onChange(e);
+    };
+
+    return (
+        <textarea
+            ref={handleRef}
+            name={name}
+            value={value}
+            onChange={handleInput}
+            rows={rows}
+            placeholder={placeholder}
+            required={required}
+            className={`w-full border-b border-gray-300 p-2 resize-none overflow-hidden ${className}`}
+        />
+    );
+}
 
 export default function NewProductPage() {
     const [collections, setCollections] = useState<
@@ -543,12 +588,11 @@ export default function NewProductPage() {
                     <label className="block text-sm font-medium mb-1">
                         Short Description
                     </label>
-                    <textarea
+                    <AutoResizeTextarea
                         name="description"
                         value={form.description}
                         onChange={handleChange}
                         rows={2}
-                        className="w-full border-b border-gray-300 p-2"
                         placeholder="Minimal, clean, and versatile..."
                     />
                 </div>
@@ -558,12 +602,11 @@ export default function NewProductPage() {
                     <label className="block text-sm font-medium mb-1">
                         Product Details*
                     </label>
-                    <textarea
+                    <AutoResizeTextarea
                         name="details"
                         value={form.details}
                         onChange={handleChange}
-                        rows={4}
-                        className="w-full border-b border-gray-300 p-2"
+                        rows={3}
                     />
                 </div>
 
@@ -572,12 +615,11 @@ export default function NewProductPage() {
                     <label className="block text-sm font-medium mb-1">
                         Delivery & Return*
                     </label>
-                    <textarea
+                    <AutoResizeTextarea
                         name="delivery"
                         value={form.delivery}
                         onChange={handleChange}
-                        rows={3}
-                        className="w-full border-b border-gray-300 p-2"
+                        rows={2}
                     />
                 </div>
 
@@ -659,7 +701,7 @@ export default function NewProductPage() {
                                         <button
                                             type="button"
                                             onClick={() => removeVariant(i)}
-                                            className="text-gray-400 hover:text-gray-600 transition"
+                                            className="text-gray-400 hover:text-red-600 transition"
                                         >
                                             <Trash size={18} />
                                         </button>

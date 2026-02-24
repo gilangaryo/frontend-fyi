@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { API_BASE } from "@/lib/constants";
 import CollectionTable from "../../components/product/CollectionTable";
@@ -28,32 +28,38 @@ type Product = {
 };
 
 type StatusFilterType = "all" | "active" | "inactive";
-type SortByType = "name" | "price" | "stock" | "sold" | "createdAt";
+type SortByType = "name" | "price" | "stock" | "createdAt";
 
 export default function ProductPage() {
     const [collections, setCollections] = useState<Collection[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [totalProducts, setTotalProducts] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
     const [activeTab, setActiveTab] = useState<"product" | "discount" | "suggested">("product");
     const [discountModalOpen, setDiscountModalOpen] = useState(false);
 
-    // ✅ Client-side filtering & search
+    // Search & filter
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
     const [sortBy, setSortBy] = useState<SortByType>("createdAt");
 
-    // ✅ Dropdown states
+    // Dropdown states
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
-    // ✅ Refs for click outside detection
+    // Refs for click outside detection
     const statusDropdownRef = useRef<HTMLDivElement>(null);
     const sortDropdownRef = useRef<HTMLDivElement>(null);
 
-    // ✅ Pagination
+    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // ✅ Click outside to close dropdowns
+    // Loading state
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Click outside to close dropdowns
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
@@ -68,112 +74,116 @@ export default function ProductPage() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Debounce search input (300ms)
     useEffect(() => {
-        async function fetchData() {
-            try {
-                const token = localStorage.getItem("token");
-                if (!token) throw new Error("Unauthorized");
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
-                const [colRes, prodRes] = await Promise.all([
-                    fetch(`${API_BASE}/collections`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                        credentials: "include",
-                    }),
-                    fetch(`${API_BASE}/products?all=true`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                        credentials: "include",
-                    }),
-                ]);
-
-                if (!colRes.ok || !prodRes.ok) {
-                    throw new Error("Failed to fetch data");
-                }
-
-                const colData = await colRes.json();
-                const prodData = await prodRes.json();
-
-                setCollections(colData.data || []);
-                setProducts(prodData.data || []);
-            } catch (err) {
-                console.error("❌ Fetch error:", err);
-            }
-        }
-
-        fetchData();
-    }, []);
-
-    // ✅ Reset to page 1 when filters change
+    // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, statusFilter, sortBy]);
+    }, [debouncedSearch, statusFilter, sortBy]);
 
-    const filteredAndSortedProducts = useMemo(() => {
-        let filtered = [...products];
+    // Fetch collections once
+    useEffect(() => {
+        async function fetchCollections() {
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) return;
 
-        if (searchQuery) {
-            filtered = filtered.filter(p =>
-                p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.collection?.title?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+                const res = await fetch(`${API_BASE}/collections`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: "include",
+                });
+                if (!res.ok) throw new Error("Failed to fetch collections");
 
-        if (statusFilter === "active") {
-            filtered = filtered.filter(p => p.status === true);
-        } else if (statusFilter === "inactive") {
-            filtered = filtered.filter(p => p.status === false);
-        }
-
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case "name":
-                    return a.title.localeCompare(b.title);
-                case "price":
-                    return Number(a.price) - Number(b.price);
-                case "stock":
-                    return a.stock - b.stock;
-                // case "sold":
-                //     return b.sold - a.sold;
-                case "createdAt":
-                    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-                default:
-                    return 0;
+                const data = await res.json();
+                setCollections(data.data || []);
+            } catch (err) {
+                console.error("Fetch collections error:", err);
             }
-        });
+        }
+        fetchCollections();
+    }, []);
 
-        return filtered;
-    }, [products, searchQuery, statusFilter, sortBy]);
+    // Fetch products with server-side pagination, search, filter, sort
+    const fetchProducts = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("Unauthorized");
 
-    const paginatedProducts = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return filteredAndSortedProducts.slice(startIndex, endIndex);
-    }, [filteredAndSortedProducts, currentPage]);
+            const params = new URLSearchParams();
+            params.set("page", String(currentPage));
+            params.set("limit", String(itemsPerPage));
 
-    const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage);
+            if (debouncedSearch) {
+                params.set("search", debouncedSearch);
+            }
+
+            if (statusFilter === "active") {
+                params.set("status", "true");
+            } else if (statusFilter === "inactive") {
+                params.set("status", "false");
+            }
+
+            // Map frontend sortBy to backend sortBy
+            const sortByMap: Record<string, string> = {
+                name: "title",
+                price: "price",
+                stock: "stock",
+                createdAt: "createdAt",
+            };
+            params.set("sortBy", sortByMap[sortBy] || "createdAt");
+            params.set("sortOrder", sortBy === "createdAt" ? "desc" : "asc");
+
+            const res = await fetch(`${API_BASE}/products?${params.toString()}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: "include",
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch products");
+
+            const data = await res.json();
+            setProducts(data.data || []);
+            setTotalProducts(data.pagination?.total ?? data.total ?? 0);
+            setTotalPages(data.pagination?.totalPages ?? 1);
+        } catch (err) {
+            console.error("Fetch products error:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, debouncedSearch, statusFilter, sortBy]);
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    // Called from ProductTable after a successful delete
+    const handleProductDeleted = useCallback(() => {
+        fetchProducts();
+    }, [fetchProducts]);
 
     const getPageNumbers = () => {
-        const pages: (number | string)[] = [];
-        const maxVisible = 5;
-
-        if (totalPages <= maxVisible) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
-        } else {
-            pages.push(1);
-            if (currentPage > 3) pages.push('...');
-            const start = Math.max(2, currentPage - 1);
-            const end = Math.min(totalPages - 1, currentPage + 1);
-            for (let i = start; i <= end; i++) {
-                pages.push(i);
-            }
-            if (currentPage < totalPages - 2) pages.push('...');
-            pages.push(totalPages);
+        const windowSize = 10;
+        const half = Math.floor(windowSize / 2);
+        let start = Math.max(1, currentPage - half);
+        let end = Math.min(totalPages, start + windowSize - 1);
+        // Shift window left if we're near the end
+        if (end - start < windowSize - 1) {
+            start = Math.max(1, end - windowSize + 1);
+        }
+        const pages: number[] = [];
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
         }
         return pages;
     };
 
-    // ✅ Dropdown options
+    // Dropdown options
     const statusOptions = [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
@@ -185,7 +195,6 @@ export default function ProductPage() {
         { value: "name", label: "Sort by Name" },
         { value: "price", label: "Sort by Price" },
         { value: "stock", label: "Sort by Stock" },
-        // { value: "sold", label: "Sort by Sold" },
     ];
 
     const collectionItems = collections.map((c) => ({
@@ -194,7 +203,7 @@ export default function ProductPage() {
         isActive: c.status,
     }));
 
-    const productItems = paginatedProducts.map((p) => ({
+    const productItems = products.map((p) => ({
         id: p.id,
         title: p.title,
         subLabel: p.collection?.title || "-",
@@ -205,12 +214,15 @@ export default function ProductPage() {
         isActive: p.status,
     }));
 
+    const showingFrom = totalProducts === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1;
+    const showingTo = Math.min(currentPage * itemsPerPage, totalProducts);
+
     return (
         <div className="bg-gray-50 min-h-screen p-2">
             <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-gray-800">All Product</h1>
                 <p className="text-sm text-gray-400 mt-1">
-                    Managing Product & Discount ({products.length} total products)
+                    Managing Product & Discount ({totalProducts} total products)
                 </p>
             </div>
 
@@ -282,7 +294,7 @@ export default function ProductPage() {
 
             {activeTab === "product" && (
                 <div className="bg-white rounded-lg shadow-sm p-6">
-                    {/* ✅ Custom Search & Filter Controls */}
+                    {/* Search & Filter Controls */}
                     <div className="flex gap-4 mb-6">
                         {/* Search Input */}
                         <div className="flex-1 relative">
@@ -296,7 +308,7 @@ export default function ProductPage() {
                             />
                         </div>
 
-                        {/* ✅ Custom Status Filter Dropdown */}
+                        {/* Status Filter Dropdown */}
                         <div className="relative min-w-[140px]" ref={statusDropdownRef}>
                             <button
                                 onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -331,6 +343,7 @@ export default function ProductPage() {
                             )}
                         </div>
 
+                        {/* Sort Dropdown */}
                         <div className="relative min-w-[160px]" ref={sortDropdownRef}>
                             <button
                                 onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
@@ -367,58 +380,115 @@ export default function ProductPage() {
                     </div>
 
                     <p className="text-sm text-gray-500 mb-4">
-                        Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredAndSortedProducts.length)} of {filteredAndSortedProducts.length} products
+                        Showing {showingFrom}-{showingTo} of {totalProducts} products
                     </p>
 
-                    <ProductTable products={productItems} />
+                    {isLoading ? (
+                        <div className="rounded-lg bg-white overflow-hidden">
+                            <div className="min-w-[900px]">
+                                {/* Header */}
+                                <div className="grid grid-cols-[1fr_15rem_15rem_15rem_8rem] bg-sky-500 text-white font-medium text-sm rounded-t-md">
+                                    <div className="px-4 py-2 text-left">Product</div>
+                                    <div className="px-4 py-2 text-center">Price</div>
+                                    <div className="px-4 py-2 text-center">Stock</div>
+                                    <div className="px-4 py-2 text-center">Status</div>
+                                    <div className="px-4 py-2 text-center">Action</div>
+                                </div>
+                                {/* Skeleton rows */}
+                                {Array.from({ length: itemsPerPage }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="grid grid-cols-[1fr_15rem_15rem_15rem_8rem] border-t border-gray-100 items-center"
+                                    >
+                                        {/* Product info */}
+                                        <div className="flex items-center gap-3 px-4 py-3">
+                                            <div className="w-10 h-10 rounded bg-gray-200 animate-pulse shrink-0" />
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="h-3.5 w-36 bg-gray-200 animate-pulse rounded" />
+                                                <div className="h-2.5 w-20 bg-gray-100 animate-pulse rounded" />
+                                            </div>
+                                        </div>
+                                        {/* Price */}
+                                        <div className="flex justify-center">
+                                            <div className="h-3.5 w-24 bg-gray-200 animate-pulse rounded" />
+                                        </div>
+                                        {/* Stock */}
+                                        <div className="flex justify-center">
+                                            <div className="h-3.5 w-10 bg-gray-200 animate-pulse rounded" />
+                                        </div>
+                                        {/* Status */}
+                                        <div className="flex justify-center">
+                                            <div className="h-7 w-24 bg-gray-200 animate-pulse rounded" />
+                                        </div>
+                                        {/* Action */}
+                                        <div className="flex justify-center gap-2 py-3">
+                                            <div className="h-7 w-12 bg-gray-200 animate-pulse rounded" />
+                                            <div className="h-7 w-8 bg-gray-200 animate-pulse rounded" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <ProductTable products={productItems} onDelete={handleProductDeleted} />
+                    )}
 
                     {/* Pagination Controls */}
-                    {totalPages > 1 && (
+                    {!isLoading && totalPages > 1 && (
                         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${currentPage === 1
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                <ChevronLeft size={18} />
-                                Previous
-                            </button>
+                            {/* Prev group */}
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                >
+                                    First
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                >
+                                    <ChevronLeft size={16} />
+                                    Prev
+                                </button>
+                            </div>
 
-                            <div className="flex items-center gap-2">
-                                {getPageNumbers().map((page, index) => (
-                                    page === '...' ? (
-                                        <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
-                                            ...
-                                        </span>
-                                    ) : (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page as number)}
-                                            className={`min-w-[40px] h-10 rounded-lg transition ${currentPage === page
-                                                ? 'bg-primary-studio text-white font-medium'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    )
+                            {/* Sliding window */}
+                            <div className="flex items-center gap-1">
+                                {getPageNumbers().map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`min-w-[38px] h-9 rounded-lg text-sm transition ${currentPage === page
+                                            ? 'bg-primary-studio text-white font-medium'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
                                 ))}
                             </div>
 
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${currentPage === totalPages
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                Next
-                                <ChevronRight size={18} />
-                            </button>
+                            {/* Next group */}
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                >
+                                    Next
+                                    <ChevronRight size={16} />
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                >
+                                    Last
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

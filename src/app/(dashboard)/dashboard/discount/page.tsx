@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Edit, Percent, DollarSign, Calendar, Tag } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { API_BASE } from '@/lib/constants'
+import DeleteConfirmModal from '../../components/DeleteConfirmModal'
 
 interface Discount {
     id: string
@@ -21,7 +23,8 @@ export default function DiscountPage() {
     const [loading, setLoading] = useState(true)
     const [modalOpen, setModalOpen] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [deleting, setDeleting] = useState<string | null>(null)
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+    const [deleting, setDeleting] = useState(false)
     const [token, setToken] = useState<string | null>(null)
 
     const [form, setForm] = useState({
@@ -39,8 +42,8 @@ export default function DiscountPage() {
         setToken(storedToken)
 
         if (!storedToken) {
-            alert('⚠️ You need to login first!')
-            window.location.href = '/login' // Redirect ke login page
+            toast.error('You need to login first!')
+            window.location.href = '/login'
         }
     }, [])
 
@@ -59,7 +62,7 @@ export default function DiscountPage() {
             const data = await res.json()
 
             if (res.status === 401) {
-                alert('⚠️ Session expired. Please login again.')
+                toast.error('Session expired. Please login again.')
                 localStorage.removeItem('token')
                 window.location.href = '/login'
                 return
@@ -70,7 +73,7 @@ export default function DiscountPage() {
             }
         } catch (err) {
             console.error('Failed to fetch discounts:', err)
-            alert('❌ Failed to load discounts')
+            toast.error('Failed to load discounts')
         } finally {
             setLoading(false)
         }
@@ -91,7 +94,7 @@ export default function DiscountPage() {
                 const data = await res.json()
 
                 if (res.status === 401) {
-                    alert('⚠️ Session expired. Please login again.')
+                    toast.error('Session expired. Please login again.')
                     localStorage.removeItem('token')
                     window.location.href = '/login'
                     return
@@ -102,7 +105,7 @@ export default function DiscountPage() {
                 }
             } catch (err) {
                 console.error('Failed to fetch discounts:', err)
-                alert('❌ Failed to load discounts')
+                toast.error('Failed to load discounts')
             } finally {
                 setLoading(false)
             }
@@ -155,7 +158,7 @@ export default function DiscountPage() {
         e.preventDefault()
 
         if (!token) {
-            alert('⚠️ Authentication required')
+            toast.error('Authentication required')
             return
         }
 
@@ -189,37 +192,37 @@ export default function DiscountPage() {
             const data = await res.json()
 
             if (res.status === 401) {
-                alert('⚠️ Session expired. Please login again.')
+                toast.error('Session expired. Please login again.')
                 localStorage.removeItem('token')
                 window.location.href = '/login'
                 return
             }
 
             if (data.success) {
-                alert(editingId ? '✅ Discount updated!' : '✅ Discount created!')
+                toast.success(editingId ? 'Discount updated!' : 'Discount created!')
                 closeModal()
                 fetchDiscounts()
             } else {
-                alert(`❌ ${data.message || 'Failed to save discount'}`)
+                toast.error(data.message || 'Failed to save discount')
             }
         } catch (err) {
             console.error('Error saving discount:', err)
-            alert('❌ Something went wrong')
+            toast.error('Something went wrong')
         }
     }
 
     // Handle delete
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this discount?')) return
+    const handleDeleteConfirm = async () => {
+        if (!deleteTarget) return
 
         if (!token) {
-            alert('⚠️ Authentication required')
+            toast.error('Authentication required')
             return
         }
 
         try {
-            setDeleting(id)
-            const res = await fetch(`${API_BASE}/discounts/${id}`, {
+            setDeleting(true)
+            const res = await fetch(`${API_BASE}/discounts/${deleteTarget.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -229,23 +232,24 @@ export default function DiscountPage() {
             const data = await res.json()
 
             if (res.status === 401) {
-                alert('⚠️ Session expired. Please login again.')
+                toast.error('Session expired. Please login again.')
                 localStorage.removeItem('token')
                 window.location.href = '/login'
                 return
             }
 
             if (data.success) {
-                alert('✅ Discount deleted!')
+                toast.success(`"${deleteTarget.title}" deleted!`)
+                setDeleteTarget(null)
                 fetchDiscounts()
             } else {
-                alert(`❌ ${data.message || 'Failed to delete discount'}`)
+                toast.error(data.message || 'Failed to delete discount')
             }
         } catch (err) {
             console.error('Error deleting discount:', err)
-            alert('❌ Something went wrong')
+            toast.error('Something went wrong')
         } finally {
-            setDeleting(null)
+            setDeleting(false)
         }
     }
 
@@ -325,14 +329,13 @@ export default function DiscountPage() {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => openModal(discount)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                            className="p-2 text-primary-studio hover:bg-blue-50 rounded-lg transition"
                                         >
                                             <Edit size={18} />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(discount.id)}
-                                            disabled={deleting === discount.id}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                                            onClick={() => setDeleteTarget({ id: discount.id, title: discount.title })}
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -408,6 +411,16 @@ export default function DiscountPage() {
                     </div>
                 )}
             </div>
+
+            <DeleteConfirmModal
+                open={!!deleteTarget}
+                itemName={deleteTarget?.title}
+                loading={deleting}
+                onConfirm={handleDeleteConfirm}
+                onCancel={() => {
+                    if (!deleting) setDeleteTarget(null)
+                }}
+            />
 
             {/* Modal */}
             {modalOpen && (

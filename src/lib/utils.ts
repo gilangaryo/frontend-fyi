@@ -1,7 +1,7 @@
 import { API_BASE } from "@/lib/constants";
 
 export function getImageUrl(path?: string | null): string {
-    if (!path) return "/product/dummy-product.jpg"
+    if (!path) return "/product/dummy.jpg"
     if (path.startsWith("http")) return path
 
     let fixedPath = path.trim().replace(/^\/+/, "")

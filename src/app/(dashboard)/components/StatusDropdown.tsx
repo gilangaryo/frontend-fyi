@@ -49,7 +49,7 @@ export default function StatusDropdown({
             {/* Selected value */}
             <button
                 onClick={() => setOpen((prev) => !prev)}
-                className="flex items-center gap-2 border border-gray-400 rounded px-3 py-1.5 text-sm text-gray-700 bg-white  hover:bg-gray-50"
+                className="flex items-center gap-2 border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-700 bg-white  hover:bg-gray-50"
             >
                 <span className={`w-2.5 h-2.5 rounded-full ${selected.color}`} />
                 {selected.label}

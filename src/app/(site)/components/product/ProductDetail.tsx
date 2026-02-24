@@ -87,8 +87,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <div
             className="
                     grid 
-                    grid-cols-4 md:grid-cols-1 
-                    md:grid-rows-4 
+                    grid-cols-5 md:grid-cols-1 
+                    md:grid-rows-5 
                     gap-4 
                     w-full md:w-24
                 "

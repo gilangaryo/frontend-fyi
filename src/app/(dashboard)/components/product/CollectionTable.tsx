@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import StatusDropdown from "../StatusDropdown";
+import DeleteConfirmModal from "../DeleteConfirmModal";
 import { API_BASE } from "@/lib/constants";
 import React from "react"
 import type { DropResult } from "@hello-pangea/dnd"
+import toast from "react-hot-toast"
 import { Grip, Trash } from "lucide-react";
 interface CollectionItem {
     id: string;
@@ -19,6 +21,8 @@ export default function CollectionTable({
     collections: CollectionItem[];
 }) {
     const [items, setItems] = React.useState(collections)
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: string; title: string } | null>(null)
+    const [deleting, setDeleting] = React.useState(false)
 
     React.useEffect(() => {
         setItems(collections)
@@ -80,29 +84,33 @@ export default function CollectionTable({
             console.error("❌ Fetch error:", err);
         }
     }
-    async function handleDelete(id: string) {
-        if (!confirm("Delete this collection?")) return;
+    async function handleDelete() {
+        if (!deleteTarget) return;
+        setDeleting(true);
 
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${API_BASE}/collections/${id}`, {
+            const res = await fetch(`${API_BASE}/collections/${deleteTarget.id}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
             });
             const json = await res.json();
             if (json.success) {
-                alert("✅ Deleted successfully!");
+                toast.success(`"${deleteTarget.title}" has been deleted.`);
+                setDeleteTarget(null);
                 fetchCollections();
             } else {
-                alert(json.message || "Failed to delete");
+                toast.error(json.message || "Failed to delete");
             }
         } catch (err) {
             console.error(err);
-            alert("Error deleting collection");
+            toast.error("Error deleting collection");
+        } finally {
+            setDeleting(false);
         }
     }
     return (
-        <div className="rounded-lg border bg-white overflow-visible">
+        <div className="rounded-lg border border-gray-300 bg-white overflow-visible">
             {/* Header */}
             <div className="flex bg-sky-500 text-white font-medium text-sm rounded-t-md">
                 <div className="w-8 px-4 py-2 text-center">#</div>
@@ -152,7 +160,7 @@ export default function CollectionTable({
                                                 </Link>
                                                 <button
                                                     onClick={() =>
-                                                        handleDelete(item.id)
+                                                        setDeleteTarget({ id: item.id, title: item.title })
                                                     }
                                                     className=" px-2 py-2 border rounded text-sm text-red-500 hover:text-white hover:bg-red-500 transition"
                                                 >
@@ -168,6 +176,16 @@ export default function CollectionTable({
                     )}
                 </Droppable>
             </DragDropContext>
+
+            <DeleteConfirmModal
+                open={!!deleteTarget}
+                itemName={deleteTarget?.title}
+                loading={deleting}
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    if (!deleting) setDeleteTarget(null);
+                }}
+            />
         </div>
     );
 }

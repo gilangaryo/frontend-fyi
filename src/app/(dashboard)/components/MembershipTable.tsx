@@ -56,7 +56,7 @@ export default function MembershipTable() {
         );
     }
     return (
-        <div className="overflow-x-auto mt-4">
+        <div className="overflow-x-auto">
             {loading ? (
                 <div className="text-center py-10 text-gray-400">Loading membership...</div>
             ) : (
