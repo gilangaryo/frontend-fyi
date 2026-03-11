@@ -48,36 +48,60 @@ export default function FilterDropdown({
                         onClick={() => setOpenFilter(null)}
                     />
 
-                    {/* MOBILE: Dropdown full width centered */}
-                    <div className="md:hidden fixed left-0 right-0 top-[280px] mx-auto max-w-7xl px-6 z-50">
-                        <div className="bg-white shadow-lg p-6 border border-gray-200">
-                            <h3 className="font-medium text-lg mb-4 text-center">{label}</h3>
-                            <div className="grid grid-cols-1 gap-3">
+                    {/* MOBILE: Bottom sheet */}
+                    <div className="md:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[70vh] bg-white shadow-2xl rounded-t-2xl border-t border-gray-200">
+                        {/* Handle bar */}
+                        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+                            <div className="w-10 h-1 rounded-full bg-gray-300" />
+                        </div>
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-3 flex-shrink-0 border-b border-gray-100">
+                            <h3 className="font-medium text-lg">{label}</h3>
+                            <button
+                                onClick={() => setOpenFilter(null)}
+                                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        {/* Scrollable options */}
+                        <div className="overflow-y-auto flex-1 px-6 py-4">
+                            <div className="grid grid-cols-2 gap-2 mb-6">
                                 {options.map((opt) => (
-                                    <label key={opt} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                    <label
+                                        key={opt}
+                                        className="relative block cursor-pointer rounded border border-gray-200 bg-white p-3 pr-9 hover:bg-gray-50"
+                                    >
                                         <input
                                             type="checkbox"
                                             checked={selected.includes(opt)}
-                                            onChange={() => toggleSelection(opt)}
+                                            onChange={() =>
+                                                toggleSelection(opt)
+                                            }
                                             className="
-                                                w-4 h-4 border border-gray-400 rounded-sm cursor-pointer appearance-none
+                                                absolute right-3 top-3 h-4 w-4 appearance-none rounded-sm border border-gray-400 cursor-pointer
                                                 checked:bg-secondary checked:border-secondary
                                                 checked:before:content-['✓'] checked:before:text-white
                                                 checked:before:text-[10px] checked:before:flex checked:before:items-center
                                                 checked:before:justify-center
                                             "
                                         />
-                                        <span className="text-sm">{opt}</span>
+                                        <span className="block text-sm leading-snug capitalize break-words">
+                                            {opt}
+                                        </span>
                                     </label>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* DESKTOP: Dropdown di bawah button (seperti semula) */}
-                    <div className="hidden md:block absolute top-full left-0 w-full bg-white shadow-md p-4 z-50">
+                    {/* DESKTOP: Dropdown di bawah button */}
+                    <div className="hidden md:block absolute top-full left-0 w-full bg-white shadow-md p-4 z-50 max-h-64 overflow-y-auto">
                         {options.map((opt) => (
-                            <label key={opt} className="flex items-center gap-2 mb-2 cursor-pointer">
+                            <label
+                                key={opt}
+                                className="flex items-center gap-2 mb-2 cursor-pointer"
+                            >
                                 <input
                                     type="checkbox"
                                     checked={selected.includes(opt)}

@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import FilterDropdown from "./FilterDropdown";
 import ActiveFilters from "./ActiveFilters";
 import { API_BASE } from "@/lib/constants";
-import { Product, Kain } from "@/types/product";
+import { Product, Kain, Collection, Category } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
 
 export default function CatalogSection() {
@@ -18,11 +18,12 @@ export default function CatalogSection() {
     );
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
+    const [collections, setCollections] = useState<string[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
     const [kains, setKains] = useState<string[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
-    const [kainsLoading, setKainsLoading] = useState(true);
     const limit = 12;
 
     const searchParams = useSearchParams();
@@ -34,15 +35,29 @@ export default function CatalogSection() {
         if (initialCollection) setSelectedCollections([initialCollection]);
     }, [initialCategory, initialCollection]);
 
+    // Reset page to 1 whenever filters change
+    useEffect(() => {
+        setPage(1);
+    }, [selectedCollections, selectedCategories, selectedKains]);
+
     useEffect(() => {
         async function fetchProducts() {
             try {
                 setLoading(true);
+                const params = new URLSearchParams();
+                params.set("status", "true");
+                params.set("page", String(page));
+                params.set("limit", String(limit));
+                if (selectedCollections.length > 0)
+                    params.set("collectionSlug", selectedCollections.join(","));
+                if (selectedCategories.length > 0)
+                    params.set("categorySlug", selectedCategories.join(","));
+                if (selectedKains.length > 0)
+                    params.set("kain", selectedKains.join(","));
+
                 const res = await fetch(
-                    `${API_BASE}/products?status=true&page=${page}&limit=${limit}`,
-                    {
-                        cache: "no-store",
-                    },
+                    `${API_BASE}/products?${params.toString()}`,
+                    { cache: "no-store" },
                 );
                 const json = await res.json();
                 if (json.success) {
@@ -57,71 +72,36 @@ export default function CatalogSection() {
         }
 
         fetchProducts();
-
         window.scrollTo({ top: 130, behavior: "smooth" });
-    }, [page]);
+    }, [page, selectedCollections, selectedCategories, selectedKains]);
 
     useEffect(() => {
-        async function fetchKains() {
+        async function fetchFilterData() {
             try {
-                setKainsLoading(true);
-                const res = await fetch(`${API_BASE}/kain`, {
-                    cache: "no-store",
-                });
-                const json = await res.json();
-                if (json.success) {
-                    setKains(json.data.map((k: Kain) => k.name));
-                }
+                const [colRes, catRes, kainRes] = await Promise.all([
+                    fetch(`${API_BASE}/collections?status=true`, {
+                        cache: "no-store",
+                    }),
+                    fetch(`${API_BASE}/categories`, { cache: "no-store" }),
+                    fetch(`${API_BASE}/kain`, { cache: "no-store" }),
+                ]);
+                const [colJson, catJson, kainJson] = await Promise.all([
+                    colRes.json(),
+                    catRes.json(),
+                    kainRes.json(),
+                ]);
+                if (colJson.success)
+                    setCollections(colJson.data.map((c: Collection) => c.slug));
+                if (catJson.success)
+                    setCategories(catJson.data.map((c: Category) => c.slug));
+                if (kainJson.success)
+                    setKains(kainJson.data.map((k: Kain) => k.name));
             } catch (err) {
-                console.error("❌ Failed to fetch kain:", err);
-            } finally {
-                setKainsLoading(false);
+                console.error("❌ Failed to fetch filter data:", err);
             }
         }
-        fetchKains();
+        fetchFilterData();
     }, []);
-
-    const getUniqueValues = (
-        items: Product[],
-        key: "collection" | "category",
-    ) =>
-        Array.from(
-            new Set(
-                items
-                    .map((item) =>
-                        key === "collection"
-                            ? item.collection?.slug
-                            : item.category?.slug,
-                    )
-                    .filter((v): v is string => Boolean(v)),
-            ),
-        );
-
-    const collections = useMemo(
-        () => getUniqueValues(products, "collection"),
-        [products],
-    );
-    const categories = useMemo(
-        () => getUniqueValues(products, "category"),
-        [products],
-    );
-
-    const filteredProducts = useMemo(() => {
-        return products.filter((product) => {
-            return (
-                (selectedCollections.length === 0 ||
-                    selectedCollections.includes(
-                        product.collection?.slug ?? "",
-                    )) &&
-                (selectedCategories.length === 0 ||
-                    selectedCategories.includes(
-                        product.category?.slug ?? "",
-                    )) &&
-                (selectedKains.length === 0 ||
-                    (product.kain && selectedKains.includes(product.kain.name)))
-            );
-        });
-    }, [products, selectedCollections, selectedCategories, selectedKains]);
 
     // Skeleton Loader Component
     const ProductSkeleton = () => (
@@ -189,7 +169,7 @@ export default function CatalogSection() {
                         <ProductSkeleton key={index} />
                     ))}
                 </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : products.length === 0 ? (
                 // Empty State
                 <div className="text-center py-16">
                     <div className="text-gray-400 mb-4"></div>
@@ -203,7 +183,7 @@ export default function CatalogSection() {
             ) : (
                 // Products Grid
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {filteredProducts.map((product) => {
+                    {products.map((product) => {
                         const primaryImg = getImageUrl(
                             product.images?.find((img) => img.isPrimary)
                                 ?.imageUrl,
@@ -231,6 +211,7 @@ export default function CatalogSection() {
                                         alt={product.title}
                                         fill
                                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                                        quality={60}
                                         className="object-cover transition-opacity duration-300 group-hover:opacity-0"
                                         loading="lazy"
                                         placeholder="blur"
@@ -241,8 +222,11 @@ export default function CatalogSection() {
                                         alt={product.title}
                                         fill
                                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                                        quality={60}
                                         className="object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
                                         loading="lazy"
+                                        placeholder="blur"
+                                        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
                                     />
                                     <button
                                         className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition duration-300"
@@ -266,7 +250,7 @@ export default function CatalogSection() {
             )}
 
             {/* Pagination */}
-            {!loading && filteredProducts.length > 0 && (
+            {!loading && products.length > 0 && (
                 <div className="flex justify-center items-center mt-8 gap-4">
                     <button
                         disabled={page === 1}
