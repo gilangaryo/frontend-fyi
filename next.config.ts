@@ -52,6 +52,11 @@ const nextConfig: NextConfig = {
             },
             {
                 protocol: "http",
+                hostname: "192.168.1.8",
+                port: "4300",
+            },
+            {
+                protocol: "http",
                 hostname: "192.168.1.13",
                 port: "4300",
             },

@@ -19,6 +19,8 @@ interface PhotoUploadGridProps {
     initialImages?: UploadedImage[];
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export default function PhotoUploadGrid({
     onChange,
     onUploadingChange,
@@ -44,14 +46,30 @@ export default function PhotoUploadGrid({
         const token = localStorage.getItem("token");
         if (!token) return toast.error("Unauthorized");
 
+        const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
+        const oversizedCount = files.length - validFiles.length;
+
+        if (oversizedCount > 0) {
+            toast.error(
+                `${oversizedCount} file(s) exceed 5MB, please choose smaller files`,
+            );
+        }
+
+        if (validFiles.length === 0) {
+            return;
+        }
+
         const remaining = 5 - images.length;
         if (remaining <= 0) {
             return toast.error("Maximum 5 photos allowed");
         }
 
-        const filesToUpload = files.slice(0, remaining);
-        if (filesToUpload.length < files.length) {
-            toast(`Only uploading ${filesToUpload.length} of ${files.length} — max 5 photos`, { icon: "⚠️" });
+        const filesToUpload = validFiles.slice(0, remaining);
+        if (filesToUpload.length < validFiles.length) {
+            toast(
+                `Only uploading ${filesToUpload.length} of ${validFiles.length} — max 5 photos`,
+                { icon: "⚠️" },
+            );
         }
 
         setUploading(true);
@@ -109,7 +127,7 @@ export default function PhotoUploadGrid({
         e.preventDefault();
         setIsDragging(false);
         const files = Array.from(e.dataTransfer.files).filter((f) =>
-            f.type.startsWith("image/")
+            f.type.startsWith("image/"),
         );
         if (files.length > 0) await uploadFiles(files);
     };
@@ -125,7 +143,7 @@ export default function PhotoUploadGrid({
                 {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${token}` },
-                }
+                },
             );
         }
 
@@ -169,7 +187,9 @@ export default function PhotoUploadGrid({
                     Photo Product<span className="text-red-500">*</span>
                 </label>
                 {images.length > 0 && (
-                    <span className={`text-xs ${images.length >= 5 ? "text-amber-500 font-medium" : "text-gray-400"}`}>
+                    <span
+                        className={`text-xs ${images.length >= 5 ? "text-amber-500 font-medium" : "text-gray-400"}`}
+                    >
                         {images.length}/5 photo{images.length > 1 ? "s" : ""}
                     </span>
                 )}
@@ -246,40 +266,46 @@ export default function PhotoUploadGrid({
 
                 {/* Upload area */}
                 {images.length < 5 && (
-                <label
-                    className={`relative aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
-                        isDragging
-                            ? "border-primary-studio bg-primary-studio/5 scale-[1.02]"
-                            : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
-                    } ${uploading ? "pointer-events-none" : ""}`}
-                    onDragOver={(e) => {
-                        e.preventDefault();
-                        setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                >
-                    {uploading ? (
-                        <div className="flex flex-col items-center gap-2 text-primary-studio">
-                            <Loader2 size={28} className="animate-spin" />
-                            <span className="text-xs font-medium">Uploading...</span>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center gap-1.5 text-gray-400">
-                            <ImagePlus size={28} strokeWidth={1.5} />
-                            <span className="text-xs font-medium">Add photo</span>
-                            <span className="text-[10px] text-gray-300">or drag & drop</span>
-                        </div>
-                    )}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleFileChange}
-                        className="hidden"
-                    />
-                </label>
+                    <label
+                        className={`relative aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
+                            isDragging
+                                ? "border-primary-studio bg-primary-studio/5 scale-[1.02]"
+                                : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
+                        } ${uploading ? "pointer-events-none" : ""}`}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDragging(true);
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDrop}
+                    >
+                        {uploading ? (
+                            <div className="flex flex-col items-center gap-2 text-primary-studio">
+                                <Loader2 size={28} className="animate-spin" />
+                                <span className="text-xs font-medium">
+                                    Uploading...
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-1.5 text-gray-400">
+                                <ImagePlus size={28} strokeWidth={1.5} />
+                                <span className="text-xs font-medium">
+                                    Add photo
+                                </span>
+                                <span className="text-[10px] text-gray-300">
+                                    or drag & drop
+                                </span>
+                            </div>
+                        )}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleFileChange}
+                            className="hidden"
+                        />
+                    </label>
                 )}
             </div>
         </div>
