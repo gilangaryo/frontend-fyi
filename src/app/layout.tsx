@@ -4,44 +4,116 @@ import "./globals.css";
 import Providers from "./(site)/providers";
 import { Toaster } from "react-hot-toast";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+const siteUrl = "https://fyicouture.com";
 
+const navigationLinks = [
+    { name: "Shop", url: `${siteUrl}/shop` },
+    { name: "Collection", url: `${siteUrl}/collection` },
+    { name: "Story", url: `${siteUrl}/story` },
+    { name: "Beyond", url: `${siteUrl}/beyond` },
+];
+
+const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "Organization",
+            name: "FYI Couture",
+            url: siteUrl,
+            logo: `${siteUrl}/homepage/logo.png`,
+        },
+        {
+            "@type": "WebSite",
+            name: "FYI Couture",
+            url: siteUrl,
+            potentialAction: {
+                "@type": "SearchAction",
+                target: `${siteUrl}/shop?search={search_term_string}`,
+                "query-input": "required name=search_term_string",
+            },
+        },
+        ...navigationLinks.map((link) => ({
+            "@type": "SiteNavigationElement",
+            name: link.name,
+            url: link.url,
+        })),
+    ],
+};
+
+const poppins = Poppins({
+    variable: "--font-poppins",
+    subsets: ["latin"],
+    weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "FYI",
-  description: "Ecommerce website",
-
+    metadataBase: new URL(siteUrl),
+    title: {
+        default: "FYI Couture",
+        template: "%s | FYI Couture",
+    },
+    description:
+        "FYI Couture official website. Explore shop, collections, stories, and beyond.",
+    alternates: {
+        canonical: "/",
+    },
+    openGraph: {
+        title: "FYI Couture",
+        description:
+            "Explore shop, collections, stories, and beyond from FYI Couture.",
+        url: siteUrl,
+        siteName: "FYI Couture",
+        type: "website",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "FYI Couture",
+        description:
+            "Explore shop, collections, stories, and beyond from FYI Couture.",
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+        },
+    },
 };
 
-
 export default function RootLayout({
-  children,
+    children,
 }: Readonly<{
-  children: React.ReactNode;
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
+    return (
+        <html lang="en">
+            <body className={`${poppins.variable} antialiased`}>
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify(structuredData),
+                    }}
+                />
 
-        <Providers>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: "#705A4F",
-                color: "#fff",
-                borderRadius: "8px",
-                padding: "12px 16px",
-              },
-            }}
-          />
-          {children}
-        </Providers>
-      </body>
-    </html>
-  );
+                <Providers>
+                    <Toaster
+                        position="top-center"
+                        toastOptions={{
+                            style: {
+                                background: "#705A4F",
+                                color: "#fff",
+                                borderRadius: "8px",
+                                padding: "12px 16px",
+                            },
+                        }}
+                    />
+                    {children}
+                </Providers>
+            </body>
+        </html>
+    );
 }
