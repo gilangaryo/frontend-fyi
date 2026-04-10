@@ -133,7 +133,7 @@ export default function NewProductPage() {
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        >,
     ) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -141,10 +141,14 @@ export default function NewProductPage() {
     const handleVariantChange = (
         index: number,
         field: string,
-        value: string
+        value: string,
     ) => {
+        const normalizedValue =
+            field === "stock"
+                ? value.replace(/\D/g, "").replace(/^0+(?=\d)/, "")
+                : value;
         const updated = [...variants];
-        updated[index] = { ...updated[index], [field]: value };
+        updated[index] = { ...updated[index], [field]: normalizedValue };
         setVariants(updated);
     };
 
@@ -171,7 +175,7 @@ export default function NewProductPage() {
 
     // Function to find or create fabric
     const findOrCreateFabric = async (
-        fabricName: string
+        fabricName: string,
     ): Promise<string | null> => {
         if (!fabricName.trim()) return null;
 
@@ -180,7 +184,7 @@ export default function NewProductPage() {
             if (!token) throw new Error("Unauthorized");
 
             const existingFabric = fabrics.find(
-                (f) => f.name.toLowerCase() === fabricName.trim().toLowerCase()
+                (f) => f.name.toLowerCase() === fabricName.trim().toLowerCase(),
             );
 
             if (existingFabric) {
@@ -209,7 +213,7 @@ export default function NewProductPage() {
 
     // Function to find or create category
     const findOrCreateCategory = async (
-        categoryTitle: string
+        categoryTitle: string,
     ): Promise<string | null> => {
         if (!categoryTitle.trim()) return null;
 
@@ -235,7 +239,7 @@ export default function NewProductPage() {
 
             // Update categories list if it's a new category
             const existingCategory = categories.find(
-                (c) => c.id === data.data.id
+                (c) => c.id === data.data.id,
             );
             if (!existingCategory) {
                 setCategories([...categories, data.data]);
@@ -386,9 +390,9 @@ export default function NewProductPage() {
                                         setTimeout(
                                             () =>
                                                 setShowCategorySuggestions(
-                                                    false
+                                                    false,
                                                 ),
-                                            200
+                                            200,
                                         )
                                     }
                                     onKeyDown={(e) => {
@@ -422,18 +426,18 @@ export default function NewProductPage() {
                                                 c.title
                                                     .toLowerCase()
                                                     .includes(
-                                                        categoryInput.toLowerCase()
-                                                    )
+                                                        categoryInput.toLowerCase(),
+                                                    ),
                                             )
                                             .map((category) => (
                                                 <div
                                                     key={category.id}
                                                     onClick={() => {
                                                         setCategoryInput(
-                                                            category.title
+                                                            category.title,
                                                         );
                                                         setShowCategorySuggestions(
-                                                            false
+                                                            false,
                                                         );
                                                     }}
                                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
@@ -445,8 +449,8 @@ export default function NewProductPage() {
                                             c.title
                                                 .toLowerCase()
                                                 .includes(
-                                                    categoryInput.toLowerCase()
-                                                )
+                                                    categoryInput.toLowerCase(),
+                                                ),
                                         ).length === 0 &&
                                             categoryInput && (
                                                 <div className="px-3 py-2 text-sm text-gray-500 italic">
@@ -488,7 +492,7 @@ export default function NewProductPage() {
                                         setTimeout(
                                             () =>
                                                 setShowFabricSuggestions(false),
-                                            200
+                                            200,
                                         )
                                     }
                                     onKeyDown={(e) => {
@@ -521,18 +525,18 @@ export default function NewProductPage() {
                                                 f.name
                                                     .toLowerCase()
                                                     .includes(
-                                                        fabricInput.toLowerCase()
-                                                    )
+                                                        fabricInput.toLowerCase(),
+                                                    ),
                                             )
                                             .map((fabric) => (
                                                 <div
                                                     key={fabric.id}
                                                     onClick={() => {
                                                         setFabricInput(
-                                                            fabric.name
+                                                            fabric.name,
                                                         );
                                                         setShowFabricSuggestions(
-                                                            false
+                                                            false,
                                                         );
                                                     }}
                                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
@@ -544,8 +548,8 @@ export default function NewProductPage() {
                                             f.name
                                                 .toLowerCase()
                                                 .includes(
-                                                    fabricInput.toLowerCase()
-                                                )
+                                                    fabricInput.toLowerCase(),
+                                                ),
                                         ).length === 0 &&
                                             fabricInput && (
                                                 <div className="px-3 py-2 text-sm text-gray-500 italic">
@@ -676,7 +680,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "size",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -691,7 +695,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "stock",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -748,7 +752,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "waist",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -763,7 +767,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "length",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -778,7 +782,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "height",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -793,7 +797,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "bust",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -808,7 +812,7 @@ export default function NewProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "sleeve",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"

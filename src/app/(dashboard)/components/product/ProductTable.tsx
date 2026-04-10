@@ -1,48 +1,50 @@
-'use client'
+"use client";
 
-import { useState, useCallback } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import toast from 'react-hot-toast'
-import StatusDropdown from '../StatusDropdown'
-import DeleteConfirmModal from '../DeleteConfirmModal'
-import { getImageUrl } from '@/lib/utils'
-import { API_BASE } from '@/lib/constants'
-import { Trash, ImageOff } from 'lucide-react'
+import { useState, useCallback } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import toast from "react-hot-toast";
+import StatusDropdown from "../StatusDropdown";
+import DeleteConfirmModal from "../DeleteConfirmModal";
+import { getImageUrl } from "@/lib/utils";
+import { API_BASE } from "@/lib/constants";
+import { Trash, ImageOff } from "lucide-react";
 
 interface ProductItem {
-    id: string
-    title: string
-    subLabel?: string
-    price: string
-    stock: number
-    sold: number
-    imageUrl: string
-    isActive: boolean
+    id: string;
+    title: string;
+    subLabel?: string;
+    price: string;
+    stock: number;
+    sold: number;
+    imageUrl: string;
+    isActive: boolean;
 }
 
 interface ProductTableProps {
-    products: ProductItem[]
-    onDelete?: () => void
+    products: ProductItem[];
+    onDelete?: () => void;
 }
 
 function ProductImage({ src, alt }: { src: string; alt: string }) {
-    const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+    const [status, setStatus] = useState<"loading" | "loaded" | "error">(
+        "loading",
+    );
 
-    const handleLoad = useCallback(() => setStatus('loaded'), [])
-    const handleError = useCallback(() => setStatus('error'), [])
+    const handleLoad = useCallback(() => setStatus("loaded"), []);
+    const handleError = useCallback(() => setStatus("error"), []);
 
-    if (status === 'error' || !src) {
+    if (status === "error" || !src) {
         return (
             <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                 <ImageOff size={16} className="text-gray-300" />
             </div>
-        )
+        );
     }
 
     return (
         <div className="relative w-10 h-10 shrink-0">
-            {status === 'loading' && (
+            {status === "loading" && (
                 <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
             )}
             <Image
@@ -52,64 +54,72 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
                 height={40}
                 sizes="40px"
                 className={`w-10 h-10 object-cover rounded-lg transition-opacity duration-300 ${
-                    status === 'loaded' ? 'opacity-100' : 'opacity-0'
+                    status === "loaded" ? "opacity-100" : "opacity-0"
                 }`}
                 onLoad={handleLoad}
                 onError={handleError}
             />
         </div>
-    )
+    );
 }
 
-export default function ProductTable({ products, onDelete }: ProductTableProps) {
-    const [deletingId, setDeletingId] = useState<string | null>(null)
-    const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+export default function ProductTable({
+    products,
+    onDelete,
+}: ProductTableProps) {
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{
+        id: string;
+        title: string;
+    } | null>(null);
 
     async function updateStatus(id: string, isActive: boolean) {
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem("token");
             const res = await fetch(`${API_BASE}/products/status/${id}`, {
-                method: 'PATCH',
+                method: "PATCH",
                 headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: token ? `Bearer ${token}` : '',
+                    "Content-Type": "application/json",
+                    Authorization: token ? `Bearer ${token}` : "",
                 },
                 body: JSON.stringify({ status: isActive }),
-            })
-            if (!res.ok) throw new Error('Failed to update status')
-            toast.success(`Status updated to ${isActive ? 'Active' : 'Inactive'}`)
+            });
+            if (!res.ok) throw new Error("Failed to update status");
+            toast.success(
+                `Status updated to ${isActive ? "Active" : "Inactive"}`,
+            );
         } catch (err) {
-            console.error(err)
-            toast.error('Failed to update status. Please try again.')
+            console.error(err);
+            toast.error("Failed to update status. Please try again.");
         }
     }
 
     async function handleDelete() {
-        if (!deleteTarget) return
-        setDeletingId(deleteTarget.id)
+        if (!deleteTarget) return;
+        setDeletingId(deleteTarget.id);
 
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem("token");
             const res = await fetch(`${API_BASE}/products/${deleteTarget.id}`, {
-                method: 'DELETE',
+                method: "DELETE",
                 headers: {
-                    Authorization: token ? `Bearer ${token}` : '',
+                    Authorization: token ? `Bearer ${token}` : "",
                 },
-            })
+            });
 
             if (!res.ok) {
-                const errText = await res.text()
-                throw new Error(errText || 'Failed to delete product')
+                const errText = await res.text();
+                throw new Error(errText || "Failed to delete product");
             }
 
-            toast.success(`"${deleteTarget.title}" has been deleted.`)
-            setDeleteTarget(null)
-            onDelete?.()
+            toast.success(`"${deleteTarget.title}" has been deleted.`);
+            setDeleteTarget(null);
+            onDelete?.();
         } catch (err) {
-            console.error(err)
-            toast.error('Failed to delete product. See console for details.')
+            console.error(err);
+            toast.error("Failed to delete product. See console for details.");
         } finally {
-            setDeletingId(null)
+            setDeletingId(null);
         }
     }
 
@@ -118,7 +128,7 @@ export default function ProductTable({ products, onDelete }: ProductTableProps) 
             <div className="text-center py-12 text-gray-500">
                 No products found.
             </div>
-        )
+        );
     }
 
     return (
@@ -141,20 +151,33 @@ export default function ProductTable({ products, onDelete }: ProductTableProps) 
                     >
                         {/* Product Info */}
                         <div className="flex items-center gap-3 px-4 py-3">
-                            <ProductImage src={item.imageUrl} alt={item.title} />
+                            <ProductImage
+                                src={item.imageUrl}
+                                alt={item.title}
+                            />
                             <div>
-                                <p className="text-gray-800 text-sm font-medium">{item.title}</p>
-                                <p className="text-xs text-gray-400">{item.subLabel || '-'}</p>
+                                <p className="text-gray-800 text-sm font-medium">
+                                    {item.title}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    {item.subLabel || "-"}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="text-center text-sm text-gray-700">{item.price}</div>
-                        <div className="text-center text-sm text-gray-700">{item.stock}</div>
+                        <div className="text-center text-sm text-gray-700">
+                            {item.price}
+                        </div>
+                        <div className="text-center text-sm text-gray-700">
+                            {item.stock}
+                        </div>
 
                         <div className="flex justify-center">
                             <StatusDropdown
-                                initial={item.isActive ? 'Active' : 'Inactive'}
-                                onChange={(value) => updateStatus(item.id, value === 'Active')}
+                                initial={item.isActive ? "Active" : "Inactive"}
+                                onChange={(value) =>
+                                    updateStatus(item.id, value === "Active")
+                                }
                             />
                         </div>
 
@@ -167,7 +190,12 @@ export default function ProductTable({ products, onDelete }: ProductTableProps) 
                             </Link>
 
                             <button
-                                onClick={() => setDeleteTarget({ id: item.id, title: item.title })}
+                                onClick={() =>
+                                    setDeleteTarget({
+                                        id: item.id,
+                                        title: item.title,
+                                    })
+                                }
                                 className="px-2 py-2 text-red-500 border rounded text-xs hover:text-white hover:bg-red-500 transition"
                             >
                                 <Trash size={16} />
@@ -183,9 +211,9 @@ export default function ProductTable({ products, onDelete }: ProductTableProps) 
                 loading={!!deletingId}
                 onConfirm={handleDelete}
                 onCancel={() => {
-                    if (!deletingId) setDeleteTarget(null)
+                    if (!deletingId) setDeleteTarget(null);
                 }}
             />
         </div>
-    )
+    );
 }

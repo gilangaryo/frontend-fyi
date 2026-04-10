@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { API_BASE } from "@/lib/constants";
 import CollectionTable from "../../components/product/CollectionTable";
+import ProductFilterDropdown, {
+    type ProductFilterOption,
+} from "../../components/product/ProductFilterDropdown";
+import ProductSingleSelectDropdown, {
+    type ProductSingleSelectOption,
+} from "../../components/product/ProductSingleSelectDropdown";
 import ProductTable from "../../components/product/ProductTable";
 import DiscountTab from "../../components/product/DiscountTab";
 import SuggestedProductTab from "../../components/SuggestedProductTab";
-import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 type Collection = {
     id: string;
     title: string;
+    slug: string;
     status: boolean;
 };
 
@@ -35,44 +42,26 @@ export default function ProductPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [totalProducts, setTotalProducts] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
-    const [activeTab, setActiveTab] = useState<"product" | "discount" | "suggested">("product");
+    const [activeTab, setActiveTab] = useState<
+        "product" | "discount" | "suggested"
+    >("product");
     const [discountModalOpen, setDiscountModalOpen] = useState(false);
 
     // Search & filter
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [selectedCollections, setSelectedCollections] = useState<string[]>(
+        [],
+    );
     const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
     const [sortBy, setSortBy] = useState<SortByType>("createdAt");
 
-    // Dropdown states
-    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-    const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-
-    // Refs for click outside detection
-    const statusDropdownRef = useRef<HTMLDivElement>(null);
-    const sortDropdownRef = useRef<HTMLDivElement>(null);
-
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 15;
 
     // Loading state
     const [isLoading, setIsLoading] = useState(true);
-
-    // Click outside to close dropdowns
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
-                setIsStatusDropdownOpen(false);
-            }
-            if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
-                setIsSortDropdownOpen(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
 
     // Debounce search input (300ms)
     useEffect(() => {
@@ -85,28 +74,32 @@ export default function ProductPage() {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, statusFilter, sortBy]);
+    }, [debouncedSearch, selectedCollections, statusFilter, sortBy]);
 
-    // Fetch collections once
+    // Fetch filter metadata once
     useEffect(() => {
-        async function fetchCollections() {
+        async function fetchFilterData() {
             try {
                 const token = localStorage.getItem("token");
                 if (!token) return;
 
-                const res = await fetch(`${API_BASE}/collections`, {
+                const collectionsRes = await fetch(`${API_BASE}/collections`, {
                     headers: { Authorization: `Bearer ${token}` },
                     credentials: "include",
                 });
-                if (!res.ok) throw new Error("Failed to fetch collections");
 
-                const data = await res.json();
-                setCollections(data.data || []);
+                if (!collectionsRes.ok) {
+                    throw new Error("Failed to fetch collections");
+                }
+
+                const collectionsData = await collectionsRes.json();
+
+                setCollections(collectionsData.data || []);
             } catch (err) {
-                console.error("Fetch collections error:", err);
+                console.error("Fetch filter data error:", err);
             }
         }
-        fetchCollections();
+        fetchFilterData();
     }, []);
 
     // Fetch products with server-side pagination, search, filter, sort
@@ -122,6 +115,10 @@ export default function ProductPage() {
 
             if (debouncedSearch) {
                 params.set("search", debouncedSearch);
+            }
+
+            if (selectedCollections.length > 0) {
+                params.set("collectionSlug", selectedCollections.join(","));
             }
 
             if (statusFilter === "active") {
@@ -140,10 +137,13 @@ export default function ProductPage() {
             params.set("sortBy", sortByMap[sortBy] || "createdAt");
             params.set("sortOrder", sortBy === "createdAt" ? "desc" : "asc");
 
-            const res = await fetch(`${API_BASE}/products?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                credentials: "include",
-            });
+            const res = await fetch(
+                `${API_BASE}/products?${params.toString()}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: "include",
+                },
+            );
 
             if (!res.ok) throw new Error("Failed to fetch products");
 
@@ -156,7 +156,13 @@ export default function ProductPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, debouncedSearch, statusFilter, sortBy]);
+    }, [
+        currentPage,
+        debouncedSearch,
+        selectedCollections,
+        statusFilter,
+        sortBy,
+    ]);
 
     useEffect(() => {
         fetchProducts();
@@ -184,18 +190,25 @@ export default function ProductPage() {
     };
 
     // Dropdown options
-    const statusOptions = [
+    const statusOptions: ProductSingleSelectOption<StatusFilterType>[] = [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
         { value: "inactive", label: "Inactive" },
     ];
 
-    const sortOptions = [
+    const sortOptions: ProductSingleSelectOption<SortByType>[] = [
         { value: "createdAt", label: "Sort by Latest" },
         { value: "name", label: "Sort by Name" },
         { value: "price", label: "Sort by Price" },
         { value: "stock", label: "Sort by Stock" },
     ];
+
+    const collectionOptions: ProductFilterOption[] = collections.map(
+        (item) => ({
+            label: item.title,
+            value: item.slug,
+        }),
+    );
 
     const collectionItems = collections.map((c) => ({
         id: c.id,
@@ -214,13 +227,27 @@ export default function ProductPage() {
         isActive: p.status,
     }));
 
-    const showingFrom = totalProducts === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1;
+    const showingFrom =
+        totalProducts === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const showingTo = Math.min(currentPage * itemsPerPage, totalProducts);
+
+    const getCollectionLabel = (value: string) =>
+        collections.find((item) => item.slug === value)?.title || value;
+
+    const clearAllFilters = () => {
+        setSelectedCollections([]);
+        setSearchQuery("");
+    };
+
+    const hasExtendedFilters =
+        searchQuery.length > 0 || selectedCollections.length > 0;
 
     return (
         <div className="bg-gray-50 min-h-screen p-2">
             <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-800">All Product</h1>
+                <h1 className="text-2xl font-semibold text-gray-800">
+                    All Product
+                </h1>
                 <p className="text-sm text-gray-400 mt-1">
                     Managing Product & Discount ({totalProducts} total products)
                 </p>
@@ -236,8 +263,18 @@ export default function ProductPage() {
                         href="/dashboard/product/collection/new"
                         className="flex items-center gap-2 text-gray-600 text-sm hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                            />
                         </svg>
                         Add Collection
                     </Link>
@@ -251,11 +288,16 @@ export default function ProductPage() {
                     {["product", "discount", "suggested"].map((tab) => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab as "product" | "discount" | "suggested")}
-                            className={`pb-3 text-2xl font-medium transition-colors relative ${activeTab === tab
-                                ? "text-primary-studio"
-                                : "text-gray-400 hover:text-gray-600"
-                                }`}
+                            onClick={() =>
+                                setActiveTab(
+                                    tab as "product" | "discount" | "suggested",
+                                )
+                            }
+                            className={`pb-3 text-2xl font-medium transition-colors relative ${
+                                activeTab === tab
+                                    ? "text-primary-studio"
+                                    : "text-gray-400 hover:text-gray-600"
+                            }`}
                         >
                             {tab[0].toUpperCase() + tab.slice(1)}
                             {activeTab === tab && (
@@ -271,8 +313,18 @@ export default function ProductPage() {
                             href="/dashboard/product/new"
                             className="flex items-center gap-2 bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 rounded-lg px-3 py-2"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 4v16m8-8H4"
+                                />
                             </svg>
                             Add Product
                         </Link>
@@ -283,8 +335,18 @@ export default function ProductPage() {
                             onClick={() => setDiscountModalOpen(true)}
                             className="flex items-center gap-2 bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 rounded-lg px-3 py-2"
                         >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 4v16m8-8H4"
+                                />
                             </svg>
                             Add Discount
                         </button>
@@ -295,9 +357,9 @@ export default function ProductPage() {
             {activeTab === "product" && (
                 <div className="bg-white rounded-lg shadow-sm p-6">
                     {/* Search & Filter Controls */}
-                    <div className="flex gap-4 mb-6">
+                    <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start">
                         {/* Search Input */}
-                        <div className="flex-1 relative">
+                        <div className="relative xl:flex-1 xl:min-w-[280px]">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
@@ -308,79 +370,72 @@ export default function ProductPage() {
                             />
                         </div>
 
-                        {/* Status Filter Dropdown */}
-                        <div className="relative min-w-[140px]" ref={statusDropdownRef}>
-                            <button
-                                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition flex items-center justify-between focus:ring-2 focus:ring-primary-studio focus:outline-none"
-                            >
-                                <span className="text-gray-700 pr-2">
-                                    {statusOptions.find(opt => opt.value === statusFilter)?.label}
-                                </span>
-                                <ChevronDown
-                                    className={`w-4 h-4 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
-                                />
-                            </button>
+                        <div className="flex flex-wrap gap-4 xl:justify-end">
+                            <ProductFilterDropdown
+                                label="Collection"
+                                options={collectionOptions}
+                                selected={selectedCollections}
+                                onChange={setSelectedCollections}
+                                emptyLabel="All collections"
+                            />
 
-                            {isStatusDropdownOpen && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                                    {statusOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                setStatusFilter(option.value as StatusFilterType);
-                                                setIsStatusDropdownOpen(false);
-                                            }}
-                                            className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition ${statusFilter === option.value
-                                                ? 'bg-primary-studio/10 text-primary-studio font-medium'
-                                                : 'text-gray-700'
-                                                }`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                            <ProductSingleSelectDropdown
+                                value={statusFilter}
+                                options={statusOptions}
+                                onChange={setStatusFilter}
+                            />
 
-                        {/* Sort Dropdown */}
-                        <div className="relative min-w-[160px]" ref={sortDropdownRef}>
-                            <button
-                                onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition flex items-center justify-between focus:ring-2 focus:ring-primary-studio focus:outline-none"
-                            >
-                                <span className="text-gray-700 pr-2">
-                                    {sortOptions.find(opt => opt.value === sortBy)?.label}
-                                </span>
-                                <ChevronDown
-                                    className={`w-4 h-4 text-gray-400 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`}
-                                />
-                            </button>
-
-                            {isSortDropdownOpen && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                                    {sortOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                setSortBy(option.value as SortByType);
-                                                setIsSortDropdownOpen(false);
-                                            }}
-                                            className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition ${sortBy === option.value
-                                                ? 'bg-primary-studio/10 text-primary-studio font-medium'
-                                                : 'text-gray-700'
-                                                }`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <ProductSingleSelectDropdown
+                                value={sortBy}
+                                options={sortOptions}
+                                onChange={setSortBy}
+                                minWidthClassName="min-w-[180px]"
+                            />
                         </div>
                     </div>
 
+                    {hasExtendedFilters && (
+                        <div className="mb-4 flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={clearAllFilters}
+                                className="rounded-full bg-primary-studio px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:opacity-90"
+                            >
+                                Clear filters
+                            </button>
+
+                            {selectedCollections.map((value) => (
+                                <button
+                                    key={`collection-${value}`}
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedCollections((current) =>
+                                            current.filter(
+                                                (item) => item !== value,
+                                            ),
+                                        )
+                                    }
+                                    className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700 transition hover:border-gray-300 hover:bg-gray-100"
+                                >
+                                    Collection: {getCollectionLabel(value)} ×
+                                </button>
+                            ))}
+
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery("")}
+                                    className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700 transition hover:border-gray-300 hover:bg-gray-100"
+                                >
+                                    Search: {searchQuery} ×
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     <p className="text-sm text-gray-500 mb-4">
-                        Showing {showingFrom}-{showingTo} of {totalProducts} products
+                        Showing {showingFrom}-{showingTo} of {totalProducts}{" "}
+                        products
                     </p>
 
                     {isLoading ? (
@@ -388,49 +443,64 @@ export default function ProductPage() {
                             <div className="min-w-[900px]">
                                 {/* Header */}
                                 <div className="grid grid-cols-[1fr_15rem_15rem_15rem_8rem] bg-sky-500 text-white font-medium text-sm rounded-t-md">
-                                    <div className="px-4 py-2 text-left">Product</div>
-                                    <div className="px-4 py-2 text-center">Price</div>
-                                    <div className="px-4 py-2 text-center">Stock</div>
-                                    <div className="px-4 py-2 text-center">Status</div>
-                                    <div className="px-4 py-2 text-center">Action</div>
+                                    <div className="px-4 py-2 text-left">
+                                        Product
+                                    </div>
+                                    <div className="px-4 py-2 text-center">
+                                        Price
+                                    </div>
+                                    <div className="px-4 py-2 text-center">
+                                        Stock
+                                    </div>
+                                    <div className="px-4 py-2 text-center">
+                                        Status
+                                    </div>
+                                    <div className="px-4 py-2 text-center">
+                                        Action
+                                    </div>
                                 </div>
                                 {/* Skeleton rows */}
-                                {Array.from({ length: itemsPerPage }).map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="grid grid-cols-[1fr_15rem_15rem_15rem_8rem] border-t border-gray-100 items-center"
-                                    >
-                                        {/* Product info */}
-                                        <div className="flex items-center gap-3 px-4 py-3">
-                                            <div className="w-10 h-10 rounded bg-gray-200 animate-pulse shrink-0" />
-                                            <div className="flex flex-col gap-1.5">
-                                                <div className="h-3.5 w-36 bg-gray-200 animate-pulse rounded" />
-                                                <div className="h-2.5 w-20 bg-gray-100 animate-pulse rounded" />
+                                {Array.from({ length: itemsPerPage }).map(
+                                    (_, i) => (
+                                        <div
+                                            key={i}
+                                            className="grid grid-cols-[1fr_15rem_15rem_15rem_8rem] border-t border-gray-100 items-center"
+                                        >
+                                            {/* Product info */}
+                                            <div className="flex items-center gap-3 px-4 py-3">
+                                                <div className="w-10 h-10 rounded bg-gray-200 animate-pulse shrink-0" />
+                                                <div className="flex flex-col gap-1.5">
+                                                    <div className="h-3.5 w-36 bg-gray-200 animate-pulse rounded" />
+                                                    <div className="h-2.5 w-20 bg-gray-100 animate-pulse rounded" />
+                                                </div>
+                                            </div>
+                                            {/* Price */}
+                                            <div className="flex justify-center">
+                                                <div className="h-3.5 w-24 bg-gray-200 animate-pulse rounded" />
+                                            </div>
+                                            {/* Stock */}
+                                            <div className="flex justify-center">
+                                                <div className="h-3.5 w-10 bg-gray-200 animate-pulse rounded" />
+                                            </div>
+                                            {/* Status */}
+                                            <div className="flex justify-center">
+                                                <div className="h-7 w-24 bg-gray-200 animate-pulse rounded" />
+                                            </div>
+                                            {/* Action */}
+                                            <div className="flex justify-center gap-2 py-3">
+                                                <div className="h-7 w-12 bg-gray-200 animate-pulse rounded" />
+                                                <div className="h-7 w-8 bg-gray-200 animate-pulse rounded" />
                                             </div>
                                         </div>
-                                        {/* Price */}
-                                        <div className="flex justify-center">
-                                            <div className="h-3.5 w-24 bg-gray-200 animate-pulse rounded" />
-                                        </div>
-                                        {/* Stock */}
-                                        <div className="flex justify-center">
-                                            <div className="h-3.5 w-10 bg-gray-200 animate-pulse rounded" />
-                                        </div>
-                                        {/* Status */}
-                                        <div className="flex justify-center">
-                                            <div className="h-7 w-24 bg-gray-200 animate-pulse rounded" />
-                                        </div>
-                                        {/* Action */}
-                                        <div className="flex justify-center gap-2 py-3">
-                                            <div className="h-7 w-12 bg-gray-200 animate-pulse rounded" />
-                                            <div className="h-7 w-8 bg-gray-200 animate-pulse rounded" />
-                                        </div>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
                         </div>
                     ) : (
-                        <ProductTable products={productItems} onDelete={handleProductDeleted} />
+                        <ProductTable
+                            products={productItems}
+                            onDelete={handleProductDeleted}
+                        />
                     )}
 
                     {/* Pagination Controls */}
@@ -446,7 +516,11 @@ export default function ProductPage() {
                                     First
                                 </button>
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    onClick={() =>
+                                        setCurrentPage((prev) =>
+                                            Math.max(1, prev - 1),
+                                        )
+                                    }
                                     disabled={currentPage === 1}
                                     className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                 >
@@ -461,9 +535,10 @@ export default function ProductPage() {
                                     <button
                                         key={page}
                                         onClick={() => setCurrentPage(page)}
-                                        className={`min-w-[38px] h-9 rounded-lg text-sm transition ${currentPage === page
-                                            ? 'bg-primary-studio text-white font-medium'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        className={`min-w-[38px] h-9 rounded-lg text-sm transition ${
+                                            currentPage === page
+                                                ? "bg-primary-studio text-white font-medium"
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                         }`}
                                     >
                                         {page}
@@ -474,7 +549,11 @@ export default function ProductPage() {
                             {/* Next group */}
                             <div className="flex items-center gap-1">
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    onClick={() =>
+                                        setCurrentPage((prev) =>
+                                            Math.min(totalPages, prev + 1),
+                                        )
+                                    }
                                     disabled={currentPage === totalPages}
                                     className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                 >
@@ -495,7 +574,10 @@ export default function ProductPage() {
             )}
 
             {activeTab === "discount" && (
-                <DiscountTab externalOpen={discountModalOpen} onExternalOpenChange={setDiscountModalOpen} />
+                <DiscountTab
+                    externalOpen={discountModalOpen}
+                    onExternalOpenChange={setDiscountModalOpen}
+                />
             )}
 
             {activeTab === "suggested" && <SuggestedProductTab />}

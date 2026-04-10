@@ -37,6 +37,57 @@ export interface Payment {
     status: string
 }
 
+export interface PricingBreakdownItemAdjustment {
+    stage: string
+    promotionId: string
+    code: string
+    title: string
+    kind: string
+    amount: number
+    unitAmount?: number
+}
+
+export interface PricingBreakdownItem {
+    variantId: string
+    productId: string
+    collectionId?: string | null
+    quantity: number
+    baseUnitPrice: number
+    effectiveUnitPrice: number
+    baseLineSubtotal: number
+    effectiveLineSubtotal: number
+    adjustments: PricingBreakdownItemAdjustment[]
+}
+
+export interface AppliedPromotion {
+    id: string
+    code: string
+    title: string
+    kind: string
+    type: string
+    value: number
+    amount: number
+    stage: string
+}
+
+export interface PricingBreakdown {
+    valid: boolean
+    currency: string
+    items: PricingBreakdownItem[]
+    promotions: {
+        applied: AppliedPromotion[]
+    }
+    summary: {
+        baseSubtotal: number
+        subtotalAfterProductDiscounts: number
+        subtotalAfterCollectionDiscounts: number
+        subtotalBeforeCartDiscounts: number
+        totalQuantity: number
+        totalDiscount: number
+        payableSubtotal: number
+    }
+}
+
 
 export interface Order {
     id: string
@@ -77,16 +128,20 @@ export interface OrderApi {
     status: string
     subTotal?: string
     shippingCost?: string
+    discountTotal?: string
     total?: string
     courierCompany?: string
     createdAt: string
+    pricingBreakdown?: PricingBreakdown | null
     items: {
         id: string
         quantity: number
         priceAtPurchase: string
+        variantId?: string | null
         product: {
             title: string
             imageUrl: string
+            price?: string
         }
     }[]
     payments: { status: string }[]
@@ -100,19 +155,20 @@ export interface OrderApi {
         village?: string
         postalCode?: string
     }
-    discount: {
+    discount?: {
         id: string
         code: string
         type: string
-        value: number
-    }
+        value: number | string
+        kind?: string
+    } | null
     tracking: {
         id: string
         trackingLink: string
         trackingId: string
         courier: string
         estimatedDelivery: string
-    }
+    }[]
 }
 
 

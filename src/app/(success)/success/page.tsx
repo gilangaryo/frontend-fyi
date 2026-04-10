@@ -76,7 +76,7 @@ function SuccessContent() {
         (async () => {
             try {
                 const res = await fetch(
-                    `${API_BASE}/orders/session/${order_id}`
+                    `${API_BASE}/orders/session/${order_id}`,
                 );
                 const json: OrderResponse = await res.json();
                 if (json.success) setData(json.data);
@@ -176,7 +176,7 @@ function SuccessContent() {
                                     <p className="text-gray-500 text-sm">
                                         x{it.quantity} — IDR{" "}
                                         {Number(
-                                            it.priceAtPurchase
+                                            it.priceAtPurchase,
                                         ).toLocaleString("id-ID")}
                                     </p>
                                 </div>
@@ -202,10 +202,10 @@ function SuccessContent() {
                             </span>
                         </div>
 
-                        <div className="flex justify-between">
+                        {/* <div className="flex justify-between">
                             <span>Payment Method</span>
                             <span>{provider || "Xendit Payment Link"}</span>
-                        </div>
+                        </div> */}
 
                         <div className="flex justify-between font-medium border-t border-gray-300 pt-3">
                             <span>Total</span>

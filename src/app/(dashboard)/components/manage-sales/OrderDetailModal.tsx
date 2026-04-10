@@ -3,13 +3,23 @@
 import Image from "next/image"
 import { useRef, useEffect } from "react"
 import { getImageUrl } from "@/lib/utils"
-import type { OrderApi } from "@/types/order"
+import type { AppliedPromotion, OrderApi, PricingBreakdownItem } from "@/types/order"
 import AcceptOrderButton from "./AcceptOrderButton"
 
 interface OrderDetailModalProps {
     order: OrderApi
     onClose: () => void
     onAccepted: (id: string) => void
+}
+
+function formatCurrency(value: number) {
+    return `Rp ${value.toLocaleString("id-ID")}`
+}
+
+function formatPromotionValue(promotion: AppliedPromotion) {
+    return promotion.type === "PERCENT"
+        ? `${promotion.value}%`
+        : formatCurrency(Number(promotion.value))
 }
 
 export default function OrderDetailModal({ order, onClose, onAccepted }: OrderDetailModalProps) {
@@ -25,19 +35,28 @@ export default function OrderDetailModal({ order, onClose, onAccepted }: OrderDe
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [onClose])
 
-    const totalPrice = (order.items ?? []).reduce(
+    const pricing = order.pricingBreakdown
+
+    const fallbackTotalPrice = (order.items ?? []).reduce(
         (sum, item) => sum + Number(item.priceAtPurchase) * item.quantity,
         0
     )
 
-    const discountAmount = order.discount
-        ? (order.discount.type === 'PERCENT'
-            ? (totalPrice * Number(order.discount.value)) / 100
-            : Number(order.discount.value))
-        : 0
+    const baseSubtotal = pricing?.summary.baseSubtotal ?? fallbackTotalPrice
+    const finalProductSubtotal = pricing?.summary.payableSubtotal ?? Number(order.total || fallbackTotalPrice)
+    const totalDiscount = pricing?.summary.totalDiscount ?? Number(order.discountTotal || 0)
+    const shippingCost = Number(order.shippingCost || 0)
+    const totalPayment = Number(order.total || finalProductSubtotal)
+    const appliedPromotions = pricing?.promotions.applied ?? []
 
-    const totalAfterDiscount = totalPrice - discountAmount
-    const totalSales = totalAfterDiscount + Number(order.shippingCost || 0)
+    const pricingItemsByVariantId = new Map(
+        (pricing?.items ?? []).map((item) => [item.variantId, item])
+    )
+
+    const getPricingItem = (variantId?: string | null): PricingBreakdownItem | undefined => {
+        if (!variantId) return undefined
+        return pricingItemsByVariantId.get(variantId)
+    }
 
 
     return (
@@ -88,25 +107,54 @@ export default function OrderDetailModal({ order, onClose, onAccepted }: OrderDe
                         <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b border-gray-200 pb-1">
                             Detail Product
                         </h3>
-                        {order.items?.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 rounded-lg p-3 mb-2">
-                                {item.product?.imageUrl && (
-                                    <Image
-                                        src={getImageUrl(item.product.imageUrl)}
-                                        alt={item.product.title}
-                                        width={60}
-                                        height={60}
-                                        className="rounded-md object-cover"
-                                    />
-                                )}
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-800">{item.product.title}</p>
+                        {order.items?.map((item) => {
+                            const pricingItem = getPricingItem(item.variantId)
+                            const baseUnitPrice = pricingItem?.baseUnitPrice ?? Number(item.product.price || item.priceAtPurchase)
+                            const finalUnitPrice = pricingItem?.effectiveUnitPrice ?? Number(item.priceAtPurchase)
+                            const itemDiscount = (pricingItem?.adjustments ?? []).reduce(
+                                (sum, adjustment) => sum + adjustment.amount,
+                                0
+                            )
+
+                            return (
+                                <div key={item.id} className="rounded-lg p-3 mb-2 border border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        {item.product?.imageUrl && (
+                                            <Image
+                                                src={getImageUrl(item.product.imageUrl)}
+                                                alt={item.product.title}
+                                                width={60}
+                                                height={60}
+                                                className="rounded-md object-cover"
+                                            />
+                                        )}
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-800">{item.product.title}</p>
+                                            <p className="text-xs text-gray-500">{item.quantity}x item</p>
+                                        </div>
+                                        <div className="text-right text-sm text-gray-700">
+                                            {baseUnitPrice !== finalUnitPrice && (
+                                                <p className="text-gray-400 line-through">
+                                                    {formatCurrency(baseUnitPrice)}
+                                                </p>
+                                            )}
+                                            <p className="font-medium">
+                                                {item.quantity}x {formatCurrency(finalUnitPrice)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {itemDiscount > 0 && (
+                                        <div className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+                                            <div className="flex justify-between">
+                                                <span>Total discount item</span>
+                                                <span>-{formatCurrency(itemDiscount)}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-sm font-medium text-gray-700">
-                                    {item.quantity}x Rp {Number(item.priceAtPurchase).toLocaleString("id-ID")}
-                                </p>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
 
                     {/* Gift Note */}
@@ -155,30 +203,40 @@ export default function OrderDetailModal({ order, onClose, onAccepted }: OrderDe
                         <h3 className="text-lg font-semibold text-gray-700">Payment Details</h3>
                         <div className="text-sm text-gray-600 space-y-1">
                             <div className="flex justify-between">
-                                <span>Total Product</span>
-                                <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
+                                <span>Initial Product Total</span>
+                                <span>{formatCurrency(baseSubtotal)}</span>
                             </div>
 
-                            {order.discount && discountAmount > 0 && (
-                                <div className="flex justify-between text-green-600">
-                                    <span className="flex items-center gap-2">
+                            {appliedPromotions.map((promotion) => (
+                                <div key={`${promotion.id}-${promotion.stage}`} className="flex justify-between text-green-600 gap-4">
+                                    <span className="flex items-center gap-2 flex-wrap">
                                         <span>Discount</span>
                                         <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
-                                            {order.discount.code}
+                                            {promotion.code}
                                         </span>
                                         <span className="text-xs text-gray-500">
-                                            ({order.discount.type === 'PERCENT' ? `${order.discount.value}%` : `IDR ${Number(order.discount.value).toLocaleString('id-ID')}`})
+                                            {promotion.title} ({formatPromotionValue(promotion)})
                                         </span>
                                     </span>
-                                    <span>-Rp {discountAmount.toLocaleString("id-ID")}</span>
+                                    <span>-{formatCurrency(promotion.amount)}</span>
+                                </div>
+                            ))}
+
+                            {totalDiscount > 0 && (
+                                <div className="flex justify-between">
+                                    <span>Product Total After Discount</span>
+                                    <span>{formatCurrency(finalProductSubtotal)}</span>
                                 </div>
                             )}
 
-
+                            <div className="flex justify-between">
+                                <span>Shipping Cost</span>
+                                <span>{formatCurrency(shippingCost)}</span>
+                            </div>
 
                             <div className="flex justify-between font-semibold text-gray-800 pt-2 border-t border-gray-200">
-                                <span>Total Sales</span>
-                                <span>Rp {totalSales.toLocaleString("id-ID")}</span>
+                                <span>Total Payment</span>
+                                <span>{formatCurrency(totalPayment)}</span>
                             </div>
                         </div>
                     </div>

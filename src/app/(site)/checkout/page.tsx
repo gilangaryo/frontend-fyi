@@ -11,66 +11,209 @@ import AddressSelector from "../components/checkout/AddressSelector";
 import { Gift } from "lucide-react";
 import toast from "react-hot-toast";
 
+interface AppliedPromotion {
+    id: string;
+    code: string;
+    title: string;
+    kind: string;
+    amount: number;
+}
+
+interface PricingItem {
+    variantId: string;
+    baseUnitPrice: number;
+    effectiveUnitPrice: number;
+}
+
+interface PricingPreview {
+    items?: PricingItem[];
+    summary?: {
+        totalDiscount: number;
+        payableSubtotal: number;
+    };
+    promotions?: {
+        applied?: AppliedPromotion[];
+        rejected?: Array<{
+            title?: string;
+            code?: string;
+            kind?: string;
+            reason?: string;
+        }>;
+    };
+}
+
+function formatCurrency(amount: number) {
+    return `IDR ${amount.toLocaleString("id-ID")}`;
+}
+
+function getPromotionKindLabel(kind: string) {
+    switch (kind) {
+        case "MINIMUM_PURCHASE_DISCOUNT":
+            return "Min. Purchase";
+        case "MINIMUM_QTY_DISCOUNT":
+            return "Min. Quantity";
+        case "COLLECTION_DISCOUNT":
+            return "Collection";
+        case "SPECIFIC_PRODUCT_DISCOUNT":
+            return "Product";
+        default:
+            return kind.toLowerCase().replace(/_/g, " ");
+    }
+}
+
 export default function CheckoutPage() {
     const dispatch = useDispatch();
     const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [storeOpen, setStoreOpen] = useState<boolean | null>(null);
     const [discountCode, setDiscountCode] = useState("");
-    const [discountAmount, setDiscountAmount] = useState(0);
-    const [discountId, setDiscountId] = useState<string | null>(null);
+    const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(
+        null,
+    );
+    const [appliedPromotionIds, setAppliedPromotionIds] = useState<string[]>(
+        [],
+    );
     const [appliedCode, setAppliedCode] = useState<string | null>(null);
     const [discountTried, setDiscountTried] = useState(false);
     const [discountLoading, setDiscountLoading] = useState(false);
+    const [discountMessage, setDiscountMessage] = useState<string | null>(null);
+    const [autoPreview, setAutoPreview] = useState<PricingPreview | null>(null);
+    const [autoLoading, setAutoLoading] = useState(false);
 
     const cartItems = useSelector((state: RootState) => state.cart.items);
     const giftNote = useSelector((state: RootState) => state.cart.giftNote);
     const subtotal = cartItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
-        0
+        0,
     );
-    const total = Math.max(subtotal - discountAmount, 0);
 
-    // Handle apply discount dengan API
+    // pricingPreview = combined preview when a code is checked; autoPreview = auto-only fallback
+    const activePreview = pricingPreview ?? autoPreview;
+    const discountAmount = activePreview?.summary?.totalDiscount ?? 0;
+    const total =
+        activePreview?.summary?.payableSubtotal ??
+        Math.max(subtotal - discountAmount, 0);
+    const pricedItems = Object.fromEntries(
+        (activePreview?.items || []).map((item) => [item.variantId, item]),
+    );
+    const AUTO_KINDS = ["MINIMUM_PURCHASE_DISCOUNT", "MINIMUM_QTY_DISCOUNT"];
+    const promotionDisplaySource = pricingPreview ?? autoPreview;
+    // When a code is applied, auto/cart-level promotions must come from the combined preview
+    // so minimum purchase/qty is evaluated after item-level discounts.
+    const autoDiscounts =
+        promotionDisplaySource?.promotions?.applied?.filter((p) =>
+            AUTO_KINDS.includes(p.kind),
+        ) ?? [];
+    const codeDiscounts =
+        pricingPreview?.promotions?.applied?.filter(
+            (p) => !AUTO_KINDS.includes(p.kind),
+        ) ?? [];
+    const totalSavings = autoDiscounts
+        .concat(codeDiscounts)
+        .reduce((sum, promotion) => sum + promotion.amount, 0);
+
     const handleApplyDiscount = async () => {
         if (!discountCode.trim()) {
+            setDiscountTried(false);
+            setDiscountMessage(null);
+            setPricingPreview(null);
+            setAppliedPromotionIds([]);
+            setAppliedCode(null);
             return;
         }
 
         setDiscountTried(true);
         setDiscountLoading(true);
+        setDiscountMessage(null);
 
         try {
             const res = await fetch(`${API_BASE}/discounts/validate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    code: discountCode,
-                    orderTotal: subtotal,
+                    code: discountCode.trim().toUpperCase(),
+                    autoApply: true,
+                    items: cartItems.map((item) => ({
+                        productId: item.id,
+                        variantId: item.variantId,
+                        quantity: item.quantity,
+                    })),
                 }),
             });
 
             const data = await res.json();
 
             if (data.success) {
-                setDiscountAmount(data.data.discountAmount);
-                setDiscountId(data.data.discountId);
-                setAppliedCode(discountCode.toUpperCase());
+                const preview = data.data as PricingPreview;
+                const appliedPromotions = preview.promotions?.applied || [];
+
+                setPricingPreview(preview);
+                setAppliedPromotionIds(
+                    appliedPromotions.map((promotion) => promotion.id),
+                );
+                setAppliedCode(discountCode.trim().toUpperCase());
+                setDiscountMessage(
+                    appliedPromotions.length > 0
+                        ? `${appliedPromotions.length} promotion applied to this cart.`
+                        : "Code checked, but no eligible promotion was applied.",
+                );
             } else {
-                // Reset jika tidak valid
-                setDiscountAmount(0);
-                setDiscountId(null);
+                setPricingPreview(null);
+                setAppliedPromotionIds([]);
                 setAppliedCode(null);
+                setDiscountMessage(
+                    data.message || "Invalid or expired discount code.",
+                );
             }
         } catch (err) {
             console.error("❌ Discount validation error:", err);
-            setDiscountAmount(0);
-            setDiscountId(null);
+            setPricingPreview(null);
+            setAppliedPromotionIds([]);
             setAppliedCode(null);
+            setDiscountMessage("Failed to validate discount code.");
         } finally {
             setDiscountLoading(false);
         }
     };
+
+    // Auto-fetch qualifying discounts (min purchase / min qty) on cart change
+    useEffect(() => {
+        if (cartItems.length === 0) {
+            setAutoPreview(null);
+            return;
+        }
+        let cancelled = false;
+        setAutoLoading(true);
+        fetch(`${API_BASE}/discounts/validate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                autoApply: true,
+                items: cartItems.map((item) => ({
+                    productId: item.id,
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                })),
+            }),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (!cancelled) {
+                    setAutoPreview(
+                        data.success ? (data.data as PricingPreview) : null,
+                    );
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setAutoPreview(null);
+            })
+            .finally(() => {
+                if (!cancelled) setAutoLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [cartItems]);
 
     useEffect(() => setMounted(true), []);
 
@@ -90,6 +233,18 @@ export default function CheckoutPage() {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        setDiscountTried(false);
+        setDiscountMessage(null);
+        setPricingPreview(null);
+        setAppliedPromotionIds([]);
+        setAppliedCode(null);
+    }, [discountCode, cartItems]);
+
+    // All applied IDs: from combined (code) preview, or auto-only preview
+    const allAppliedIds =
+        activePreview?.promotions?.applied?.map((p) => p.id) ?? [];
 
     const [form, setForm] = useState({
         email: "",
@@ -123,7 +278,7 @@ export default function CheckoutPage() {
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-        >
+        >,
     ) => {
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
@@ -138,7 +293,7 @@ export default function CheckoutPage() {
         }
         if (storeOpen === false) {
             toast.error(
-                "The store is currently closed. You cannot place an order right now."
+                "The store is currently closed. You cannot place an order right now.",
             );
             return;
         }
@@ -161,7 +316,9 @@ export default function CheckoutPage() {
                     order_note: null,
                 },
                 giftNote: giftNote || null,
-                discountId: discountId || null, // Tambahkan discountId
+                discountId: allAppliedIds[0] || null,
+                discountIds: allAppliedIds,
+                promoCodes: appliedCode ? [appliedCode] : [],
             };
 
             let payload: unknown;
@@ -220,8 +377,8 @@ export default function CheckoutPage() {
                 err instanceof Error
                     ? err.message
                     : typeof err === "string"
-                    ? err
-                    : "Failed to checkout";
+                      ? err
+                      : "Failed to checkout";
 
             toast.error(message);
         } finally {
@@ -400,10 +557,33 @@ export default function CheckoutPage() {
                                         <p className="text-gray-500 text-sm">
                                             {item.size || "All Size"}
                                         </p>
-                                        <p className="font-semibold text-gray-800">
-                                            IDR{" "}
-                                            {item.price.toLocaleString("id-ID")}
-                                        </p>
+                                        {item.variantId &&
+                                        pricedItems[item.variantId] &&
+                                        pricedItems[item.variantId]
+                                            .effectiveUnitPrice <
+                                            pricedItems[item.variantId]
+                                                .baseUnitPrice ? (
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-gray-400 line-through">
+                                                    {formatCurrency(
+                                                        pricedItems[
+                                                            item.variantId
+                                                        ].baseUnitPrice,
+                                                    )}
+                                                </p>
+                                                <p className="font-semibold text-emerald-700">
+                                                    {formatCurrency(
+                                                        pricedItems[
+                                                            item.variantId
+                                                        ].effectiveUnitPrice,
+                                                    )}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="font-semibold text-gray-800">
+                                                {formatCurrency(item.price)}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 <p className="text-gray-600 text-sm">
@@ -411,7 +591,6 @@ export default function CheckoutPage() {
                                 </p>
                             </div>
                         ))}
-
                         {/* Gift Note Display */}
                         {giftNote && (
                             <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
@@ -433,17 +612,19 @@ export default function CheckoutPage() {
                         )}
 
                         <div className="space-y-4 text-sm text-gray-700">
-                            {/* Discount Input */}
+                            {/* Discount code input */}
                             <div className="space-y-1">
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
                                     <input
                                         type="text"
                                         placeholder="Discount code"
                                         value={discountCode}
                                         onChange={(e) =>
-                                            setDiscountCode(e.target.value)
+                                            setDiscountCode(
+                                                e.target.value.toUpperCase(),
+                                            )
                                         }
-                                        className="flex-1 border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-200 uppercase"
+                                        className="flex-1 border border-gray-300 rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 uppercase"
                                     />
                                     <button
                                         type="button"
@@ -457,45 +638,179 @@ export default function CheckoutPage() {
                                     </button>
                                 </div>
 
-                                {discountTried && !appliedCode && (
-                                    <p className="text-xs text-red-500 mt-1">
-                                        ⚠️ Invalid or expired discount code.
-                                    </p>
-                                )}
-                                {discountTried && appliedCode && (
-                                    <p className="text-xs text-green-600 mt-2">
-                                        ✅ Discount code &quot;{appliedCode}
-                                        &quot; applied successfully!
-                                    </p>
-                                )}
+                                {discountTried &&
+                                    !appliedCode &&
+                                    discountMessage && (
+                                        <p className="text-xs text-red-500">
+                                            {discountMessage}
+                                        </p>
+                                    )}
+                                {discountTried &&
+                                    appliedCode &&
+                                    discountMessage && (
+                                        <p className="text-xs text-green-600">
+                                            {discountMessage}
+                                        </p>
+                                    )}
                             </div>
+                            {codeDiscounts.length > 0 && (
+                                <div className="border border-gray-200 rounded-md p-3 bg-gray-50 space-y-2">
+                                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                        Applied promotions
+                                    </p>
+                                    {codeDiscounts.map((promo) => (
+                                        <div
+                                            key={promo.id}
+                                            className="flex justify-between items-start text-sm"
+                                        >
+                                            <div>
+                                                <p className="font-medium text-gray-800">
+                                                    {promo.title}
+                                                </p>
+                                                <p className="text-xs text-gray-400">
+                                                    {promo.code && (
+                                                        <span className="mr-1">
+                                                            {promo.code} ·
+                                                        </span>
+                                                    )}
+                                                    {getPromotionKindLabel(
+                                                        promo.kind,
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <span className="text-green-600 font-medium shrink-0">
+                                                -{formatCurrency(promo.amount)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
-                            {/* Price Summary */}
-                            <div className="space-y-2">
+                            {/* Auto promo banner */}
+                            {autoLoading && (
+                                <p className="text-xs text-gray-400 animate-pulse">
+                                    Checking automatic discounts...
+                                </p>
+                            )}
+                            {!autoLoading && autoDiscounts.length > 0 && (
+                                <div className="border border-gray-200 rounded-md p-3 bg-gray-50 space-y-2">
+                                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                        Automatic discount
+                                    </p>
+                                    {autoDiscounts.map((promo) => (
+                                        <div
+                                            key={promo.id}
+                                            className="flex justify-between items-start text-sm"
+                                        >
+                                            <div>
+                                                <p className="font-medium text-gray-800">
+                                                    {promo.title}
+                                                </p>
+                                                <p className="text-xs text-gray-400">
+                                                    {getPromotionKindLabel(
+                                                        promo.kind,
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <span className="text-green-600 font-medium shrink-0">
+                                                -{formatCurrency(promo.amount)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Code-based promotions */}
+
+                            {/* Rejected promotions — hide auto-discount conflicts, only show user-relevant rejections */}
+                            {(() => {
+                                const visibleRejected = (
+                                    activePreview?.promotions?.rejected ?? []
+                                ).filter(
+                                    (promo) =>
+                                        !(
+                                            AUTO_KINDS.includes(
+                                                promo.kind ?? "",
+                                            ) &&
+                                            promo.reason ===
+                                                "Conflicts with a higher value non-combinable promotion"
+                                        ),
+                                );
+                                return visibleRejected.length > 0 ? (
+                                    <div className="border border-gray-200 rounded-md p-3 bg-gray-50 space-y-1">
+                                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                            Not applied
+                                        </p>
+                                        {visibleRejected.map((promo, index) => (
+                                            <p
+                                                key={`${promo.code || promo.title || "promo"}-${index}`}
+                                                className="text-xs text-gray-500"
+                                            >
+                                                <span className="text-gray-700">
+                                                    {promo.title ||
+                                                        promo.code ||
+                                                        "Promotion"}
+                                                </span>
+                                                {" · "}
+                                                {promo.reason ||
+                                                    "Not eligible for this cart."}
+                                            </p>
+                                        ))}
+                                    </div>
+                                ) : null;
+                            })()}
+
+                            {/* Price summary */}
+                            <div className="space-y-2 pt-2">
                                 <div className="flex justify-between">
                                     <span>Subtotal</span>
-                                    <span>
-                                        IDR {subtotal.toLocaleString("id-ID")}
-                                    </span>
+                                    <span>{formatCurrency(subtotal)}</span>
                                 </div>
 
-                                {appliedCode && discountAmount > 0 && (
-                                    <div className="flex justify-between text-green-600">
-                                        <span>Discount ({appliedCode})</span>
+                                {codeDiscounts.map((promo) => (
+                                    <div
+                                        key={promo.id}
+                                        className="flex justify-between text-green-600"
+                                    >
                                         <span>
-                                            -IDR{" "}
-                                            {discountAmount.toLocaleString(
-                                                "id-ID"
-                                            )}
+                                            {promo.code
+                                                ? `Discount (${promo.code})`
+                                                : promo.title}
+                                        </span>
+                                        <span>
+                                            -{formatCurrency(promo.amount)}
                                         </span>
                                     </div>
-                                )}
-
-                                <div className="flex justify-between font-semibold pt-2 border-t">
+                                ))}
+                                {autoDiscounts.map((promo) => (
+                                    <div
+                                        key={promo.id}
+                                        className="flex justify-between text-green-600"
+                                    >
+                                        <span>{promo.title}</span>
+                                        <span>
+                                            -{formatCurrency(promo.amount)}
+                                        </span>
+                                    </div>
+                                ))}
+                                {autoDiscounts.length === 0 &&
+                                    codeDiscounts.length === 0 &&
+                                    discountAmount > 0 && (
+                                        <div className="flex justify-between text-green-600">
+                                            <span>
+                                                {appliedCode
+                                                    ? `Discount (${appliedCode})`
+                                                    : "Automatic discount"}
+                                            </span>
+                                            <span>
+                                                -
+                                                {formatCurrency(discountAmount)}
+                                            </span>
+                                        </div>
+                                    )}
+                                <div className="flex justify-between font-semibold pt-2 border-t border-gray-200">
                                     <span>Total</span>
-                                    <span>
-                                        IDR {total.toLocaleString("id-ID")}
-                                    </span>
+                                    <span>{formatCurrency(total)}</span>
                                 </div>
                             </div>
                         </div>

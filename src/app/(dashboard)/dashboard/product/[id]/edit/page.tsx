@@ -132,12 +132,12 @@ export default function EditProductPage() {
                         colRes.json(),
                         catRes.json(),
                         fabRes.ok ? fabRes.json() : { data: [] },
-                    ]
+                    ],
                 );
 
                 if (!prodRes.ok)
                     throw new Error(
-                        prodData.message || "Failed to fetch product"
+                        prodData.message || "Failed to fetch product",
                     );
                 const product = prodData.data;
 
@@ -156,7 +156,7 @@ export default function EditProductPage() {
                         url: img.imageUrl,
                         isPrimary: img.isPrimary,
                         isSecondary: img.isSecondary || false,
-                    }))
+                    })),
                 );
 
                 setVariants(
@@ -170,7 +170,7 @@ export default function EditProductPage() {
                         height: v.height || "",
                         stock: v.stock?.toString() || "",
                         sku: v.sku || "",
-                    }))
+                    })),
                 );
 
                 setCollections(colData.data || []);
@@ -212,7 +212,7 @@ export default function EditProductPage() {
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        >,
     ) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -221,10 +221,14 @@ export default function EditProductPage() {
     const handleVariantChange = (
         index: number,
         field: string,
-        value: string
+        value: string,
     ) => {
+        const normalizedValue =
+            field === "stock"
+                ? value.replace(/\D/g, "").replace(/^0+(?=\d)/, "")
+                : value;
         const updated = [...variants];
-        updated[index] = { ...updated[index], [field]: value };
+        updated[index] = { ...updated[index], [field]: normalizedValue };
         setVariants(updated);
     };
 
@@ -250,13 +254,13 @@ export default function EditProductPage() {
     };
 
     const findOrCreateFabric = async (
-        fabricName: string
+        fabricName: string,
     ): Promise<string | null> => {
         if (!fabricName.trim()) return null;
         try {
             const token = localStorage.getItem("token");
             const existing = fabrics.find(
-                (f) => f.name.toLowerCase() === fabricName.trim().toLowerCase()
+                (f) => f.name.toLowerCase() === fabricName.trim().toLowerCase(),
             );
             if (existing) return existing.id;
 
@@ -280,7 +284,7 @@ export default function EditProductPage() {
 
     // Function to find or create category
     const findOrCreateCategory = async (
-        categoryTitle: string
+        categoryTitle: string,
     ): Promise<string | null> => {
         if (!categoryTitle.trim()) return null;
 
@@ -306,7 +310,7 @@ export default function EditProductPage() {
 
             // Update categories list if it's a new category
             const existingCategory = categories.find(
-                (c) => c.id === data.data.id
+                (c) => c.id === data.data.id,
             );
             if (!existingCategory) {
                 setCategories([...categories, data.data]);
@@ -462,9 +466,9 @@ export default function EditProductPage() {
                                         setTimeout(
                                             () =>
                                                 setShowCategorySuggestions(
-                                                    false
+                                                    false,
                                                 ),
-                                            200
+                                            200,
                                         )
                                     }
                                     onKeyDown={(e) => {
@@ -498,18 +502,18 @@ export default function EditProductPage() {
                                                 c.title
                                                     .toLowerCase()
                                                     .includes(
-                                                        categoryInput.toLowerCase()
-                                                    )
+                                                        categoryInput.toLowerCase(),
+                                                    ),
                                             )
                                             .map((category) => (
                                                 <div
                                                     key={category.id}
                                                     onClick={() => {
                                                         setCategoryInput(
-                                                            category.title
+                                                            category.title,
                                                         );
                                                         setShowCategorySuggestions(
-                                                            false
+                                                            false,
                                                         );
                                                     }}
                                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
@@ -521,8 +525,8 @@ export default function EditProductPage() {
                                             c.title
                                                 .toLowerCase()
                                                 .includes(
-                                                    categoryInput.toLowerCase()
-                                                )
+                                                    categoryInput.toLowerCase(),
+                                                ),
                                         ).length === 0 &&
                                             categoryInput && (
                                                 <div className="px-3 py-2 text-sm text-gray-500 italic">
@@ -544,7 +548,7 @@ export default function EditProductPage() {
                                 !categories.find(
                                     (c) =>
                                         c.title.toLowerCase() ===
-                                        categoryInput.toLowerCase()
+                                        categoryInput.toLowerCase(),
                                 ) && (
                                     <span className="flex items-center px-3 py-2 bg-green-50 text-green-700 text-sm border border-green-200 whitespace-nowrap">
                                         New: {categoryInput}
@@ -574,7 +578,7 @@ export default function EditProductPage() {
                                         setTimeout(
                                             () =>
                                                 setShowFabricSuggestions(false),
-                                            200
+                                            200,
                                         )
                                     }
                                     onKeyDown={(e) => {
@@ -608,18 +612,18 @@ export default function EditProductPage() {
                                                 f.name
                                                     .toLowerCase()
                                                     .includes(
-                                                        fabricInput.toLowerCase()
-                                                    )
+                                                        fabricInput.toLowerCase(),
+                                                    ),
                                             )
                                             .map((fabric) => (
                                                 <div
                                                     key={fabric.id}
                                                     onClick={() => {
                                                         setFabricInput(
-                                                            fabric.name
+                                                            fabric.name,
                                                         );
                                                         setShowFabricSuggestions(
-                                                            false
+                                                            false,
                                                         );
                                                     }}
                                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
@@ -631,8 +635,8 @@ export default function EditProductPage() {
                                             f.name
                                                 .toLowerCase()
                                                 .includes(
-                                                    fabricInput.toLowerCase()
-                                                )
+                                                    fabricInput.toLowerCase(),
+                                                ),
                                         ).length === 0 &&
                                             fabricInput && (
                                                 <div className="px-3 py-2 text-sm text-gray-500 italic">
@@ -654,7 +658,7 @@ export default function EditProductPage() {
                                 !fabrics.find(
                                     (f) =>
                                         f.name.toLowerCase() ===
-                                        fabricInput.toLowerCase()
+                                        fabricInput.toLowerCase(),
                                 ) && (
                                     <span className="flex items-center px-3 py-2 bg-green-50 text-green-700 text-sm border border-green-200 whitespace-nowrap">
                                         New: {fabricInput}
@@ -769,7 +773,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "size",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -784,7 +788,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "stock",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -841,7 +845,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "waist",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -856,7 +860,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "length",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -871,7 +875,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "height",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -886,7 +890,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "bust",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -901,7 +905,7 @@ export default function EditProductPage() {
                                                 handleVariantChange(
                                                     i,
                                                     "sleeve",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
@@ -926,8 +930,8 @@ export default function EditProductPage() {
                     {uploadingImages
                         ? "Uploading images..."
                         : submitting
-                        ? "Updating..."
-                        : "Update Product"}
+                          ? "Updating..."
+                          : "Update Product"}
                 </button>
             </form>
         </div>
