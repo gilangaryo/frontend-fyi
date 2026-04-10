@@ -175,5 +175,5 @@ export interface OrderCardData {
     createdAt: string;
     status: string;
     paymentStatus: string;
-    trackingLink: string;
+    trackingLink?: string | null;
 }
