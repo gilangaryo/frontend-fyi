@@ -13,7 +13,7 @@ interface Order {
     createdAt: string;
     status: string;
     paymentStatus: string;
-    trackingLink?: string | null;
+    trackingLink?: string;
 }
 
 export default function OrderCard({

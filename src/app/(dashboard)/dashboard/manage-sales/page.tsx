@@ -53,7 +53,7 @@ export default function ManageSalesPage() {
                         createdAt: o.createdAt,
                         status: o.status,
                         paymentStatus: o.payments?.[0]?.status || "PENDING",
-                        trackingLink: o.tracking?.[0]?.trackingLink || null,
+                        trackingLink: o.tracking?.[0]?.trackingLink,
                     }),
                 );
 
