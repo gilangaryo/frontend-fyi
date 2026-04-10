@@ -74,22 +74,22 @@ const KIND_OPTIONS: Array<{
     {
         value: "COLLECTION_DISCOUNT",
         label: "Collection Discount",
-        helper: "Potongan hanya untuk item di collection tertentu.",
+        helper: "Applies only to items in selected collections.",
     },
     {
         value: "SPECIFIC_PRODUCT_DISCOUNT",
         label: "Specific Product Discount",
-        helper: "Potongan untuk produk tertentu, biasanya tampil di product page.",
+        helper: "Applies to selected products, typically shown on product pages.",
     },
     {
         value: "MINIMUM_PURCHASE_DISCOUNT",
         label: "Minimum Purchase Discount",
-        helper: "Aktif bila subtotal cart mencapai nominal minimum.",
+        helper: "Applies when the cart subtotal reaches the minimum amount.",
     },
     {
         value: "MINIMUM_QTY_DISCOUNT",
         label: "Minimum Quantity Discount",
-        helper: "Aktif bila jumlah item di cart memenuhi threshold qty.",
+        helper: "Applies when the total item quantity reaches the threshold.",
     },
 ];
 
@@ -125,6 +125,10 @@ function getAllowedCombinableOptions(kind: PromotionKind) {
     return ITEM_LEVEL_KINDS;
 }
 
+function isCartLevelKind(kind: PromotionKind) {
+    return CART_LEVEL_KINDS.includes(kind);
+}
+
 function formatThousands(raw: string): string {
     const num = raw.replace(/\D/g, "");
     if (!num) return "";
@@ -133,6 +137,15 @@ function formatThousands(raw: string): string {
 
 function parseThousands(formatted: string): string {
     return formatted.replace(/\D/g, "");
+}
+
+function normalizePercentageValue(raw: string): string {
+    if (!raw) return "";
+
+    const numericValue = Number(raw);
+    if (Number.isNaN(numericValue)) return "";
+
+    return String(Math.min(Math.max(numericValue, 0), 100));
 }
 
 export default function DiscountFormModal({
@@ -163,7 +176,7 @@ export default function DiscountFormModal({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
-            <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
                 {/* Header */}
                 <div className="relative  bg-gradient-to-br from-primary-studio via-secondary-studio to-primary-studio px-8 py-6">
                     <div className="relative flex items-start justify-between gap-4">
@@ -268,29 +281,38 @@ export default function DiscountFormModal({
                                                 key={option.value}
                                                 type="button"
                                                 onClick={() =>
-                                                    onChange((c) => ({
-                                                        ...c,
-                                                        kind: option.value,
-                                                        collectionIds:
-                                                            option.value ===
-                                                            "COLLECTION_DISCOUNT"
-                                                                ? c.collectionIds
-                                                                : [],
-                                                        productIds:
-                                                            option.value ===
-                                                            "SPECIFIC_PRODUCT_DISCOUNT"
-                                                                ? c.productIds
-                                                                : [],
-                                                        combinableWith:
-                                                            c.combinableWith.filter(
-                                                                (kind) =>
-                                                                    getAllowedCombinableOptions(
-                                                                        option.value,
-                                                                    ).includes(
-                                                                        kind,
-                                                                    ),
-                                                            ),
-                                                    }))
+                                                    onChange((c) => {
+                                                        const nextIsCartLevel =
+                                                            isCartLevelKind(
+                                                                option.value,
+                                                            );
+
+                                                        return {
+                                                            ...c,
+                                                            kind: option.value,
+                                                            autoApply:
+                                                                nextIsCartLevel,
+                                                            collectionIds:
+                                                                option.value ===
+                                                                "COLLECTION_DISCOUNT"
+                                                                    ? c.collectionIds
+                                                                    : [],
+                                                            productIds:
+                                                                option.value ===
+                                                                "SPECIFIC_PRODUCT_DISCOUNT"
+                                                                    ? c.productIds
+                                                                    : [],
+                                                            combinableWith:
+                                                                c.combinableWith.filter(
+                                                                    (kind) =>
+                                                                        getAllowedCombinableOptions(
+                                                                            option.value,
+                                                                        ).includes(
+                                                                            kind,
+                                                                        ),
+                                                                ),
+                                                        };
+                                                    })
                                                 }
                                                 className={`rounded-2xl border p-4 text-left transition ${
                                                     form.kind === option.value
@@ -389,8 +411,10 @@ export default function DiscountFormModal({
                                                                       e.target
                                                                           .value,
                                                                   )
-                                                                : e.target
-                                                                      .value,
+                                                                : normalizePercentageValue(
+                                                                      e.target
+                                                                          .value,
+                                                                  ),
                                                     }))
                                                 }
                                                 className="w-full rounded-xl border border-stone-200 bg-stone-50 py-3 pl-10 pr-4 text-xl font-semibold text-stone-900 outline-none transition focus:border-stone-400 focus:bg-white"
@@ -403,17 +427,6 @@ export default function DiscountFormModal({
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs text-stone-400">
-                                            Execution order:{" "}
-                                            <span className="font-medium text-stone-600">
-                                                Collection / Product
-                                            </span>{" "}
-                                            dihitung lebih dulu, baru{" "}
-                                            <span className="font-medium text-stone-600">
-                                                Min. Purchase / Min. Qty
-                                            </span>
-                                            .
-                                        </p>
                                         {form.type === "PERCENT" && (
                                             <p className="text-xs text-amber-500">
                                                 Percentage max 100%.
@@ -561,7 +574,7 @@ export default function DiscountFormModal({
                                             />
                                             <input
                                                 type="text"
-                                                placeholder="Cari collection..."
+                                                placeholder="Search collections..."
                                                 value={collectionSearch}
                                                 onChange={(e) =>
                                                     setCollectionSearch(
@@ -575,8 +588,7 @@ export default function DiscountFormModal({
                                             {filteredCollections.length ===
                                             0 ? (
                                                 <p className="px-4 py-3 text-xs text-stone-400">
-                                                    Tidak ada collection
-                                                    ditemukan.
+                                                    No collections found.
                                                 </p>
                                             ) : (
                                                 filteredCollections.map(
@@ -664,7 +676,7 @@ export default function DiscountFormModal({
                                             />
                                             <input
                                                 type="text"
-                                                placeholder="Cari product..."
+                                                placeholder="Search products..."
                                                 value={productSearch}
                                                 onChange={(e) =>
                                                     setProductSearch(
@@ -674,10 +686,10 @@ export default function DiscountFormModal({
                                                 className="w-full rounded-xl border border-stone-200 bg-white py-2 pl-8 pr-3 text-xs outline-none transition focus:border-stone-400"
                                             />
                                         </div>
-                                        <div className="max-h-56 overflow-y-auto rounded-2xl border border-stone-200 bg-stone-50">
+                                        <div className="max-h-80 overflow-y-auto rounded-2xl border border-stone-200 bg-stone-50">
                                             {filteredProducts.length === 0 ? (
                                                 <p className="px-4 py-3 text-xs text-stone-400">
-                                                    Tidak ada product ditemukan.
+                                                    No products found.
                                                 </p>
                                             ) : (
                                                 filteredProducts.map(
@@ -802,9 +814,9 @@ export default function DiscountFormModal({
                                                         Auto Apply
                                                     </p>
                                                     <p className="text-xs text-stone-400">
-                                                        Stored on the promo, but
-                                                        checkout still uses code
-                                                        validation today.
+                                                        {isCartLevelPromotion
+                                                            ? "Enabled by default for cart-level promotions, but can still be turned off."
+                                                            : "Stored on the promo, but checkout still uses code validation today."}
                                                     </p>
                                                 </div>
                                                 <div
@@ -832,7 +844,7 @@ export default function DiscountFormModal({
                                     </div>
 
                                     {/* Stack With */}
-                                    <div>
+                                    {/* <div>
                                         <div className="mb-1 flex items-center gap-2">
                                             <Shuffle
                                                 size={14}
@@ -915,10 +927,10 @@ export default function DiscountFormModal({
                                                 </div>
                                             </>
                                         ) : null}
-                                    </div>
+                                    </div> */}
 
                                     {/* Notes */}
-                                    <div className="rounded-2xl border border-dashed border-stone-300 p-4">
+                                    {/* <div className="rounded-2xl border border-dashed border-stone-300 p-4">
                                         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                                             How It Works
                                         </p>
@@ -953,7 +965,7 @@ export default function DiscountFormModal({
                                                 "Stack With" satu sama lain.
                                             </li>
                                         </ul>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         </div>

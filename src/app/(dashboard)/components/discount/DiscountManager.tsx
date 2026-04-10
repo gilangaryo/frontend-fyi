@@ -558,7 +558,7 @@ export default function DiscountManager({
     return (
         <div className={embedded ? "" : "min-h-screen bg-stone-50 p-6"}>
             <div className={embedded ? "" : "mx-auto max-w-7xl"}>
-                <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm md:flex-row md:items-end md:justify-between">
+                {/* <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm md:flex-row md:items-end md:justify-between">
                     <div className="max-w-2xl">
                         <h1 className="text-2xl font-semibold text-stone-900 md:text-3xl">
                             {title}
@@ -574,9 +574,9 @@ export default function DiscountManager({
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-studio px-5 py-3 text-sm font-medium text-white transition hover:bg-secondary-studio"
                     >
                         <Plus size={16} />
-                        Add Promotion
+                        Add Discount
                     </button>
-                </div>
+                </div> */}
 
                 {loading ? (
                     <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white">

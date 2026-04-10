@@ -73,7 +73,11 @@ export default function DateTimePicker({
     const triggerRef = useRef<HTMLButtonElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+    const [popoverPos, setPopoverPos] = useState({
+        top: 0,
+        left: 0,
+        maxHeight: 0,
+    });
 
     const parsed = parseValue(value);
     const now = new Date();
@@ -99,18 +103,54 @@ export default function DateTimePicker({
     // Position popover relative to trigger
     const updatePosition = useCallback(() => {
         if (!triggerRef.current) return;
+
         const rect = triggerRef.current.getBoundingClientRect();
         const popoverWidth = 320;
+        const viewportPadding = 8;
+        const preferredGap = 6;
+        const estimatedPopoverHeight = popoverRef.current?.offsetHeight ?? 460;
         let left = rect.left;
+
         // Prevent going off-screen right
-        if (left + popoverWidth > window.innerWidth - 8) {
-            left = window.innerWidth - popoverWidth - 8;
+        if (left + popoverWidth > window.innerWidth - viewportPadding) {
+            left = window.innerWidth - popoverWidth - viewportPadding;
         }
-        setPopoverPos({ top: rect.bottom + 6, left });
+
+        left = Math.max(viewportPadding, left);
+
+        const spaceBelow =
+            window.innerHeight - rect.bottom - viewportPadding - preferredGap;
+        const spaceAbove = rect.top - viewportPadding - preferredGap;
+        const placeAbove =
+            spaceBelow < estimatedPopoverHeight && spaceAbove > spaceBelow;
+        const maxHeight = Math.max(240, placeAbove ? spaceAbove : spaceBelow);
+        const top = placeAbove
+            ? Math.max(
+                  viewportPadding,
+                  rect.top -
+                      Math.min(estimatedPopoverHeight, maxHeight) -
+                      preferredGap,
+              )
+            : rect.bottom + preferredGap;
+
+        setPopoverPos({ top, left, maxHeight });
     }, []);
 
     useEffect(() => {
-        if (open) updatePosition();
+        if (!open) return;
+
+        updatePosition();
+        const frame = window.requestAnimationFrame(updatePosition);
+
+        const handleViewportChange = () => updatePosition();
+        window.addEventListener("resize", handleViewportChange);
+        window.addEventListener("scroll", handleViewportChange, true);
+
+        return () => {
+            window.cancelAnimationFrame(frame);
+            window.removeEventListener("resize", handleViewportChange);
+            window.removeEventListener("scroll", handleViewportChange, true);
+        };
     }, [open, updatePosition]);
 
     // Close on outside click
@@ -256,7 +296,7 @@ export default function DateTimePicker({
                     </span>
                 ) : (
                     <span className="flex-1 text-stone-400">
-                        Pilih tanggal & waktu
+                        Choose date and time
                     </span>
                 )}
                 {displayValue && !required && (
@@ -278,170 +318,181 @@ export default function DateTimePicker({
                 createPortal(
                     <div
                         ref={popoverRef}
-                        style={{ top: popoverPos.top, left: popoverPos.left }}
-                        className="fixed z-[200] w-[320px] overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-1"
+                        style={{
+                            top: popoverPos.top,
+                            left: popoverPos.left,
+                            maxHeight: popoverPos.maxHeight || undefined,
+                        }}
+                        className="fixed z-[200] flex w-[320px] max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-1"
                     >
-                        {/* Calendar header */}
-                        <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
-                            <button
-                                type="button"
-                                onClick={prevMonth}
-                                className="rounded-lg p-1 text-stone-500 transition hover:bg-stone-100"
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                            <span className="text-sm font-semibold text-stone-800">
-                                {MONTH_NAMES[viewMonth]} {viewYear}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={nextMonth}
-                                className="rounded-lg p-1 text-stone-500 transition hover:bg-stone-100"
-                            >
-                                <ChevronRight size={16} />
-                            </button>
-                        </div>
-
-                        {/* Day names */}
-                        <div className="grid grid-cols-7 border-b border-stone-50 px-3 py-2">
-                            {DAY_NAMES.map((d) => (
-                                <span
-                                    key={d}
-                                    className="text-center text-[11px] font-medium text-stone-400"
+                        <div className="min-h-0 overflow-y-auto">
+                            {/* Calendar header */}
+                            <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
+                                <button
+                                    type="button"
+                                    onClick={prevMonth}
+                                    className="rounded-lg p-1 text-stone-500 transition hover:bg-stone-100"
                                 >
-                                    {d}
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <span className="text-sm font-semibold text-stone-800">
+                                    {MONTH_NAMES[viewMonth]} {viewYear}
                                 </span>
-                            ))}
-                        </div>
-
-                        {/* Calendar grid */}
-                        <div className="grid grid-cols-7 gap-y-0.5 px-3 py-2">
-                            {cells.map((cell, idx) => {
-                                const sel =
-                                    cell.current && isSelected(cell.day);
-                                const today = cell.current && isToday(cell.day);
-                                return (
-                                    <button
-                                        key={idx}
-                                        type="button"
-                                        disabled={!cell.current}
-                                        onClick={() =>
-                                            cell.current && selectDay(cell.day)
-                                        }
-                                        className={`mx-auto flex h-8 w-8 items-center justify-center rounded-lg text-xs transition ${
-                                            sel
-                                                ? "bg-primary-studio font-semibold text-white"
-                                                : today
-                                                  ? "font-semibold text-primary-studio ring-1 ring-primary-studio/30"
-                                                  : cell.current
-                                                    ? "text-stone-700 hover:bg-stone-100"
-                                                    : "text-stone-300"
-                                        }`}
-                                    >
-                                        {cell.day}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Time picker */}
-                        <div className="border-t border-stone-100 px-4 py-3">
-                            <div className="flex items-center gap-2 mb-2.5">
-                                <Clock size={13} className="text-stone-400" />
-                                <span className="text-xs font-medium text-stone-500">
-                                    Waktu
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={nextMonth}
+                                    className="rounded-lg p-1 text-stone-500 transition hover:bg-stone-100"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
                             </div>
-                            <div className="flex items-center justify-center gap-2">
-                                {/* Hour spinner */}
-                                <div className="flex flex-col items-center">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            changeHour((hour + 23) % 24)
-                                        }
-                                        className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
+
+                            {/* Day names */}
+                            <div className="grid grid-cols-7 border-b border-stone-50 px-3 py-2">
+                                {DAY_NAMES.map((d) => (
+                                    <span
+                                        key={d}
+                                        className="text-center text-[11px] font-medium text-stone-400"
                                     >
-                                        <ChevronUp size={14} />
-                                    </button>
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-studio/8 border border-primary-studio/20">
-                                        <span className="text-base font-semibold tabular-nums text-stone-800">
-                                            {pad(hour)}
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            changeHour((hour + 1) % 24)
-                                        }
-                                        className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
-                                    >
-                                        <ChevronDown size={14} />
-                                    </button>
-                                    <span className="mt-0.5 text-[10px] font-medium text-stone-400 uppercase tracking-wide">
-                                        Jam
+                                        {d}
                                     </span>
-                                </div>
+                                ))}
+                            </div>
 
-                                <span className="mb-4 text-xl font-bold text-stone-300">
-                                    :
-                                </span>
-
-                                {/* Minute spinner */}
-                                <div className="flex flex-col items-center">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            changeMinute((minute + 59) % 60)
-                                        }
-                                        className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
-                                    >
-                                        <ChevronUp size={14} />
-                                    </button>
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-studio/8 border border-primary-studio/20">
-                                        <span className="text-base font-semibold tabular-nums text-stone-800">
-                                            {pad(minute)}
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            changeMinute((minute + 1) % 60)
-                                        }
-                                        className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
-                                    >
-                                        <ChevronDown size={14} />
-                                    </button>
-                                    <span className="mt-0.5 text-[10px] font-medium text-stone-400 uppercase tracking-wide">
-                                        Menit
-                                    </span>
-                                </div>
-
-                                {/* Quick presets */}
-                                <div className="ml-auto flex flex-col gap-1.5">
-                                    {[
-                                        [0, 0],
-                                        [9, 0],
-                                        [12, 0],
-                                        [18, 0],
-                                        [23, 59],
-                                    ].map(([h, m]) => (
+                            {/* Calendar grid */}
+                            <div className="grid grid-cols-7 gap-y-0.5 px-3 py-2">
+                                {cells.map((cell, idx) => {
+                                    const sel =
+                                        cell.current && isSelected(cell.day);
+                                    const today =
+                                        cell.current && isToday(cell.day);
+                                    return (
                                         <button
-                                            key={`${h}-${m}`}
+                                            key={idx}
                                             type="button"
-                                            onClick={() => {
-                                                changeHour(h);
-                                                changeMinute(m);
-                                            }}
-                                            className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
-                                                hour === h && minute === m
-                                                    ? "bg-primary-studio text-white"
-                                                    : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                                            disabled={!cell.current}
+                                            onClick={() =>
+                                                cell.current &&
+                                                selectDay(cell.day)
+                                            }
+                                            className={`mx-auto flex h-8 w-8 items-center justify-center rounded-lg text-xs transition ${
+                                                sel
+                                                    ? "bg-primary-studio font-semibold text-white"
+                                                    : today
+                                                      ? "font-semibold text-primary-studio ring-1 ring-primary-studio/30"
+                                                      : cell.current
+                                                        ? "text-stone-700 hover:bg-stone-100"
+                                                        : "text-stone-300"
                                             }`}
                                         >
-                                            {pad(h)}:{pad(m)}
+                                            {cell.day}
                                         </button>
-                                    ))}
+                                    );
+                                })}
+                            </div>
+
+                            {/* Time picker */}
+                            <div className="border-t border-stone-100 px-4 py-3">
+                                <div className="flex items-center gap-2 mb-2.5">
+                                    <Clock
+                                        size={13}
+                                        className="text-stone-400"
+                                    />
+                                    <span className="text-xs font-medium text-stone-500">
+                                        Waktu
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-center gap-2">
+                                    {/* Hour spinner */}
+                                    <div className="flex flex-col items-center">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                changeHour((hour + 23) % 24)
+                                            }
+                                            className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
+                                        >
+                                            <ChevronUp size={14} />
+                                        </button>
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-studio/8 border border-primary-studio/20">
+                                            <span className="text-base font-semibold tabular-nums text-stone-800">
+                                                {pad(hour)}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                changeHour((hour + 1) % 24)
+                                            }
+                                            className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
+                                        >
+                                            <ChevronDown size={14} />
+                                        </button>
+                                        <span className="mt-0.5 text-[10px] font-medium text-stone-400 uppercase tracking-wide">
+                                            Jam
+                                        </span>
+                                    </div>
+
+                                    <span className="mb-4 text-xl font-bold text-stone-300">
+                                        :
+                                    </span>
+
+                                    {/* Minute spinner */}
+                                    <div className="flex flex-col items-center">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                changeMinute((minute + 59) % 60)
+                                            }
+                                            className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
+                                        >
+                                            <ChevronUp size={14} />
+                                        </button>
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-studio/8 border border-primary-studio/20">
+                                            <span className="text-base font-semibold tabular-nums text-stone-800">
+                                                {pad(minute)}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                changeMinute((minute + 1) % 60)
+                                            }
+                                            className="flex h-7 w-10 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
+                                        >
+                                            <ChevronDown size={14} />
+                                        </button>
+                                        <span className="mt-0.5 text-[10px] font-medium text-stone-400 uppercase tracking-wide">
+                                            Menit
+                                        </span>
+                                    </div>
+
+                                    {/* Quick presets */}
+                                    <div className="ml-auto flex flex-col gap-1.5">
+                                        {[
+                                            [0, 0],
+                                            [9, 0],
+                                            [12, 0],
+                                            [18, 0],
+                                            [23, 59],
+                                        ].map(([h, m]) => (
+                                            <button
+                                                key={`${h}-${m}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    changeHour(h);
+                                                    changeMinute(m);
+                                                }}
+                                                className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
+                                                    hour === h && minute === m
+                                                        ? "bg-primary-studio text-white"
+                                                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                                                }`}
+                                            >
+                                                {pad(h)}:{pad(m)}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
