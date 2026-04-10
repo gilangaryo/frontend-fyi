@@ -116,6 +116,18 @@ const nextConfig: NextConfig = {
                 hostname: "api.fyicouture.com",
                 pathname: "/api/uploads/**",
             },
+            {
+                protocol: "http",
+                hostname:
+                    "fyi-backend-fyi-g9fh5m-33cd7a-76-13-193-236.traefik.me",
+                pathname: "/api/uploads/**",
+            },
+            {
+                protocol: "https",
+                hostname:
+                    "fyi-backend-fyi-g9fh5m-33cd7a-76-13-193-236.traefik.me",
+                pathname: "/api/uploads/**",
+            },
         ],
     },
 };
