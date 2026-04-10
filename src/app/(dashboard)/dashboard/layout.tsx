@@ -16,7 +16,7 @@ export default function DashboardLayout({
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [user, setUser] = useState<{ name?: string; role?: string } | null>(
-        null
+        null,
     );
 
     const [checkingAuth, setCheckingAuth] = useState(true);
@@ -101,12 +101,12 @@ export default function DashboardLayout({
             iconDefault: "/dashboard/icons/beyond-black.svg",
             iconActive: "/dashboard/icons/beyond-white.svg",
         },
-        {
-            name: "Discount",
-            href: "/dashboard/discount",
-            iconDefault: "/dashboard/icons/beyond-black.svg",
-            iconActive: "/dashboard/icons/beyond-white.svg",
-        },
+        // {
+        //     name: "Discount",
+        //     href: "/dashboard/discount",
+        //     iconDefault: "/dashboard/icons/beyond-black.svg",
+        //     iconActive: "/dashboard/icons/beyond-white.svg",
+        // },
         {
             name: "Membership",
             href: "/dashboard/member",
