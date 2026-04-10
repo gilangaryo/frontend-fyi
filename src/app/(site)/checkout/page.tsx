@@ -17,6 +17,7 @@ interface AppliedPromotion {
     title: string;
     kind: string;
     amount: number;
+    autoApply?: boolean;
 }
 
 interface PricingItem {
@@ -38,6 +39,7 @@ interface PricingPreview {
             code?: string;
             kind?: string;
             reason?: string;
+            autoApply?: boolean;
         }>;
     };
 }
@@ -96,17 +98,19 @@ export default function CheckoutPage() {
     const pricedItems = Object.fromEntries(
         (activePreview?.items || []).map((item) => [item.variantId, item]),
     );
-    const AUTO_KINDS = ["MINIMUM_PURCHASE_DISCOUNT", "MINIMUM_QTY_DISCOUNT"];
     const promotionDisplaySource = pricingPreview ?? autoPreview;
-    // When a code is applied, auto/cart-level promotions must come from the combined preview
-    // so minimum purchase/qty is evaluated after item-level discounts.
+    const isAutomaticPromotion = (promotion: { autoApply?: boolean }) =>
+        Boolean(promotion.autoApply);
+
+    // When a code is applied, automatic promotions must come from the combined preview
+    // so cart-level promos are evaluated after item-level discounts.
     const autoDiscounts =
-        promotionDisplaySource?.promotions?.applied?.filter((p) =>
-            AUTO_KINDS.includes(p.kind),
+        promotionDisplaySource?.promotions?.applied?.filter(
+            isAutomaticPromotion,
         ) ?? [];
     const codeDiscounts =
         pricingPreview?.promotions?.applied?.filter(
-            (p) => !AUTO_KINDS.includes(p.kind),
+            (promotion) => !isAutomaticPromotion(promotion),
         ) ?? [];
     const totalSavings = autoDiscounts
         .concat(codeDiscounts)
@@ -689,13 +693,13 @@ export default function CheckoutPage() {
                             {/* Auto promo banner */}
                             {autoLoading && (
                                 <p className="text-xs text-gray-400 animate-pulse">
-                                    Checking automatic discounts...
+                                    Checking discounts...
                                 </p>
                             )}
                             {!autoLoading && autoDiscounts.length > 0 && (
                                 <div className="border border-gray-200 rounded-md p-3 bg-gray-50 space-y-2">
                                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        Automatic discount
+                                        discount
                                     </p>
                                     {autoDiscounts.map((promo) => (
                                         <div
@@ -729,9 +733,7 @@ export default function CheckoutPage() {
                                 ).filter(
                                     (promo) =>
                                         !(
-                                            AUTO_KINDS.includes(
-                                                promo.kind ?? "",
-                                            ) &&
+                                            isAutomaticPromotion(promo) &&
                                             promo.reason ===
                                                 "Conflicts with a higher value non-combinable promotion"
                                         ),
