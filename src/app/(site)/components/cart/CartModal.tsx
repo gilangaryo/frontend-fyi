@@ -10,10 +10,42 @@ import { Gift } from "lucide-react";
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/constants";
 import toast from "react-hot-toast";
+import { Product } from "@/types/product";
 
 interface CartModalProps {
     open: boolean;
     onClose: () => void;
+}
+
+function getProductDisplayPrices(product: Product) {
+    const pricingBase = Number(product.pricing?.basePrice);
+    const pricingFinal = Number(product.pricing?.finalPrice);
+
+    if (
+        Number.isFinite(pricingBase) &&
+        Number.isFinite(pricingFinal) &&
+        pricingBase > pricingFinal
+    ) {
+        return {
+            displayPrice: pricingFinal,
+            originalPrice: pricingBase,
+        };
+    }
+
+    const fallbackOriginal = [
+        product.originalPrice,
+        product.basePrice,
+        product.priceBeforeDiscount,
+    ]
+        .map((value) => Number(value))
+        .find(
+            (value) => Number.isFinite(value) && value > Number(product.price),
+        );
+
+    return {
+        displayPrice: Number(product.price),
+        originalPrice: fallbackOriginal,
+    };
 }
 
 export default function CartModal({ open, onClose }: CartModalProps) {
@@ -22,14 +54,17 @@ export default function CartModal({ open, onClose }: CartModalProps) {
     const giftNote = useSelector((state: RootState) => state.cart.giftNote);
     const total = cartItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
-        0
+        0,
     );
 
     const [storeOpen, setStoreOpen] = useState<boolean | null>(null);
     const [giftNoteOpen, setGiftNoteOpen] = useState(false);
     const [variantStocks, setVariantStocks] = useState<Record<string, number>>(
-        {}
+        {},
     );
+    const [productPriceMap, setProductPriceMap] = useState<
+        Record<string, { displayPrice: number; originalPrice?: number }>
+    >({});
 
     useEffect(() => {
         (async () => {
@@ -54,6 +89,10 @@ export default function CartModal({ open, onClose }: CartModalProps) {
 
         const fetchStocks = async () => {
             const stocks: Record<string, number> = {};
+            const nextProductPriceMap: Record<
+                string,
+                { displayPrice: number; originalPrice?: number }
+            > = {};
             const uniqueProductIds = [
                 ...new Set(cartItems.map((item) => item.id)),
             ];
@@ -62,10 +101,15 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                 uniqueProductIds.map(async (productId) => {
                     try {
                         const res = await fetch(
-                            `${API_BASE}/products/${productId}`
+                            `${API_BASE}/products/${productId}`,
                         );
                         const json = await res.json();
                         if (json.success && json.data?.variants) {
+                            const prices = getProductDisplayPrices(
+                                json.data as Product,
+                            );
+                            nextProductPriceMap[productId] = prices;
+
                             json.data.variants.forEach((variant: any) => {
                                 stocks[variant.id] = variant.stock;
                             });
@@ -73,13 +117,14 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                     } catch (err) {
                         console.error(
                             `Failed to fetch product ${productId}:`,
-                            err
+                            err,
                         );
                     }
-                })
+                }),
             );
 
             setVariantStocks(stocks);
+            setProductPriceMap(nextProductPriceMap);
         };
 
         fetchStocks();
@@ -113,7 +158,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
             if (data.invalid.length > 0) {
                 data.invalid.forEach((inv: any) => {
                     dispatch(
-                        removeFromCart({ id: "", variantId: inv.variantId })
+                        removeFromCart({ id: "", variantId: inv.variantId }),
                     );
                 });
 
@@ -121,7 +166,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                     `Some products are no longer available:\n${data.invalid
                         .map((i: any) => `- ${i.productName}`)
                         .join("\n")}`,
-                    { duration: 5000 }
+                    { duration: 5000 },
                 );
 
                 return;
@@ -186,116 +231,164 @@ export default function CartModal({ open, onClose }: CartModalProps) {
 
                         {/* Cart Items */}
                         <div className="p-6 flex-1 overflow-y-auto space-y-4">
-                            {cartItems.map((item) => (
-                                <div
-                                    key={`${item.id}-${
-                                        item.variantId || "default"
-                                    }`}
-                                    className="flex gap-6 border-b border-gray-200 pb-6 last:border-none"
-                                >
-                                    {/* Product Image */}
-                                    <div className="relative w-20 aspect-auto md:w-40 md:h-52 flex-shrink-0">
-                                        <Image
-                                            src={item.imageUrl}
-                                            alt={item.title}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
+                            {cartItems.map((item) =>
+                                (() => {
+                                    const fallbackPrices =
+                                        productPriceMap[item.id];
+                                    const displayPrice =
+                                        typeof fallbackPrices?.displayPrice ===
+                                        "number"
+                                            ? fallbackPrices.displayPrice
+                                            : item.price;
+                                    const originalPrice =
+                                        typeof item.originalPrice ===
+                                            "number" &&
+                                        item.originalPrice > displayPrice
+                                            ? item.originalPrice
+                                            : typeof fallbackPrices?.originalPrice ===
+                                                    "number" &&
+                                                fallbackPrices.originalPrice >
+                                                    displayPrice
+                                              ? fallbackPrices.originalPrice
+                                              : undefined;
 
-                                    {/* Product Info */}
-                                    <div className="flex-1 flex flex-col justify-between">
-                                        <div>
-                                            <h3 className="text-[17px] font-medium leading-snug text-gray-900 mb-1">
-                                                {item.title}
-                                            </h3>
-                                            <p className="text-sm text-gray-500 mb-1">
-                                                {item.size || "All Size"}
-                                            </p>
-                                            {item.color && (
-                                                <p className="text-sm text-gray-500 mb-1">
-                                                    Color: {item.color}
-                                                </p>
-                                            )}
-                                            <p className="text-[16px] font-semibold text-gray-900">
-                                                IDR{" "}
-                                                {item.price.toLocaleString(
-                                                    "id-ID"
-                                                )}
-                                            </p>
-                                        </div>
-
-                                        {/* Quantity & Remove */}
-                                        <div className="flex items-center justify-between mt-4">
-                                            <div className="flex items-center border border-gray-400 divide-x divide-gray-400 text-xs md:text-base">
-                                                <button
-                                                    className="px-3 md:px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
-                                                    onClick={() =>
-                                                        dispatch(
-                                                            updateQuantity({
-                                                                id: item.id,
-                                                                variantId:
-                                                                    item.variantId,
-                                                                quantity:
-                                                                    item.quantity -
-                                                                    1,
-                                                            })
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        item.quantity <= 1
-                                                    }
-                                                >
-                                                    −
-                                                </button>
-                                                <span className="px-6 py-2 text-gray-800 select-none">
-                                                    {item.quantity}
-                                                </span>
-                                                <button
-                                                    className="px-3 md:px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
-                                                    onClick={() =>
-                                                        dispatch(
-                                                            updateQuantity({
-                                                                id: item.id,
-                                                                variantId:
-                                                                    item.variantId,
-                                                                quantity:
-                                                                    item.quantity +
-                                                                    1,
-                                                            })
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        item.quantity >=
-                                                        (item.variantId
-                                                            ? variantStocks[
-                                                                  item.variantId
-                                                              ] ?? 999
-                                                            : 999)
-                                                    }
-                                                >
-                                                    +
-                                                </button>
+                                    return (
+                                        <div
+                                            key={`${item.id}-${
+                                                item.variantId || "default"
+                                            }`}
+                                            className="flex gap-6 border-b border-gray-200 pb-6 last:border-none"
+                                        >
+                                            {/* Product Image */}
+                                            <div className="relative w-20 aspect-auto md:w-40 md:h-52 flex-shrink-0">
+                                                <Image
+                                                    src={item.imageUrl}
+                                                    alt={item.title}
+                                                    fill
+                                                    className="object-cover"
+                                                />
                                             </div>
 
-                                            <button
-                                                onClick={() =>
-                                                    dispatch(
-                                                        removeFromCart({
-                                                            id: item.id,
-                                                            variantId:
-                                                                item.variantId,
-                                                        })
-                                                    )
-                                                }
-                                                className="text-xs md:text-sm text-gray-800 underline hover:text-black transition"
-                                            >
-                                                Remove
-                                            </button>
+                                            {/* Product Info */}
+                                            <div className="flex-1 flex flex-col justify-between">
+                                                <div>
+                                                    <h3 className="text-[17px] font-medium leading-snug text-gray-900 mb-1">
+                                                        {item.title}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500 mb-1">
+                                                        {item.size ||
+                                                            "All Size"}
+                                                    </p>
+                                                    {item.color && (
+                                                        <p className="text-sm text-gray-500 mb-1">
+                                                            Color: {item.color}
+                                                        </p>
+                                                    )}
+                                                    {typeof originalPrice ===
+                                                    "number" ? (
+                                                        <div className="flex items-center gap-2 text-[16px]">
+                                                            <span className="font-semibold text-gray-900">
+                                                                IDR{" "}
+                                                                {displayPrice.toLocaleString(
+                                                                    "id-ID",
+                                                                )}
+                                                            </span>
+                                                            <span className="text-gray-400 line-through text-sm">
+                                                                IDR{" "}
+                                                                {originalPrice.toLocaleString(
+                                                                    "id-ID",
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-[16px] font-semibold text-gray-900">
+                                                            IDR{" "}
+                                                            {displayPrice.toLocaleString(
+                                                                "id-ID",
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Quantity & Remove */}
+                                                <div className="flex items-center justify-between mt-4">
+                                                    <div className="flex items-center border border-gray-400 divide-x divide-gray-400 text-xs md:text-base">
+                                                        <button
+                                                            className="px-3 md:px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
+                                                            onClick={() =>
+                                                                dispatch(
+                                                                    updateQuantity(
+                                                                        {
+                                                                            id: item.id,
+                                                                            variantId:
+                                                                                item.variantId,
+                                                                            quantity:
+                                                                                item.quantity -
+                                                                                1,
+                                                                        },
+                                                                    ),
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                item.quantity <=
+                                                                1
+                                                            }
+                                                        >
+                                                            −
+                                                        </button>
+                                                        <span className="px-6 py-2 text-gray-800 select-none">
+                                                            {item.quantity}
+                                                        </span>
+                                                        <button
+                                                            className="px-3 md:px-4 py-2 hover:bg-gray-100 transition disabled:opacity-40"
+                                                            onClick={() =>
+                                                                dispatch(
+                                                                    updateQuantity(
+                                                                        {
+                                                                            id: item.id,
+                                                                            variantId:
+                                                                                item.variantId,
+                                                                            quantity:
+                                                                                item.quantity +
+                                                                                1,
+                                                                        },
+                                                                    ),
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                item.quantity >=
+                                                                (item.variantId
+                                                                    ? (variantStocks[
+                                                                          item
+                                                                              .variantId
+                                                                      ] ?? 999)
+                                                                    : 999)
+                                                            }
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() =>
+                                                            dispatch(
+                                                                removeFromCart({
+                                                                    id: item.id,
+                                                                    variantId:
+                                                                        item.variantId,
+                                                                }),
+                                                            )
+                                                        }
+                                                        className="text-xs md:text-sm text-gray-800 underline hover:text-black transition"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))}
+                                    );
+                                })(),
+                            )}
                         </div>
 
                         {/* Footer */}
@@ -344,7 +437,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                                                 value={giftNote}
                                                 onChange={(e) =>
                                                     handleGiftNoteChange(
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                                 placeholder="Write your gift message here..."

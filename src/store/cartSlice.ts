@@ -7,6 +7,7 @@ export interface CartItem {
     title: string;
     variantId?: string;
     price: number;
+    originalPrice?: number;
     quantity: number;
     imageUrl: string;
     size?: string;
@@ -56,7 +57,9 @@ const cartSlice = createSlice({
     reducers: {
         addToCart: (state, action: PayloadAction<CartItem>) => {
             const existing = state.items.find(
-                (i) => i.id === action.payload.id && i.variantId === action.payload.variantId
+                (i) =>
+                    i.id === action.payload.id &&
+                    i.variantId === action.payload.variantId,
             );
             if (existing) {
                 existing.quantity += action.payload.quantity;
@@ -66,19 +69,32 @@ const cartSlice = createSlice({
             saveCart(state.items, state.giftNote);
         },
 
-        removeFromCart: (state, action: PayloadAction<{ id: string; variantId?: string }>) => {
+        removeFromCart: (
+            state,
+            action: PayloadAction<{ id: string; variantId?: string }>,
+        ) => {
             state.items = state.items.filter(
-                (i) => !(i.id === action.payload.id && i.variantId === action.payload.variantId)
+                (i) =>
+                    !(
+                        i.id === action.payload.id &&
+                        i.variantId === action.payload.variantId
+                    ),
             );
             saveCart(state.items, state.giftNote);
         },
 
         updateQuantity: (
             state,
-            action: PayloadAction<{ id: string; variantId?: string; quantity: number }>
+            action: PayloadAction<{
+                id: string;
+                variantId?: string;
+                quantity: number;
+            }>,
         ) => {
             const item = state.items.find(
-                (i) => i.id === action.payload.id && i.variantId === action.payload.variantId
+                (i) =>
+                    i.id === action.payload.id &&
+                    i.variantId === action.payload.variantId,
             );
             if (item) item.quantity = action.payload.quantity;
             saveCart(state.items, state.giftNote);
@@ -97,5 +113,11 @@ const cartSlice = createSlice({
     },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, setGiftNote, clearCart } = cartSlice.actions;
+export const {
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    setGiftNote,
+    clearCart,
+} = cartSlice.actions;
 export default cartSlice.reducer;

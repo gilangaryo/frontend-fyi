@@ -8,21 +8,12 @@ import { clearCart } from "@/store/cartSlice";
 import { API_BASE } from "@/lib/constants";
 import { getImageUrl } from "@/lib/utils";
 import AddressSelector from "../components/checkout/AddressSelector";
-import { Gift, ChevronDown, ChevronUp, Tag } from "lucide-react";
+import { Gift, Tag } from "lucide-react";
 import toast from "react-hot-toast";
-
-interface EligiblePromotion {
-    id: string;
-    code: string;
-    title: string;
-    kind: string;
-    type: string;
-    value: number;
-    minimumOrderAmount?: number | null;
-    minimumQty?: number | null;
-    expiresAt?: string;
-    autoApply?: boolean;
-}
+import { Product } from "@/types/product";
+import VoucherPicker, {
+    EligiblePromotion,
+} from "../components/checkout/VoucherPicker";
 
 interface AppliedPromotion {
     id: string;
@@ -57,17 +48,11 @@ interface PricingPreview {
     };
 }
 
-const ITEM_LEVEL_KINDS = ["COLLECTION_DISCOUNT", "SPECIFIC_PRODUCT_DISCOUNT"];
+const ITEM_LEVEL_KINDS = ["COLLECTION_DISCOUNT"];
 const CART_LEVEL_KINDS = ["MINIMUM_PURCHASE_DISCOUNT", "MINIMUM_QTY_DISCOUNT"];
 
 function formatCurrency(amount: number) {
     return `IDR ${amount.toLocaleString("id-ID")}`;
-}
-
-function formatExpiresAt(dateStr?: string) {
-    if (!dateStr) return null;
-    const d = new Date(dateStr);
-    return `Valid until ${d.toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "2-digit" })} - ${d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} PM`;
 }
 
 function getPromotionKindLabel(kind: string) {
@@ -85,28 +70,32 @@ function getPromotionKindLabel(kind: string) {
     }
 }
 
-function getPromoDescription(promo: EligiblePromotion): string {
-    const discount =
-        promo.type === "PERCENT"
-            ? `Disc ${promo.value}%`
-            : `Disc ${formatCurrency(promo.value)}`;
+function getProductDisplayPrices(product: Product) {
+    const pricingBase = Number(product.pricing?.basePrice);
+    const pricingFinal = Number(product.pricing?.finalPrice);
 
-    if (promo.kind === "COLLECTION_DISCOUNT") {
-        return `Collection couture canvas - ${discount}`;
-    }
-    if (promo.kind === "SPECIFIC_PRODUCT_DISCOUNT") {
-        return `Product discount - ${discount}`;
-    }
     if (
-        promo.kind === "MINIMUM_PURCHASE_DISCOUNT" &&
-        promo.minimumOrderAmount
+        Number.isFinite(pricingBase) &&
+        Number.isFinite(pricingFinal) &&
+        pricingBase > pricingFinal
     ) {
-        return `Min. Spend ${formatCurrency(promo.minimumOrderAmount)} - ${discount}`;
+        return { displayPrice: pricingFinal, originalPrice: pricingBase };
     }
-    if (promo.kind === "MINIMUM_QTY_DISCOUNT" && promo.minimumQty) {
-        return `Min. Qty ${promo.minimumQty} item - ${discount}`;
-    }
-    return discount;
+
+    const fallbackOriginal = [
+        product.originalPrice,
+        product.basePrice,
+        product.priceBeforeDiscount,
+    ]
+        .map((value) => Number(value))
+        .find(
+            (value) => Number.isFinite(value) && value > Number(product.price),
+        );
+
+    return {
+        displayPrice: Number(product.price),
+        originalPrice: fallbackOriginal,
+    };
 }
 
 export default function CheckoutPage() {
@@ -116,12 +105,10 @@ export default function CheckoutPage() {
     const [storeOpen, setStoreOpen] = useState<boolean | null>(null);
 
     // Voucher picker state
-    const [voucherOpen, setVoucherOpen] = useState(false);
     const [availablePromos, setAvailablePromos] = useState<EligiblePromotion[]>(
         [],
     );
     const [availableLoading, setAvailableLoading] = useState(false);
-    const [showAllCartLevel, setShowAllCartLevel] = useState(false);
 
     // Selected voucher IDs (max 1 per group)
     const [selectedItemLevelId, setSelectedItemLevelId] = useState<
@@ -137,10 +124,59 @@ export default function CheckoutPage() {
     );
     const [pricingLoading, setPricingLoading] = useState(false);
 
+    const [productPricingMap, setProductPricingMap] = useState<
+        Record<string, { displayPrice: number; originalPrice?: number }>
+    >({});
+
     const cartItems = useSelector((state: RootState) => state.cart.items);
     const giftNote = useSelector((state: RootState) => state.cart.giftNote);
+
+    // Fetch live product pricing to reflect auto-applied specific-product discounts
+    useEffect(() => {
+        if (cartItems.length === 0) {
+            setProductPricingMap({});
+            return;
+        }
+        const uniqueProductIds = [...new Set(cartItems.map((item) => item.id))];
+        const map: Record<
+            string,
+            { displayPrice: number; originalPrice?: number }
+        > = {};
+        Promise.all(
+            uniqueProductIds.map(async (productId) => {
+                try {
+                    const res = await fetch(
+                        `${API_BASE}/products/${productId}`,
+                    );
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        map[productId] = getProductDisplayPrices(
+                            json.data as Product,
+                        );
+                    }
+                } catch {
+                    // ignore
+                }
+            }),
+        ).then(() => setProductPricingMap(map));
+    }, [cartItems]);
+
+    // Full product price subtotal (before any discount, for strikethrough when voucher active)
+    const baseSubtotal = cartItems.reduce(
+        (sum, item) =>
+            sum +
+            (productPricingMap[item.id]?.originalPrice ??
+                productPricingMap[item.id]?.displayPrice ??
+                item.price) *
+                item.quantity,
+        0,
+    );
+    // Specific-product-discount-aware subtotal (baseline when no explicit voucher)
     const subtotal = cartItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
+        (sum, item) =>
+            sum +
+            (productPricingMap[item.id]?.displayPrice ?? item.price) *
+                item.quantity,
         0,
     );
 
@@ -151,12 +187,15 @@ export default function CheckoutPage() {
     );
     const appliedDiscounts = activePricing?.promotions?.applied ?? [];
 
-    const itemLevelPromos = availablePromos.filter((p) =>
-        ITEM_LEVEL_KINDS.includes(p.kind),
-    );
-    const cartLevelPromos = availablePromos.filter((p) =>
-        CART_LEVEL_KINDS.includes(p.kind),
-    );
+    const estimatePromoAmount = (p: EligiblePromotion) =>
+        p.type === "PERCENT" ? (p.value / 100) * subtotal : p.value;
+
+    const itemLevelPromos = availablePromos
+        .filter((p) => ITEM_LEVEL_KINDS.includes(p.kind))
+        .sort((a, b) => estimatePromoAmount(b) - estimatePromoAmount(a));
+    const cartLevelPromos = availablePromos
+        .filter((p) => CART_LEVEL_KINDS.includes(p.kind))
+        .sort((a, b) => estimatePromoAmount(b) - estimatePromoAmount(a));
 
     const selectedIds = [selectedItemLevelId, selectedCartLevelId].filter(
         Boolean,
@@ -188,7 +227,13 @@ export default function CheckoutPage() {
             .then((data) => {
                 if (!cancelled) {
                     setAvailablePromos(
-                        data.success ? (data.data as EligiblePromotion[]) : [],
+                        data.success
+                            ? (data.data as EligiblePromotion[]).filter(
+                                  (promo) =>
+                                      promo.kind !==
+                                      "SPECIFIC_PRODUCT_DISCOUNT",
+                              )
+                            : [],
                     );
                 }
             })
@@ -587,7 +632,14 @@ export default function CheckoutPage() {
                                             .effectiveUnitPrice <
                                             pricedItems[item.variantId]
                                                 .baseUnitPrice ? (
-                                            <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-semibold text-gra-700">
+                                                    {formatCurrency(
+                                                        pricedItems[
+                                                            item.variantId
+                                                        ].effectiveUnitPrice,
+                                                    )}
+                                                </p>
                                                 <p className="text-xs text-gray-400 line-through">
                                                     {formatCurrency(
                                                         pricedItems[
@@ -595,17 +647,49 @@ export default function CheckoutPage() {
                                                         ].baseUnitPrice,
                                                     )}
                                                 </p>
+                                            </div>
+                                        ) : productPricingMap[item.id]
+                                              ?.originalPrice !== undefined &&
+                                          productPricingMap[item.id]
+                                              .originalPrice! >
+                                              productPricingMap[item.id]
+                                                  .displayPrice ? (
+                                            <div className="flex items-center gap-2">
                                                 <p className="font-semibold text-emerald-700">
                                                     {formatCurrency(
-                                                        pricedItems[
-                                                            item.variantId
-                                                        ].effectiveUnitPrice,
+                                                        productPricingMap[
+                                                            item.id
+                                                        ].displayPrice,
+                                                    )}
+                                                </p>
+                                                <p className="text-xs text-gray-400 line-through">
+                                                    {formatCurrency(
+                                                        productPricingMap[
+                                                            item.id
+                                                        ].originalPrice!,
+                                                    )}
+                                                </p>
+                                            </div>
+                                        ) : typeof item.originalPrice ===
+                                              "number" &&
+                                          item.originalPrice > item.price ? (
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-semibold text-emerald-700">
+                                                    {formatCurrency(item.price)}
+                                                </p>
+                                                <p className="text-xs text-gray-400 line-through">
+                                                    {formatCurrency(
+                                                        item.originalPrice,
                                                     )}
                                                 </p>
                                             </div>
                                         ) : (
                                             <p className="font-semibold text-gray-800">
-                                                {formatCurrency(item.price)}
+                                                {formatCurrency(
+                                                    productPricingMap[item.id]
+                                                        ?.displayPrice ??
+                                                        item.price,
+                                                )}
                                             </p>
                                         )}
                                     </div>
@@ -636,267 +720,19 @@ export default function CheckoutPage() {
                         )}
 
                         <div className="space-y-4 text-sm text-gray-700">
-                            {/* Voucher Picker Accordion */}
-                            <div className="border border-gray-300 rounded-md overflow-hidden">
-                                <button
-                                    type="button"
-                                    onClick={() => setVoucherOpen((v) => !v)}
-                                    className="w-full flex items-center justify-between px-4 py-3 bg-secondary text-white font-medium"
-                                >
-                                    <span className="flex items-center gap-2">
-                                        <Tag size={16} />
-                                        Use Voucher
-                                        {selectedIds.length > 0 && (
-                                            <span className="ml-1 bg-white text-secondary text-xs px-2 py-0.5 rounded-full font-semibold">
-                                                {selectedIds.length} applied
-                                            </span>
-                                        )}
-                                    </span>
-                                    {voucherOpen ? (
-                                        <ChevronUp size={16} />
-                                    ) : (
-                                        <ChevronDown size={16} />
-                                    )}
-                                </button>
-
-                                {voucherOpen && (
-                                    <div className="p-4 space-y-4 bg-white">
-                                        {availableLoading ? (
-                                            <p className="text-xs text-gray-400 animate-pulse text-center py-2">
-                                                Loading vouchers...
-                                            </p>
-                                        ) : availablePromos.length === 0 ? (
-                                            <p className="text-xs text-gray-500 text-center py-2">
-                                                No vouchers available for your
-                                                cart.
-                                            </p>
-                                        ) : (
-                                            <>
-                                                {/* Item-level promos (Collection / Product) */}
-                                                {itemLevelPromos.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        {itemLevelPromos.map(
-                                                            (promo) => (
-                                                                <label
-                                                                    key={
-                                                                        promo.id
-                                                                    }
-                                                                    className={`flex items-start gap-3 border rounded-md p-3 cursor-pointer transition ${
-                                                                        selectedItemLevelId ===
-                                                                        promo.id
-                                                                            ? "border-secondary bg-stone-50"
-                                                                            : "border-gray-200 hover:border-gray-300"
-                                                                    }`}
-                                                                >
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="itemLevelPromo"
-                                                                        value={
-                                                                            promo.id
-                                                                        }
-                                                                        checked={
-                                                                            selectedItemLevelId ===
-                                                                            promo.id
-                                                                        }
-                                                                        onChange={() =>
-                                                                            setSelectedItemLevelId(
-                                                                                selectedItemLevelId ===
-                                                                                    promo.id
-                                                                                    ? null
-                                                                                    : promo.id,
-                                                                            )
-                                                                        }
-                                                                        onClick={() => {
-                                                                            if (
-                                                                                selectedItemLevelId ===
-                                                                                promo.id
-                                                                            ) {
-                                                                                setSelectedItemLevelId(
-                                                                                    null,
-                                                                                );
-                                                                            }
-                                                                        }}
-                                                                        className="mt-0.5 accent-secondary"
-                                                                    />
-                                                                    <div>
-                                                                        <p className="font-semibold text-gray-800 text-sm">
-                                                                            {promo.code ||
-                                                                                promo.title}
-                                                                        </p>
-                                                                        <p className="text-xs text-gray-500">
-                                                                            {getPromoDescription(
-                                                                                promo,
-                                                                            )}
-                                                                        </p>
-                                                                        {promo.expiresAt && (
-                                                                            <p className="text-xs text-gray-400 mt-0.5">
-                                                                                {formatExpiresAt(
-                                                                                    promo.expiresAt,
-                                                                                )}
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                </label>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Cart-level promos (Min.Spend / Min.Qty) */}
-                                                {cartLevelPromos.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        {cartLevelPromos.length >
-                                                            1 && (
-                                                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                                                Voucher Min.
-                                                                Spend or Min.Qty
-                                                            </p>
-                                                        )}
-                                                        <p className="text-xs text-gray-400">
-                                                            {cartLevelPromos.length >
-                                                            1
-                                                                ? "Pick 1 voucher"
-                                                                : ""}
-                                                        </p>
-                                                        {(showAllCartLevel
-                                                            ? cartLevelPromos
-                                                            : cartLevelPromos.slice(
-                                                                  0,
-                                                                  3,
-                                                              )
-                                                        ).map((promo) => (
-                                                            <label
-                                                                key={promo.id}
-                                                                className={`flex items-start gap-3 border rounded-md p-3 cursor-pointer transition ${
-                                                                    selectedCartLevelId ===
-                                                                    promo.id
-                                                                        ? "border-secondary bg-stone-50"
-                                                                        : "border-gray-200 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                <input
-                                                                    type="radio"
-                                                                    name="cartLevelPromo"
-                                                                    value={
-                                                                        promo.id
-                                                                    }
-                                                                    checked={
-                                                                        selectedCartLevelId ===
-                                                                        promo.id
-                                                                    }
-                                                                    onChange={() =>
-                                                                        setSelectedCartLevelId(
-                                                                            selectedCartLevelId ===
-                                                                                promo.id
-                                                                                ? null
-                                                                                : promo.id,
-                                                                        )
-                                                                    }
-                                                                    onClick={() => {
-                                                                        if (
-                                                                            selectedCartLevelId ===
-                                                                            promo.id
-                                                                        ) {
-                                                                            setSelectedCartLevelId(
-                                                                                null,
-                                                                            );
-                                                                        }
-                                                                    }}
-                                                                    className="mt-0.5 accent-secondary"
-                                                                />
-                                                                <div>
-                                                                    <p className="font-semibold text-gray-800 text-sm">
-                                                                        {promo.code ||
-                                                                            promo.title}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500">
-                                                                        {getPromoDescription(
-                                                                            promo,
-                                                                        )}
-                                                                    </p>
-                                                                    {promo.expiresAt && (
-                                                                        <p className="text-xs text-gray-400 mt-0.5">
-                                                                            {formatExpiresAt(
-                                                                                promo.expiresAt,
-                                                                            )}
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            </label>
-                                                        ))}
-                                                        {cartLevelPromos.length >
-                                                            3 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setShowAllCartLevel(
-                                                                        (v) =>
-                                                                            !v,
-                                                                    )
-                                                                }
-                                                                className="w-full py-2 text-xs text-gray-500 border border-gray-200 rounded-md hover:bg-gray-50 transition"
-                                                            >
-                                                                {showAllCartLevel
-                                                                    ? "Show less"
-                                                                    : `Show More Voucher (${cartLevelPromos.length - 3} more)`}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Collapsed state: show selected vouchers summary */}
-                                {!voucherOpen && selectedIds.length > 0 && (
-                                    <div className="px-4 py-3 bg-stone-50 border-t border-gray-200 space-y-1">
-                                        {selectedItemLevelId &&
-                                            (() => {
-                                                const p = availablePromos.find(
-                                                    (x) =>
-                                                        x.id ===
-                                                        selectedItemLevelId,
-                                                );
-                                                return p ? (
-                                                    <p
-                                                        key={p.id}
-                                                        className="text-xs text-gray-700 flex items-center gap-1"
-                                                    >
-                                                        <Tag
-                                                            size={11}
-                                                            className="text-secondary"
-                                                        />
-                                                        {p.title} ({p.code})
-                                                    </p>
-                                                ) : null;
-                                            })()}
-                                        {selectedCartLevelId &&
-                                            (() => {
-                                                const p = availablePromos.find(
-                                                    (x) =>
-                                                        x.id ===
-                                                        selectedCartLevelId,
-                                                );
-                                                return p ? (
-                                                    <p
-                                                        key={p.id}
-                                                        className="text-xs text-gray-700 flex items-center gap-1"
-                                                    >
-                                                        <Tag
-                                                            size={11}
-                                                            className="text-secondary"
-                                                        />
-                                                        {p.title} ({p.code})
-                                                    </p>
-                                                ) : null;
-                                            })()}
-                                    </div>
-                                )}
-                            </div>
+                            <VoucherPicker
+                                itemLevelPromos={itemLevelPromos}
+                                cartLevelPromos={cartLevelPromos}
+                                availableLoading={availableLoading}
+                                availablePromos={availablePromos}
+                                selectedItemLevelId={selectedItemLevelId}
+                                selectedCartLevelId={selectedCartLevelId}
+                                onSelectItemLevel={setSelectedItemLevelId}
+                                onSelectCartLevel={setSelectedCartLevelId}
+                            />
 
                             {/* Price summary */}
-                            <div className="space-y-2 pt-2">
+                            <div className="space-y-2 pt-2 text-gray-500">
                                 <div className="flex justify-between">
                                     <span>
                                         Subtotal -{" "}
@@ -913,16 +749,16 @@ export default function CheckoutPage() {
                                     ) : discountAmount > 0 ? (
                                         <span className="flex gap-2 items-center">
                                             <span className="line-through text-gray-400">
-                                                {formatCurrency(subtotal)}
+                                                {formatCurrency(baseSubtotal)}
                                             </span>
-                                            <span>
-                                                {formatCurrency(
-                                                    total + discountAmount,
-                                                )}
+                                            <span className="text-gray-900">
+                                                {formatCurrency(total)}
                                             </span>
                                         </span>
                                     ) : (
-                                        <span>{formatCurrency(subtotal)}</span>
+                                        <span className="text-gray-900">
+                                            {formatCurrency(subtotal)}
+                                        </span>
                                     )}
                                 </div>
                                 <div className="flex justify-between">
@@ -938,16 +774,16 @@ export default function CheckoutPage() {
                                     .map((promo) => (
                                         <div
                                             key={promo.id}
-                                            className="flex justify-between text-orange-600"
+                                            className="flex justify-between "
                                         >
                                             <span>
                                                 Discount (Voucher{" "}
                                                 {getPromotionKindLabel(
                                                     promo.kind,
                                                 )}
-                                                /Product)
+                                                )
                                             </span>
-                                            <span>
+                                            <span className="text-orange-600">
                                                 -{formatCurrency(promo.amount)}
                                             </span>
                                         </div>
@@ -961,12 +797,12 @@ export default function CheckoutPage() {
                                     .map((promo) => (
                                         <div
                                             key={promo.id}
-                                            className="flex justify-between text-orange-600"
+                                            className="flex justify-between "
                                         >
                                             <span>
                                                 Discount (Min.Spend/qty)
                                             </span>
-                                            <span>
+                                            <span className="text-orange-600">
                                                 -{formatCurrency(promo.amount)}
                                             </span>
                                         </div>
@@ -977,8 +813,7 @@ export default function CheckoutPage() {
                                     <>
                                         <div className="flex justify-between text-gray-400">
                                             <span>
-                                                Discount (Voucher
-                                                Collection/Product)
+                                                Discount (Voucher Collection)
                                             </span>
                                             <span>-</span>
                                         </div>
@@ -991,7 +826,7 @@ export default function CheckoutPage() {
                                     </>
                                 )}
 
-                                <div className="flex justify-between font-semibold pt-2 border-t border-gray-200">
+                                <div className="flex justify-between font-semibold pt-2 border-t border-gray-200 text-gray-900">
                                     <span>Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>

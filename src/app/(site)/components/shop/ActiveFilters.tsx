@@ -4,6 +4,9 @@ type ActiveFiltersProps = {
     collections: string[];
     categories: string[];
     kains: string[];
+    collectionLabelMap: Record<string, string>;
+    categoryLabelMap: Record<string, string>;
+    kainLabelMap: Record<string, string>;
     setCollections: React.Dispatch<React.SetStateAction<string[]>>;
     setCategories: React.Dispatch<React.SetStateAction<string[]>>;
     setKains: React.Dispatch<React.SetStateAction<string[]>>;
@@ -13,11 +16,15 @@ export default function ActiveFilters({
     collections,
     categories,
     kains,
+    collectionLabelMap,
+    categoryLabelMap,
+    kainLabelMap,
     setCollections,
     setCategories,
     setKains,
 }: ActiveFiltersProps) {
-    const hasFilters = collections.length > 0 || categories.length > 0 || kains.length > 0;
+    const hasFilters =
+        collections.length > 0 || categories.length > 0 || kains.length > 0;
 
     if (!hasFilters) return null;
 
@@ -35,11 +42,16 @@ export default function ActiveFilters({
             </button>
 
             {collections.map((col) => (
-                <div key={col} className="flex items-center border px-3 py-1 rounded">
-                    <span>{col}</span>
+                <div
+                    key={col}
+                    className="flex items-center border px-3 py-1 rounded"
+                >
+                    <span>{collectionLabelMap[col] || col}</span>
                     <button
                         className="ml-2 text-black"
-                        onClick={() => setCollections(collections.filter((c) => c !== col))}
+                        onClick={() =>
+                            setCollections(collections.filter((c) => c !== col))
+                        }
                     >
                         ×
                     </button>
@@ -47,11 +59,16 @@ export default function ActiveFilters({
             ))}
 
             {categories.map((cat) => (
-                <div key={cat} className="flex items-center border px-3 py-1 rounded">
-                    <span>{cat}</span>
+                <div
+                    key={cat}
+                    className="flex items-center border px-3 py-1 rounded"
+                >
+                    <span>{categoryLabelMap[cat] || cat}</span>
                     <button
                         className="ml-2 text-black"
-                        onClick={() => setCategories(categories.filter((c) => c !== cat))}
+                        onClick={() =>
+                            setCategories(categories.filter((c) => c !== cat))
+                        }
                     >
                         ×
                     </button>
@@ -59,8 +76,11 @@ export default function ActiveFilters({
             ))}
 
             {kains.map((k) => (
-                <div key={k} className="flex items-center border px-3 py-1 rounded">
-                    <span>{k}</span>
+                <div
+                    key={k}
+                    className="flex items-center border px-3 py-1 rounded"
+                >
+                    <span>{kainLabelMap[k] || k}</span>
                     <button
                         className="ml-2 text-black"
                         onClick={() => setKains(kains.filter((c) => c !== k))}

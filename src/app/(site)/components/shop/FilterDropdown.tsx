@@ -2,9 +2,14 @@
 
 import { ChevronDown } from "lucide-react";
 
+export type FilterOption = {
+    value: string;
+    label: string;
+};
+
 type FilterDropdownProps = {
     label: string;
-    options: string[];
+    options: FilterOption[];
     selected: string[];
     setSelected: React.Dispatch<React.SetStateAction<string[]>>;
     openFilter: string | null;
@@ -69,14 +74,16 @@ export default function FilterDropdown({
                             <div className="grid grid-cols-2 gap-2 mb-6">
                                 {options.map((opt) => (
                                     <label
-                                        key={opt}
+                                        key={opt.value}
                                         className="relative block cursor-pointer rounded border border-gray-200 bg-white p-3 pr-9 hover:bg-gray-50"
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={selected.includes(opt)}
+                                            checked={selected.includes(
+                                                opt.value,
+                                            )}
                                             onChange={() =>
-                                                toggleSelection(opt)
+                                                toggleSelection(opt.value)
                                             }
                                             className="
                                                 absolute right-3 top-3 h-4 w-4 appearance-none rounded-sm border border-gray-400 cursor-pointer
@@ -87,7 +94,7 @@ export default function FilterDropdown({
                                             "
                                         />
                                         <span className="block text-sm leading-snug capitalize break-words">
-                                            {opt}
+                                            {opt.label}
                                         </span>
                                     </label>
                                 ))}
@@ -99,13 +106,13 @@ export default function FilterDropdown({
                     <div className="hidden md:block absolute top-full left-0 w-full bg-white shadow-md p-4 z-50 max-h-64 overflow-y-auto">
                         {options.map((opt) => (
                             <label
-                                key={opt}
+                                key={opt.value}
                                 className="flex items-center gap-2 mb-2 cursor-pointer"
                             >
                                 <input
                                     type="checkbox"
-                                    checked={selected.includes(opt)}
-                                    onChange={() => toggleSelection(opt)}
+                                    checked={selected.includes(opt.value)}
+                                    onChange={() => toggleSelection(opt.value)}
                                     className="
                                         w-4 h-4 border border-gray-400 rounded-sm cursor-pointer appearance-none
                                         checked:bg-secondary checked:border-secondary
@@ -114,7 +121,7 @@ export default function FilterDropdown({
                                         checked:before:justify-center
                                     "
                                 />
-                                {opt}
+                                {opt.label}
                             </label>
                         ))}
                     </div>

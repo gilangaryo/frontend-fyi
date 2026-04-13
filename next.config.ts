@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
         "localhost",
         "192.168.1.11",
         "192.168.1.13",
+        "192.168.18.20",
+        "172.20.10.2",
     ],
     async rewrites() {
         return [
@@ -57,12 +59,17 @@ const nextConfig: NextConfig = {
             },
             {
                 protocol: "http",
-                hostname: "192.168.1.13",
+                hostname: "172.20.10.2",
                 port: "4300",
             },
             {
                 protocol: "http",
                 hostname: "192.168.1.15",
+                port: "4300",
+            },
+            {
+                protocol: "http",
+                hostname: "172.20.10.2",
                 port: "4300",
             },
             {

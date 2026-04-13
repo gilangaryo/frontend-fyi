@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import FilterDropdown from "./FilterDropdown";
+import type { FilterOption } from "./FilterDropdown";
 import ActiveFilters from "./ActiveFilters";
 import { API_BASE } from "@/lib/constants";
 import { Product, Kain, Collection, Category } from "@/types/product";
@@ -18,9 +19,9 @@ export default function CatalogSection() {
     );
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
-    const [collections, setCollections] = useState<string[]>([]);
-    const [categories, setCategories] = useState<string[]>([]);
-    const [kains, setKains] = useState<string[]>([]);
+    const [collections, setCollections] = useState<FilterOption[]>([]);
+    const [categories, setCategories] = useState<FilterOption[]>([]);
+    const [kains, setKains] = useState<FilterOption[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
@@ -91,17 +92,42 @@ export default function CatalogSection() {
                     kainRes.json(),
                 ]);
                 if (colJson.success)
-                    setCollections(colJson.data.map((c: Collection) => c.slug));
+                    setCollections(
+                        colJson.data.map((c: Collection) => ({
+                            value: c.slug,
+                            label: c.title,
+                        })),
+                    );
                 if (catJson.success)
-                    setCategories(catJson.data.map((c: Category) => c.slug));
+                    setCategories(
+                        catJson.data.map((c: Category) => ({
+                            value: c.slug,
+                            label: c.title,
+                        })),
+                    );
                 if (kainJson.success)
-                    setKains(kainJson.data.map((k: Kain) => k.name));
+                    setKains(
+                        kainJson.data.map((k: Kain) => ({
+                            value: k.name,
+                            label: k.name,
+                        })),
+                    );
             } catch (err) {
                 console.error("❌ Failed to fetch filter data:", err);
             }
         }
         fetchFilterData();
     }, []);
+
+    const collectionLabelMap = Object.fromEntries(
+        collections.map((option) => [option.value, option.label]),
+    );
+    const categoryLabelMap = Object.fromEntries(
+        categories.map((option) => [option.value, option.label]),
+    );
+    const kainLabelMap = Object.fromEntries(
+        kains.map((option) => [option.value, option.label]),
+    );
 
     // Skeleton Loader Component
     const ProductSkeleton = () => (
@@ -155,6 +181,9 @@ export default function CatalogSection() {
                     collections={selectedCollections}
                     categories={selectedCategories}
                     kains={selectedKains}
+                    collectionLabelMap={collectionLabelMap}
+                    categoryLabelMap={categoryLabelMap}
+                    kainLabelMap={kainLabelMap}
                     setCollections={setSelectedCollections}
                     setCategories={setSelectedCategories}
                     setKains={setSelectedKains}

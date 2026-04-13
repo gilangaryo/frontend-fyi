@@ -46,6 +46,9 @@ export interface Product {
     title: string;
     description: string;
     price: number;
+    originalPrice?: number;
+    basePrice?: number;
+    priceBeforeDiscount?: number;
     stock: number;
     sku: string | null;
     imageUrl: string;
@@ -61,6 +64,16 @@ export interface Product {
     category: Category;
     collection: Collection;
     kain?: Kain;
+    pricing?: {
+        basePrice: number;
+        finalPrice: number;
+        discountAmount: number;
+        appliedPromotions?: Array<{
+            id: string;
+            kind: string;
+            amount: number;
+        }>;
+    };
 }
 
 export interface Kain {
