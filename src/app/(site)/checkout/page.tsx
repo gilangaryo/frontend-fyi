@@ -181,11 +181,13 @@ export default function CheckoutPage() {
     );
 
     const discountAmount = activePricing?.summary?.totalDiscount ?? 0;
-    const total = activePricing?.summary?.payableSubtotal ?? subtotal;
     const pricedItems = Object.fromEntries(
         (activePricing?.items || []).map((item) => [item.variantId, item]),
     );
     const appliedDiscounts = activePricing?.promotions?.applied ?? [];
+    const discountedSubtotal =
+        activePricing?.summary?.payableSubtotal ?? subtotal;
+    const total = discountedSubtotal;
 
     const estimatePromoAmount = (p: EligiblePromotion) =>
         p.type === "PERCENT" ? (p.value / 100) * subtotal : p.value;
@@ -655,7 +657,7 @@ export default function CheckoutPage() {
                                               productPricingMap[item.id]
                                                   .displayPrice ? (
                                             <div className="flex items-center gap-2">
-                                                <p className="font-semibold text-emerald-700">
+                                                <p className="font-semibold text-gray-700">
                                                     {formatCurrency(
                                                         productPricingMap[
                                                             item.id
@@ -674,7 +676,7 @@ export default function CheckoutPage() {
                                               "number" &&
                                           item.originalPrice > item.price ? (
                                             <div className="flex items-center gap-2">
-                                                <p className="font-semibold text-emerald-700">
+                                                <p className="font-semibold text-gray-700">
                                                     {formatCurrency(item.price)}
                                                 </p>
                                                 <p className="text-xs text-gray-400 line-through">
@@ -746,13 +748,13 @@ export default function CheckoutPage() {
                                         <span className="text-gray-400 animate-pulse">
                                             ...
                                         </span>
-                                    ) : discountAmount > 0 ? (
+                                    ) : baseSubtotal > subtotal ? (
                                         <span className="flex gap-2 items-center">
                                             <span className="line-through text-gray-400">
                                                 {formatCurrency(baseSubtotal)}
                                             </span>
                                             <span className="text-gray-900">
-                                                {formatCurrency(total)}
+                                                {formatCurrency(subtotal)}
                                             </span>
                                         </span>
                                     ) : (
