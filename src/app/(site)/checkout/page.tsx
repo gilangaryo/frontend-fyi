@@ -629,33 +629,12 @@ export default function CheckoutPage() {
                                             {item.size || "All Size"}
                                         </p>
                                         {item.variantId &&
-                                        pricedItems[item.variantId] &&
-                                        pricedItems[item.variantId]
-                                            .effectiveUnitPrice <
-                                            pricedItems[item.variantId]
-                                                .baseUnitPrice ? (
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-semibold text-gra-700">
-                                                    {formatCurrency(
-                                                        pricedItems[
-                                                            item.variantId
-                                                        ].effectiveUnitPrice,
-                                                    )}
-                                                </p>
-                                                <p className="text-xs text-gray-400 line-through">
-                                                    {formatCurrency(
-                                                        pricedItems[
-                                                            item.variantId
-                                                        ].baseUnitPrice,
-                                                    )}
-                                                </p>
-                                            </div>
-                                        ) : productPricingMap[item.id]
-                                              ?.originalPrice !== undefined &&
-                                          productPricingMap[item.id]
-                                              .originalPrice! >
-                                              productPricingMap[item.id]
-                                                  .displayPrice ? (
+                                        productPricingMap[item.id]
+                                            ?.originalPrice !== undefined &&
+                                        productPricingMap[item.id]
+                                            .originalPrice! >
+                                            productPricingMap[item.id]
+                                                .displayPrice ? (
                                             <div className="flex items-center gap-2">
                                                 <p className="font-semibold text-gray-700">
                                                     {formatCurrency(
