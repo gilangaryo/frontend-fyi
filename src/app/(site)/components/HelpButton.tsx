@@ -26,8 +26,8 @@ export default function HelpButton() {
                             <Mail size={18} className="text-secondary" />
                             <div>
                                 <p className="font-medium">Our Email</p>
-                                <a href="mailto:fyiwearstudio@gmail.com" className="text-xs text-gray-500 hover:underline">
-                                    fyiwearstudio@gmail.com
+                                <a href="mailto:foryourinfinity@gmail.com" className="text-xs text-gray-500 hover:underline">
+                                    foryourinfinity@gmail.com
                                 </a>
                             </div>
                         </div>
@@ -44,14 +44,6 @@ export default function HelpButton() {
                                 >
                                     FYI Couture (Admin)
                                 </a>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <Phone size={18} className="text-secondary" />
-                            <div>
-                                <p className="font-medium">Call Support</p>
-                                <p className="text-xs text-gray-500">+62 812 3456 7890</p>
                             </div>
                         </div>
                     </div>
