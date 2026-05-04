@@ -49,6 +49,9 @@ export interface Product {
     originalPrice?: number;
     basePrice?: number;
     priceBeforeDiscount?: number;
+    discountPercent?: number;
+    modelHeight?: string | null;
+    modelWeight?: string | null;
     stock: number;
     sku: string | null;
     imageUrl: string;
