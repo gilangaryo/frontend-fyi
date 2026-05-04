@@ -51,19 +51,30 @@ export default function CatalogSection() {
                 params.set("limit", String(limit));
                 if (selectedCollections.length > 0)
                     params.set("collectionSlug", selectedCollections.join(","));
-                if (selectedCategories.length > 0)
-                    params.set("categorySlug", selectedCategories.join(","));
+                const isSaleMode = selectedCategories.includes("sale");
+                const endpoint = isSaleMode ? "/products/sale" : "/products";
+
+                if (selectedCategories.length > 0) {
+                    const filteredCats = selectedCategories.filter(c => c !== "sale");
+                    if (filteredCats.length > 0) {
+                        params.set("categorySlug", filteredCats.join(","));
+                    }
+                }
                 if (selectedKains.length > 0)
                     params.set("kain", selectedKains.join(","));
 
                 const res = await fetch(
-                    `${API_BASE}/products?${params.toString()}`,
+                    `${API_BASE}${endpoint}?${params.toString()}`,
                     { cache: "no-store" },
                 );
                 const json = await res.json();
                 if (json.success) {
                     setProducts(json.data);
-                    setTotalPages(json.pagination.totalPages);
+                    if (json.pagination) {
+                        setTotalPages(json.pagination.totalPages);
+                    } else {
+                        setTotalPages(1);
+                    }
                 }
             } catch (error) {
                 console.error("❌ Failed to fetch products:", error);
@@ -235,6 +246,11 @@ export default function CatalogSection() {
                                 className="text-center group block mb-8"
                             >
                                 <div className="aspect-[3/4] relative mb-4 overflow-hidden group bg-gray-100">
+                                    {product.priceBeforeDiscount && (
+                                        <div className="absolute top-3 left-3 bg-[#5a4b43] text-white text-xs font-semibold px-3 py-1 z-10">
+                                            SALE
+                                        </div>
+                                    )}
                                     <Image
                                         src={primaryImg}
                                         alt={product.title}
@@ -269,9 +285,25 @@ export default function CatalogSection() {
                                     ></button>
                                 </div>
 
-                                <p className="text-sm md:text-base font-light">
+                                <p className="text-sm md:text-base font-light mb-1">
                                     {product.title}
                                 </p>
+                                {product.priceBeforeDiscount ? (
+                                    <div className="flex items-center justify-center gap-2 mt-1">
+                                        <p className="text-sm line-through text-gray-400">
+                                            IDR {Number(product.priceBeforeDiscount).toLocaleString("id-ID")}
+                                        </p>
+                                        <p className="text-sm font-bold text-red-700">
+                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    product.price && (
+                                        <p className="text-sm md:text-base font-bold text-center">
+                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                        </p>
+                                    )
+                                )}
                             </Link>
                         );
                     })}
