@@ -7,7 +7,6 @@ import { Volume2, VolumeX } from "lucide-react";
 export default function About() {
     const videoRefs = useRef<HTMLVideoElement[]>([]);
     const [, setUserInteracted] = useState(false);
-    const [hovered, setHovered] = useState(false);
     const [muted, setMuted] = useState(true);
 
     useEffect(() => {
@@ -79,54 +78,21 @@ export default function About() {
     return (
         <section className="bg-white px-4 md:px-10">
             <div className="max-w-full grid md:grid-cols-2 gap-2">
-                {/* 🖼️ LEFT COLUMN — Image + Overlay Hover */}
-                <div className="flex flex-col justify-between">
-                    <div
-                        className="relative aspect-[4/5] w-full overflow-hidden group cursor-pointer"
-                        onMouseEnter={() => setHovered(true)}
-                        onMouseLeave={() => setHovered(false)}
-                    >
-                        <Image
-                            src="/homepage/wear.webp"
-                            alt="Wear Your Worth Left"
-                            fill
-                            className="object-cover transition-transform duration-700"
-                        />
+                {/* 🖼️ LEFT COLUMN — Text Area */}
+                <div className="flex flex-col justify-center bg-[#f8f7f5] p-8 md:p-12 text-gray-700 h-full w-full aspect-[4/5]">
+                    <h2 className="text-2xl font-medium mb-6">Wear Your Worth</h2>
 
-                        <div
-                            className={`absolute inset-0 flex flex-col items-start justify-center bg-white text-gray-700 text-left px-6 transition-opacity duration-400 ${hovered ? "opacity-100" : "opacity-0"
-                                }`}
-                        >
-                            <h2 className="text-2xl font-medium mb-6">Wear Your Worth</h2>
+                    <p className="text-sm md:text-base font-light max-w-full leading-relaxed">
+                        True self-worth doesn’t scream for attention, demand validation, or seek approval. It moves with quiet certainty. Graceful, unshaken, at ease.
+                        <br />
+                        <br />
+                        The world tells that self-worth is something to prove. That it needs to be louder, bolder, more. Real self-worth isn’t about proving. It’s about owning it gracefully.
+                        <br />
+                        <br />
 
-                            <p className="text-sm md:text-base font-light max-w-full leading-relaxed">
-                                True self-worth doesn’t scream for attention, demand validation, or seek approval. It moves with quiet certainty. Graceful, unshaken, at ease.
-                                <br />
-                                <br />
-                                The world tells that self-worth is something to prove. That it needs to be louder, bolder, more. Real self-worth isn’t about proving. It’s about owning it gracefully.
-                                <br />
-                                <br />
-
-                                We create daily couture carrying that presence: intentional, refined, versatile. Pieces that move with you, elevating your worth without crying for validation. Because self-worth isn’t something you perform. It’s something you embody.
-                            </p>
-                            <h2 className="text-2xl font-medium mt-6">Wear your worth. Day in, day out.</h2>
-
-                        </div>
-                    </div>
-
-                    {/* <h2 className="text-2xl font-medium mb-4 mt-6">Wear Your Worth</h2>
-                    <div className="text-gray-600 font-light text-sm leading-relaxed max-w-[90%]">
-                        <p className="mb-6">
-                            True self-worth doesn’t scream for attention, demand validation, or
-                            seek approval. It moves with quiet certainty. Graceful, unshaken, at
-                            ease.
-                        </p>
-                        <p>
-                            The world tells that self-worth is something to prove. That it needs to
-                            be louder, bolder, more. Real self-worth isn’t about proving. It’s about
-                            owning it gracefully.
-                        </p>
-                    </div> */}
+                        We create daily couture carrying that presence: intentional, refined, versatile. Pieces that move with you, elevating your worth without crying for validation. Because self-worth isn’t something you perform. It’s something you embody.
+                    </p>
+                    <h2 className="text-xl md:text-2xl font-medium mt-6">Wear your worth. Day in, day out.</h2>
                 </div>
 
                 <div className="flex flex-col justify-between">
