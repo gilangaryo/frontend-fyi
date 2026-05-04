@@ -50,8 +50,8 @@ export default function CollectionSection({
     const isReversed = index % 2 === 1
     const heroHeightClass =
         index === 0
-            ? 'md:h-[calc(100vh-140px)]'
-            : 'md:h-screen'
+            ? 'min-h-[60vh] md:min-h-[calc(100vh-140px)]'
+            : 'min-h-[60vh] md:min-h-screen'
     const scrollMarginTop = index === 0 ? 'scroll-mt-50' : 'scroll-mt-0'
     return (
         <section
@@ -62,7 +62,7 @@ export default function CollectionSection({
 
             {/* LEFT (hero text) */}
             <div
-                className={`relative h-svh ${heroHeightClass} text-white flex flex-col justify-center px-8 md:px-16 lg:px-20 text-center`}
+                className={`relative ${heroHeightClass} text-white flex flex-col justify-center px-8 md:px-16 lg:px-20 text-center bg-gray-100`}
             >
                 <Image
                     src={getImageUrl(data.heroImage)}
