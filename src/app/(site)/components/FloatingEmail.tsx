@@ -98,8 +98,8 @@ export default function FloatingEmail() {
     return (
         <>
             {/* Floating Email Form */}
-            <div className="fixed bottom-24 right-6 z-[9998] animate-slideUp backdrop-blur-xs">
-                <div className="relative bg-secondary/70 text-white p-8 w-[90vw] max-w-md shadow-2xl">
+            <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="relative bg-secondary/90 text-white p-8 w-[90vw] max-w-md shadow-2xl animate-slideUp">
                     {/* Close button */}
                     <button
                         onClick={handleClose}
@@ -114,7 +114,7 @@ export default function FloatingEmail() {
                         Be an Exclusive Member
                     </h2>
                     <p className="text-center text-sm mb-6 text-gray-200 font-light">
-                        Letters that speak to the soul, inspiration that lingers, and special things we keep just for you.
+                        10% sale for first purchase
                     </p>
 
                     {/* Form */}
