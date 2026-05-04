@@ -78,6 +78,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }, [product.variants, selectedVariantId]);
 
     const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
     // const [isAddCartModalOpen, setIsAddCartModalOpen] = useState(false);
 
     const handleAddToCart = () => {
@@ -155,7 +156,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     </div>
 
                     {/* Main Image */}
-                    <div className="flex-1 relative aspect-[3/4]">
+                    <div 
+                        className="flex-1 relative aspect-[3/4] cursor-zoom-in"
+                        onClick={() => setIsZoomed(true)}
+                    >
                         <Image
                             src={mainImage}
                             alt={product.title}
@@ -258,12 +262,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                               : "Add to Bag"}
                     </button>
 
-                    <p className="text-sm text-charcoal leading-relaxed mb-6">
-                        {product.description}
-                    </p>
-
                     <div className="divide-y text-sm">
                         <Accordion title="Details">
+                            <p className="mb-4 leading-relaxed">{product.description}</p>
                             {product.details || "-"}
                         </Accordion>
                         <Accordion title="Delivery & Returns">
@@ -272,6 +273,30 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     </div>
                 </div>
             </section>
+
+            {/* Modal Image Zoom */}
+            {isZoomed && (
+                <div 
+                    className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center cursor-zoom-out"
+                    onClick={() => setIsZoomed(false)}
+                >
+                    <button 
+                        className="absolute top-6 right-6 text-white hover:text-gray-300 z-50"
+                        onClick={() => setIsZoomed(false)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <div className="relative w-full h-full max-w-5xl max-h-[90vh] mx-auto p-4 flex items-center justify-center">
+                        <Image
+                            src={mainImage}
+                            alt={product.title}
+                            fill
+                            className="object-contain"
+                            quality={100}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/*  Modal Add to Cart */}
             {/* <AddToCartModal
@@ -337,7 +362,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         </div>
 
                         <div className="text-xl font-light">
-                            <div className="p-6 overflow-x-auto">
+                            {(product.modelHeight || product.modelWeight) && (
+                                <div className="px-6 pt-2 pb-0 text-sm text-gray-600 bg-primary-muted/50 py-2 mx-6 mb-4">
+                                    <span className="font-medium">Model info:</span>{" "}
+                                    {product.modelHeight && <span>Height: {product.modelHeight}</span>}
+                                    {product.modelHeight && product.modelWeight && <span> &middot; </span>}
+                                    {product.modelWeight && <span>Weight: {product.modelWeight}</span>}
+                                </div>
+                            )}
+                            <div className="px-6 pb-6 overflow-x-auto">
                                 <table className="min-w-full text-sm border border-gray-200">
                                     <thead className="bg-gray-100 text-gray-700 font-medium">
                                         <tr>
@@ -357,7 +390,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                                                 Sleeve
                                             </th>
                                             <th className="px-4 py-2 border">
-                                                Height
+                                                Hip
                                             </th>
                                         </tr>
                                     </thead>
