@@ -192,6 +192,7 @@ export default function Navbar() {
         { name: "Collection", href: "/collection" },
         { name: "Story", href: "/story" },
         { name: "Beyond", href: "/beyond" },
+        { name: "Sale", href: "/shop?category=sale" },
     ];
 
     return (
@@ -201,8 +202,12 @@ export default function Navbar() {
     ${showNavbar ? "translate-y-0" : "-translate-y-full"} 
     ${openMenu ? "z-[10000]" : "z-50"}`}
             >
+                {/* Sale Bar */}
+                <div className="py-2 flex items-center justify-center text-center text-sm font-medium bg-[#5a4b43] text-red-600 tracking-wider z-50">
+                    40% LAST SEASON SALE
+                </div>
                 {/* Announcement Bar */}
-                <div className="h-[40px] flex items-center justify-center text-center text-sm font-medium bg-primary-muted text-secondary z-50">
+                <div className="py-1.5 flex items-center justify-center text-center text-xs font-medium bg-primary-muted text-secondary z-50">
                     {announcement ? (
                         <h2>{announcement}</h2>
                     ) : (
