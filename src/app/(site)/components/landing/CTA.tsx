@@ -10,6 +10,7 @@ interface Product {
     id: string;
     title: string;
     slug: string;
+    price?: number | string;
     images: { imageUrl: string; isPrimary: boolean }[];
 }
 
@@ -102,9 +103,14 @@ export default function CTA() {
                                             />
                                         )}
                                     </div>
-                                    <p className="text-sm text-charcoal font-light text-center leading-relaxed tracking-wide px-1">
+                                    <p className="text-sm text-charcoal font-light text-center leading-relaxed tracking-wide px-1 mb-1">
                                         {product.title}
                                     </p>
+                                    {product.price && (
+                                        <p className="text-sm text-charcoal font-bold text-center">
+                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                        </p>
+                                    )}
                                 </Link>
                             );
                         })}
@@ -142,9 +148,14 @@ export default function CTA() {
                                             />
                                         )}
                                     </div>
-                                    <p className="text-xs text-gray-700 font-light text-center leading-relaxed">
+                                    <p className="text-xs text-gray-700 font-light text-center leading-relaxed mb-1">
                                         {product.title}
                                     </p>
+                                    {product.price && (
+                                        <p className="text-xs text-gray-700 font-bold text-center">
+                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                        </p>
+                                    )}
                                 </Link>
                             );
                         })}
@@ -182,9 +193,14 @@ export default function CTA() {
                                             />
                                         )}
                                     </div>
-                                    <p className="text-xs text-gray-700 font-light text-center leading-relaxed px-1">
+                                    <p className="text-xs text-gray-700 font-light text-center leading-relaxed px-1 mb-1">
                                         {product.title}
                                     </p>
+                                    {product.price && (
+                                        <p className="text-xs text-gray-700 font-bold text-center">
+                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                        </p>
+                                    )}
                                 </Link>
                             );
                         })}
