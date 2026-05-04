@@ -91,6 +91,8 @@ export default function NewProductPage() {
         price: "",
         collectionId: "",
         categoryId: "",
+        modelHeight: "",
+        modelWeight: "",
     });
 
     const router = useRouter();
@@ -296,6 +298,8 @@ export default function NewProductPage() {
                 categoryId: categoryId,
                 collectionId: form.collectionId,
                 kainId: kainId || null,
+                modelHeight: form.modelHeight || null,
+                modelWeight: form.modelWeight || null,
                 images: images.map((img) => ({
                     imageUrl: img.url,
                     isPrimary: img.isPrimary,
@@ -821,6 +825,36 @@ export default function NewProductPage() {
                                     <div className="col-span-1"></div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                    
+                    {/* Model Measurements */}
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Model Height
+                            </label>
+                            <input
+                                name="modelHeight"
+                                type="text"
+                                placeholder="e.g. 168 cm"
+                                value={form.modelHeight}
+                                onChange={handleChange}
+                                className="w-full border-b border-gray-300 p-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Model Weight
+                            </label>
+                            <input
+                                name="modelWeight"
+                                type="text"
+                                placeholder="e.g. 55 kg"
+                                value={form.modelWeight}
+                                onChange={handleChange}
+                                className="w-full border-b border-gray-300 p-2"
+                            />
                         </div>
                     </div>
                 </div>
