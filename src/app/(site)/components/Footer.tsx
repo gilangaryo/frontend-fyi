@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUp, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 export default function Footer() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -29,7 +30,9 @@ export default function Footer() {
                 "Privacy Policy",
               ].map((link, idx, arr) => (
                 <span key={link}>
-                  {link}
+                  <Link href={link === "Home" ? "/" : `/${link.toLowerCase().replace(" ", "-")}`} className="hover:underline hover:text-secondary transition-colors">
+                    {link}
+                  </Link>
                   {idx < arr.length - 1 && " /"}
                 </span>
               ))}
@@ -56,9 +59,14 @@ export default function Footer() {
           <div className="flex-1 text-sm space-y-6">
             <div>
               <p className="uppercase text-xs text-charcoal mb-1">Address</p>
-              <p className="text-sm md:text-lg text-charcoal">
+              <a 
+                href="https://maps.google.com/?q=Butik+FYI,+Jalan+Tanah+Barak+no.15,+Badung,+Bali,+Indonesia+80351"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm md:text-lg text-charcoal hover:underline block"
+              >
                 Jalan Tanah Barak no.15, Badung, Bali, Indonesia 80351
-              </p>
+              </a>
             </div>
             <div>
               <p className="uppercase text-xs text-charcoal mb-1">
