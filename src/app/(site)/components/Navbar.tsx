@@ -197,7 +197,7 @@ export default function Navbar() {
         { name: "Collection", href: "/collection" },
         { name: "Story", href: "/story" },
         { name: "Beyond", href: "/beyond" },
-        { name: "Sale", href: "/shop?category=sale" },
+        { name: "Sale", href: "/sale" },
     ];
 
     return (
