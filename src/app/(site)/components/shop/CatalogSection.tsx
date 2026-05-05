@@ -293,13 +293,13 @@ export default function CatalogSection() {
                                         <p className="text-sm line-through text-gray-400">
                                             IDR {Number(product.priceBeforeDiscount).toLocaleString("id-ID")}
                                         </p>
-                                        <p className="text-sm font-bold text-red-700">
+                                        <p className="text-sm font-medium text-charcoal">
                                             IDR {Number(product.price).toLocaleString("id-ID")}
                                         </p>
                                     </div>
                                 ) : (
                                     product.price && (
-                                        <p className="text-sm md:text-base font-bold text-center">
+                                        <p className="text-sm md:text-base font-medium text-center text-charcoal">
                                             IDR {Number(product.price).toLocaleString("id-ID")}
                                         </p>
                                     )
