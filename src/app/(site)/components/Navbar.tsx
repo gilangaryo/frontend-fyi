@@ -30,6 +30,10 @@ interface CollectionSlug {
     slug: string;
 }
 
+const DEFAULT_OPEN_ANNOUNCEMENT = "Free shipping all over Indonesia";
+const DEFAULT_CLOSED_MESSAGE =
+    "Our store is currently closed — orders are temporarily unavailable.";
+
 export default function Navbar() {
     const [search, setSearch] = useState("");
     const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -49,7 +53,7 @@ export default function Navbar() {
     const router = useRouter();
 
     const totalItems = useSelector((state: RootState) =>
-        state.cart.items.reduce((sum, item) => sum + item.quantity, 0)
+        state.cart.items.reduce((sum, item) => sum + item.quantity, 0),
     );
 
     const [lastScrollY, setLastScrollY] = useState(0);
@@ -92,27 +96,28 @@ export default function Navbar() {
 
                 const isOpen = store?.data?.isOpen ?? true;
                 const closedMessage =
-                    store?.data?.closedMessage ||
-                    "Our store is currently closed — orders are temporarily unavailable.";
+                    store?.data?.closedMessage || DEFAULT_CLOSED_MESSAGE;
+                const announcementValue =
+                    ann?.success && typeof ann?.data?.value === "string"
+                        ? ann.data.value
+                        : null;
 
                 setStoreOpen(isOpen);
 
                 if (!isOpen) {
                     // ✅ Use custom closed message
                     setAnnouncement(closedMessage);
-                } else if (ann?.success && ann?.data?.isActive) {
-                    setAnnouncement(
-                        ann.data.value || "Free shipping all over Indonesia"
-                    );
+                } else if (announcementValue) {
+                    setAnnouncement(announcementValue);
                 } else {
-                    setAnnouncement("Free shipping all over Indonesia");
+                    setAnnouncement(DEFAULT_OPEN_ANNOUNCEMENT);
                 }
             } catch (err) {
                 console.error(
                     "Failed to fetch announcement or store status:",
-                    err
+                    err,
                 );
-                setAnnouncement("Free shipping all over Indonesia");
+                setAnnouncement(DEFAULT_OPEN_ANNOUNCEMENT);
             }
         }
 
@@ -157,8 +162,8 @@ export default function Navbar() {
                 setLoadingSearch(true);
                 const res = await fetch(
                     `${API_BASE}/products?search=${encodeURIComponent(
-                        search
-                    )}&limit=5`
+                        search,
+                    )}&limit=5`,
                 );
                 const data = await res.json();
 
@@ -202,12 +207,8 @@ export default function Navbar() {
     ${showNavbar ? "translate-y-0" : "-translate-y-full"} 
     ${openMenu ? "z-[10000]" : "z-50"}`}
             >
-                {/* Sale Bar */}
-                <div className="py-2 flex items-center justify-center text-center text-sm font-medium bg-[#5a4b43] text-red-600 tracking-wider z-50">
-                    40% LAST SEASON SALE
-                </div>
                 {/* Announcement Bar */}
-                <div className="py-1.5 flex items-center justify-center text-center text-xs font-medium bg-primary-muted text-secondary z-50">
+                <div className="py-4 flex items-center justify-center text-center text-sm font-medium bg-primary-muted text-secondary z-50">
                     {announcement ? (
                         <h2>{announcement}</h2>
                     ) : (
@@ -280,18 +281,18 @@ export default function Navbar() {
                                                                         {col.slug
                                                                             .replace(
                                                                                 /-/g,
-                                                                                " "
+                                                                                " ",
                                                                             )
                                                                             .replace(
                                                                                 /\b\w/g,
                                                                                 (
-                                                                                    l
+                                                                                    l,
                                                                                 ) =>
-                                                                                    l.toUpperCase()
+                                                                                    l.toUpperCase(),
                                                                             )}
                                                                     </Link>
                                                                 </li>
-                                                            )
+                                                            ),
                                                         )
                                                     ) : (
                                                         <li className="px-4 py-2 text-sm text-gray-400">
@@ -375,7 +376,7 @@ export default function Navbar() {
                                     {!loadingSearch &&
                                         searchResults.map((p) => {
                                             const primaryImage = p.images?.find(
-                                                (img) => img.isPrimary
+                                                (img) => img.isPrimary,
                                             )?.imageUrl;
                                             const imageSrc = primaryImage
                                                 ? `${API_BASE}${primaryImage}`
@@ -386,14 +387,14 @@ export default function Navbar() {
                                                     key={p.id}
                                                     onClick={() =>
                                                         handleSelectProduct(
-                                                            p.slug
+                                                            p.slug,
                                                         )
                                                     }
                                                     className="flex items-center gap-3 w-full text-left px-4 py-2 hover:bg-gray-100"
                                                 >
                                                     <Image
                                                         src={getImageUrl(
-                                                            imageSrc
+                                                            imageSrc,
                                                         )}
                                                         alt={p.title}
                                                         width={40}
@@ -476,7 +477,7 @@ export default function Navbar() {
                             <div className="divide-y divide-gray-200">
                                 {searchResults.map((p) => {
                                     const primaryImage = p.images?.find(
-                                        (img) => img.isPrimary
+                                        (img) => img.isPrimary,
                                     )?.imageUrl;
                                     const imageSrc = primaryImage
                                         ? `${API_BASE}${primaryImage}`
@@ -505,9 +506,9 @@ export default function Navbar() {
                                                     <span className="text-gray-500 text-sm">
                                                         Rp{" "}
                                                         {Number(
-                                                            p.price
+                                                            p.price,
                                                         ).toLocaleString(
-                                                            "id-ID"
+                                                            "id-ID",
                                                         )}
                                                     </span>
                                                 )}
