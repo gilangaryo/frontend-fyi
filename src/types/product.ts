@@ -50,8 +50,8 @@ export interface Product {
     basePrice?: number;
     priceBeforeDiscount?: number;
     discountPercent?: number;
-    modelHeight?: string | null;
-    modelWeight?: string | null;
+    modelHeight?: number | null;
+    modelWeight?: number | null;
     stock: number;
     sku: string | null;
     imageUrl: string;

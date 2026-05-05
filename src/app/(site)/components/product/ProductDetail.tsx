@@ -365,9 +365,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                             {(product.modelHeight || product.modelWeight) && (
                                 <div className="px-6 pt-2 pb-0 text-sm text-gray-600 bg-primary-muted/50 py-2 mx-6 mb-4">
                                     <span className="font-medium">Model info:</span>{" "}
-                                    {product.modelHeight && <span>Height: {product.modelHeight}</span>}
+                                    {product.modelHeight && <span>Height: {product.modelHeight} cm</span>}
                                     {product.modelHeight && product.modelWeight && <span> &middot; </span>}
-                                    {product.modelWeight && <span>Weight: {product.modelWeight}</span>}
+                                    {product.modelWeight && <span>Weight: {product.modelWeight} kg</span>}
                                 </div>
                             )}
                             <div className="px-6 pb-6 overflow-x-auto">

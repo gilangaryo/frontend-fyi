@@ -365,8 +365,8 @@ export default function EditProductPage() {
                 categoryId: categoryId,
                 collectionId: form.collectionId,
                 kainId: kainId || null,
-                modelHeight: form.modelHeight || null,
-                modelWeight: form.modelWeight || null,
+                modelHeight: form.modelHeight ? Number(form.modelHeight) : null,
+                modelWeight: form.modelWeight ? Number(form.modelWeight) : null,
                 images: images.map((img) => ({
                     imageUrl: img.url,
                     isPrimary: img.isPrimary,
@@ -931,8 +931,8 @@ export default function EditProductPage() {
                             </label>
                             <input
                                 name="modelHeight"
-                                type="text"
-                                placeholder="e.g. 168 cm"
+                                type="number"
+                                placeholder="in cm"
                                 value={form.modelHeight}
                                 onChange={handleChange}
                                 className="w-full border-b border-gray-300 p-2"
@@ -944,8 +944,8 @@ export default function EditProductPage() {
                             </label>
                             <input
                                 name="modelWeight"
-                                type="text"
-                                placeholder="e.g. 55 kg"
+                                type="number"
+                                placeholder="in kg"
                                 value={form.modelWeight}
                                 onChange={handleChange}
                                 className="w-full border-b border-gray-300 p-2"
