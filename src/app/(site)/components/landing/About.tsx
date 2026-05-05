@@ -77,9 +77,9 @@ export default function About() {
 
     return (
         <section className="bg-white px-4 md:px-10">
-            <div className="max-w-full grid md:grid-cols-2 gap-2">
+            <div className="max-w-full grid lg:grid-cols-2 gap-2">
                 {/* 🖼️ LEFT COLUMN — Text Area */}
-                <div className="flex flex-col justify-center bg-[#f8f7f5] p-8 md:p-12 text-gray-700 h-full w-full aspect-[4/5]">
+                <div className="flex flex-col justify-center bg-white p-8 md:p-12 text-gray-700 h-full w-full">
                     <h2 className="text-2xl font-medium mb-6">Wear Your Worth</h2>
 
                     <p className="text-sm md:text-base font-light max-w-full leading-relaxed">
