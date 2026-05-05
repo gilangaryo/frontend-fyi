@@ -11,6 +11,10 @@ interface Product {
     title: string;
     slug: string;
     price?: number | string;
+    pricing?: {
+        basePrice: number;
+        finalPrice: number;
+    };
     images: { imageUrl: string; isPrimary: boolean }[];
 }
 
@@ -86,6 +90,12 @@ export default function CTA() {
                                     className="group block"
                                 >
                                     <div className="aspect-[3/4] relative bg-gray-100 mb-4 overflow-hidden">
+                                        {/* SALE Badge */}
+                                        {product.pricing && product.pricing.finalPrice < product.pricing.basePrice && (
+                                            <div className="absolute top-3 left-3 bg-[#5a4b43] text-white text-xs font-semibold px-3 py-1 z-10">
+                                                SALE
+                                            </div>
+                                        )}
                                         {/* Image utama */}
                                         <Image
                                             src={getImageUrl(primary)}
@@ -106,10 +116,21 @@ export default function CTA() {
                                     <p className="text-sm text-charcoal font-light text-center leading-relaxed tracking-wide px-1 mb-1">
                                         {product.title}
                                     </p>
-                                    {product.price && (
-                                        <p className="text-sm text-charcoal font-bold text-center">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
-                                        </p>
+                                    {product.pricing && product.pricing.finalPrice < product.pricing.basePrice ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <p className="text-sm line-through text-gray-400">
+                                                IDR {Number(product.pricing.basePrice).toLocaleString("id-ID")}
+                                            </p>
+                                            <p className="text-sm font-medium text-charcoal">
+                                                IDR {Number(product.pricing.finalPrice).toLocaleString("id-ID")}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        product.price && (
+                                            <p className="text-sm text-charcoal font-medium text-center">
+                                                IDR {Number(product.price).toLocaleString("id-ID")}
+                                            </p>
+                                        )
                                     )}
                                 </Link>
                             );
@@ -133,6 +154,12 @@ export default function CTA() {
                                     className="flex-none w-64 group"
                                 >
                                     <div className="aspect-[3/4] relative bg-gray-100 mb-4 overflow-hidden">
+                                        {/* SALE Badge */}
+                                        {product.pricing && product.pricing.finalPrice < product.pricing.basePrice && (
+                                            <div className="absolute top-3 left-3 bg-[#5a4b43] text-white text-xs font-semibold px-3 py-1 z-10">
+                                                SALE
+                                            </div>
+                                        )}
                                         <Image
                                             src={getImageUrl(primary || "/placeholder.jpg")}
                                             alt={product.title}
@@ -151,10 +178,21 @@ export default function CTA() {
                                     <p className="text-xs text-gray-700 font-light text-center leading-relaxed mb-1">
                                         {product.title}
                                     </p>
-                                    {product.price && (
-                                        <p className="text-xs text-gray-700 font-bold text-center">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
-                                        </p>
+                                    {product.pricing && product.pricing.finalPrice < product.pricing.basePrice ? (
+                                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                                            <p className="text-xs line-through text-gray-400">
+                                                IDR {Number(product.pricing.basePrice).toLocaleString("id-ID")}
+                                            </p>
+                                            <p className="text-xs font-medium text-charcoal">
+                                                IDR {Number(product.pricing.finalPrice).toLocaleString("id-ID")}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        product.price && (
+                                            <p className="text-xs font-medium text-charcoal text-center">
+                                                IDR {Number(product.price).toLocaleString("id-ID")}
+                                            </p>
+                                        )
                                     )}
                                 </Link>
                             );
@@ -178,6 +216,12 @@ export default function CTA() {
                                     className="flex-none w-48 group"
                                 >
                                     <div className="aspect-[3/4] relative bg-gray-100 mb-4 overflow-hidden">
+                                        {/* SALE Badge */}
+                                        {product.pricing && product.pricing.finalPrice < product.pricing.basePrice && (
+                                            <div className="absolute top-3 left-3 bg-[#5a4b43] text-white text-xs font-semibold px-3 py-1 z-10">
+                                                SALE
+                                            </div>
+                                        )}
                                         <Image
                                             src={getImageUrl(primary || "/placeholder.jpg")}
                                             alt={product.title}
@@ -196,10 +240,21 @@ export default function CTA() {
                                     <p className="text-xs text-gray-700 font-light text-center leading-relaxed px-1 mb-1">
                                         {product.title}
                                     </p>
-                                    {product.price && (
-                                        <p className="text-xs text-gray-700 font-bold text-center">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
-                                        </p>
+                                    {product.pricing && product.pricing.finalPrice < product.pricing.basePrice ? (
+                                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                                            <p className="text-xs line-through text-gray-400">
+                                                IDR {Number(product.pricing.basePrice).toLocaleString("id-ID")}
+                                            </p>
+                                            <p className="text-xs font-medium text-charcoal">
+                                                IDR {Number(product.pricing.finalPrice).toLocaleString("id-ID")}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        product.price && (
+                                            <p className="text-xs font-medium text-charcoal text-center">
+                                                IDR {Number(product.price).toLocaleString("id-ID")}
+                                            </p>
+                                        )
                                     )}
                                 </Link>
                             );
