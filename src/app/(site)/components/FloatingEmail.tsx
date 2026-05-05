@@ -99,50 +99,44 @@ export default function FloatingEmail() {
         <>
             {/* Floating Email Form */}
             <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="relative bg-secondary/90 text-white p-8 w-[90vw] max-w-md shadow-2xl animate-slideUp">
+                <div className="relative bg-secondary/50 text-white p-10 w-[90vw] max-w-md shadow-2xl animate-slideUp flex flex-col items-center">
                     {/* Close button */}
                     <button
                         onClick={handleClose}
-                        className="absolute top-4 right-4 text-white/80 hover:text-white"
+                        className="absolute top-6 right-6 text-white/80 hover:text-white"
                     >
-                        <X size={20} />
+                        <X size={24} />
                     </button>
 
 
                     {/* Heading */}
-                    <h2 className="text-2xl md:text-2xl font-light text-center mb-3">
+                    <h2 className="text-2xl font-light text-center mb-4">
                         Be an Exclusive Member
                     </h2>
-                    <p className="text-center text-sm mb-6 text-gray-200 font-light">
-                        10% sale for first purchase
+                    <p className="text-center text-sm text-gray-200 font-light leading-relaxed">
+                        Enjoy your 10% sales for your first Purchase when you sign up to our newsletter for our exclusive content & more.
                     </p>
 
                     {/* Form */}
-                    <form className="space-y-4" onSubmit={handleSubscribe}>
-                        <input
-                            type="email"
-                            required
-                            placeholder="email address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-transparent border-b border-white/60 text-white py-2 focus:outline-none placeholder:text-white/50"
-                        />
+                    <form className="w-full mt-10 space-y-8" onSubmit={handleSubscribe}>
+                        <div className="relative">
+                            <input
+                                type="email"
+                                required
+                                placeholder="Email Address"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-transparent border-b border-white/40 text-white py-3 focus:outline-none focus:border-white placeholder:text-white/60 transition-colors"
+                            />
+                        </div>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-2.5 bg-white/90 text-[#5a4638] font-medium rounded-sm hover:bg-white transition disabled:opacity-70"
+                            className="w-full py-3 bg-white text-secondary font-medium tracking-wide hover:bg-white/90 transition disabled:opacity-70 text-sm"
                         >
                             {loading ? 'Subscribing...' : 'Subscribe'}
                         </button>
                     </form>
-
-                    {/* Privacy Policy */}
-                    <p className="text-[11px] text-center mt-4 text-gray-300 leading-snug">
-                        By signing up you agree to receive emails from FYI Couture and agree to our{' '}
-                        <a href="/privacy-policy" className="underline hover:text-white">
-                            Privacy Policy
-                        </a>.
-                    </p>
                 </div>
 
                 {/* Animation */}
