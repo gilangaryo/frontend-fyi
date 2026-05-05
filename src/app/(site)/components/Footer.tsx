@@ -26,8 +26,6 @@ export default function Footer() {
                 "Home",
                 "Beyond",
                 "Story",
-                "Accessibility",
-                "Privacy Policy",
               ].map((link, idx, arr) => (
                 <span key={link}>
                   <Link href={link === "Home" ? "/" : `/${link.toLowerCase().replace(" ", "-")}`} className="hover:underline hover:text-secondary transition-colors">
