@@ -59,11 +59,8 @@ export default function SaleCatalogSection() {
         <section className="px-6 md:px-10 pb-8">
             {/* Title */}
             <h1 className="text-3xl md:text-5xl font-medium text-center mb-4 leading-normal text-charcoal">
-                On Sale
+                Sale
             </h1>
-            <p className="text-center text-sm text-gray-500 mb-8">
-                Exclusive discounts on selected pieces — while stocks last.
-            </p>
 
             {/* Product Grid */}
             {loading ? (
