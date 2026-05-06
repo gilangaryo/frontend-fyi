@@ -2,44 +2,85 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import FilterDropdown from "./FilterDropdown";
 import type { FilterOption } from "./FilterDropdown";
 import ActiveFilters from "./ActiveFilters";
+import Pagination from "./Pagination";
 import { API_BASE } from "@/lib/constants";
 import { Product, Kain, Collection, Category } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
 
 export default function CatalogSection() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const initialCategory = searchParams.get("category");
+    const initialCollection = searchParams.get("collection");
+    const initialPage = Math.max(1, Number(searchParams.get("page") ?? 1) || 1);
+
     const [openFilter, setOpenFilter] = useState<string | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
     const [selectedCollections, setSelectedCollections] = useState<string[]>(
-        [],
+        initialCollection ? [initialCollection] : [],
     );
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>(
+        initialCategory ? [initialCategory] : [],
+    );
     const [selectedKains, setSelectedKains] = useState<string[]>([]);
     const [collections, setCollections] = useState<FilterOption[]>([]);
     const [categories, setCategories] = useState<FilterOption[]>([]);
     const [kains, setKains] = useState<FilterOption[]>([]);
-    const [page, setPage] = useState(1);
+    const [page, setPageState] = useState(initialPage);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
     const limit = 12;
 
-    const searchParams = useSearchParams();
-    const initialCategory = searchParams.get("category");
-    const initialCollection = searchParams.get("collection");
+    // Track previous filter references to detect actual user-driven changes.
+    // Comparing by reference is safe because useState only creates a new reference
+    // when the setter is called — so this is always false on initial mount,
+    // even under React Strict Mode's double-invoke of effects.
+    const prevFiltersRef = useRef({
+        collections: selectedCollections,
+        categories: selectedCategories,
+        kains: selectedKains,
+    });
 
+    // Sync page state when URL changes (e.g. browser back/forward navigation)
     useEffect(() => {
-        if (initialCategory) setSelectedCategories([initialCategory]);
-        if (initialCollection) setSelectedCollections([initialCollection]);
-    }, [initialCategory, initialCollection]);
+        const urlPage = Math.max(1, Number(searchParams.get("page")) || 1);
+        setPageState(urlPage);
+    }, [searchParams]);
 
-    // Reset page to 1 whenever filters change
+    // Sync page to URL without adding to browser history stack
+    const setPage = useCallback(
+        (newPage: number) => {
+            setPageState(newPage);
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("page", String(newPage));
+            router.replace(`?${params.toString()}`, { scroll: false });
+        },
+        [router, searchParams],
+    );
+
+    // Reset page to 1 only when filters actually change — not on mount
     useEffect(() => {
+        const prev = prevFiltersRef.current;
+        const changed =
+            prev.collections !== selectedCollections ||
+            prev.categories !== selectedCategories ||
+            prev.kains !== selectedKains;
+
+        prevFiltersRef.current = {
+            collections: selectedCollections,
+            categories: selectedCategories,
+            kains: selectedKains,
+        };
+
+        if (!changed) return;
         setPage(1);
-    }, [selectedCollections, selectedCategories, selectedKains]);
+    }, [selectedCollections, selectedCategories, selectedKains]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         async function fetchProducts() {
@@ -55,7 +96,9 @@ export default function CatalogSection() {
                 const endpoint = isSaleMode ? "/products/sale" : "/products";
 
                 if (selectedCategories.length > 0) {
-                    const filteredCats = selectedCategories.filter(c => c !== "sale");
+                    const filteredCats = selectedCategories.filter(
+                        (c) => c !== "sale",
+                    );
                     if (filteredCats.length > 0) {
                         params.set("categorySlug", filteredCats.join(","));
                     }
@@ -291,16 +334,25 @@ export default function CatalogSection() {
                                 {product.priceBeforeDiscount ? (
                                     <div className="flex items-center justify-center gap-2 mt-1">
                                         <p className="text-sm line-through text-gray-400">
-                                            IDR {Number(product.priceBeforeDiscount).toLocaleString("id-ID")}
+                                            IDR{" "}
+                                            {Number(
+                                                product.priceBeforeDiscount,
+                                            ).toLocaleString("id-ID")}
                                         </p>
                                         <p className="text-sm font-medium text-charcoal">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                            IDR{" "}
+                                            {Number(
+                                                product.price,
+                                            ).toLocaleString("id-ID")}
                                         </p>
                                     </div>
                                 ) : (
                                     product.price && (
                                         <p className="text-sm md:text-base font-medium text-center text-charcoal">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                            IDR{" "}
+                                            {Number(
+                                                product.price,
+                                            ).toLocaleString("id-ID")}
                                         </p>
                                     )
                                 )}
@@ -310,38 +362,13 @@ export default function CatalogSection() {
                 </div>
             )}
 
-            {/* Pagination */}
-            {!loading && products.length > 0 && (
-                <div className="flex justify-center items-center mt-8 gap-4">
-                    <button
-                        disabled={page === 1}
-                        onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                        className={`px-4 py-2 border rounded hover:bg-gray-200 transition-colors ${
-                            page === 1 ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
-                    >
-                        Prev
-                    </button>
-
-                    <span className="text-sm text-gray-600">
-                        Page {page} of {totalPages}
-                    </span>
-
-                    <button
-                        disabled={page === totalPages}
-                        onClick={() =>
-                            setPage((p) => Math.min(p + 1, totalPages))
-                        }
-                        className={`px-4 py-2 border rounded hover:bg-gray-200 transition-colors ${
-                            page === totalPages
-                                ? "opacity-50 cursor-not-allowed"
-                                : ""
-                        }`}
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
+            <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                isLoading={loading}
+                itemsCount={products.length}
+            />
         </section>
     );
 }

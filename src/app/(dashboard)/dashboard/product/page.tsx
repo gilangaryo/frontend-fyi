@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { API_BASE } from "@/lib/constants";
 import CollectionTable from "../../components/product/CollectionTable";
 import ProductFilterDropdown, {
@@ -37,7 +38,34 @@ type Product = {
 type StatusFilterType = "all" | "active" | "inactive";
 type SortByType = "name" | "price" | "stock" | "createdAt";
 
+const STATUS_FILTER_VALUES: StatusFilterType[] = ["all", "active", "inactive"];
+const SORT_BY_VALUES: SortByType[] = ["name", "price", "stock", "createdAt"];
+
+function parseDashboardArrayParam(value: string | null) {
+    return value ? value.split(",").filter(Boolean) : [];
+}
+
 export default function ProductPage() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    const initialSearchQuery = searchParams.get("search") ?? "";
+    const initialCollections = parseDashboardArrayParam(
+        searchParams.get("collection"),
+    );
+    const initialStatus = STATUS_FILTER_VALUES.includes(
+        (searchParams.get("status") as StatusFilterType) ?? "all",
+    )
+        ? ((searchParams.get("status") as StatusFilterType) ?? "all")
+        : "all";
+    const initialSort = SORT_BY_VALUES.includes(
+        (searchParams.get("sort") as SortByType) ?? "createdAt",
+    )
+        ? ((searchParams.get("sort") as SortByType) ?? "createdAt")
+        : "createdAt";
+    const initialPage = Math.max(1, Number(searchParams.get("page") ?? 1) || 1);
+
     const [collections, setCollections] = useState<Collection[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [totalProducts, setTotalProducts] = useState(0);
@@ -48,20 +76,63 @@ export default function ProductPage() {
     const [discountModalOpen, setDiscountModalOpen] = useState(false);
 
     // Search & filter
-    const [searchQuery, setSearchQuery] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [selectedCollections, setSelectedCollections] = useState<string[]>(
-        [],
-    );
-    const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
-    const [sortBy, setSortBy] = useState<SortByType>("createdAt");
+    const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+    const [debouncedSearch, setDebouncedSearch] = useState(initialSearchQuery);
+    const [selectedCollections, setSelectedCollections] =
+        useState<string[]>(initialCollections);
+    const [statusFilter, setStatusFilter] =
+        useState<StatusFilterType>(initialStatus);
+    const [sortBy, setSortBy] = useState<SortByType>(initialSort);
 
     // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(initialPage);
     const itemsPerPage = 15;
 
     // Loading state
     const [isLoading, setIsLoading] = useState(true);
+    const prevFiltersRef = useRef({
+        debouncedSearch,
+        selectedCollections,
+        statusFilter,
+        sortBy,
+    });
+
+    useEffect(() => {
+        const urlSearch = searchParams.get("search") ?? "";
+        const urlCollections = parseDashboardArrayParam(
+            searchParams.get("collection"),
+        );
+        const urlStatus = STATUS_FILTER_VALUES.includes(
+            (searchParams.get("status") as StatusFilterType) ?? "all",
+        )
+            ? ((searchParams.get("status") as StatusFilterType) ?? "all")
+            : "all";
+        const urlSort = SORT_BY_VALUES.includes(
+            (searchParams.get("sort") as SortByType) ?? "createdAt",
+        )
+            ? ((searchParams.get("sort") as SortByType) ?? "createdAt")
+            : "createdAt";
+        const urlPage = Math.max(1, Number(searchParams.get("page") ?? 1) || 1);
+
+        setSearchQuery((current) =>
+            current === urlSearch ? current : urlSearch,
+        );
+        setDebouncedSearch((current) =>
+            current === urlSearch ? current : urlSearch,
+        );
+        setSelectedCollections((current) => {
+            const sameLength = current.length === urlCollections.length;
+            const sameValues =
+                sameLength &&
+                current.every((item, index) => item === urlCollections[index]);
+            return sameValues ? current : urlCollections;
+        });
+        setStatusFilter((current) =>
+            current === urlStatus ? current : urlStatus,
+        );
+        setSortBy((current) => (current === urlSort ? current : urlSort));
+        setCurrentPage((current) => (current === urlPage ? current : urlPage));
+    }, [searchParams]);
 
     // Debounce search input (300ms)
     useEffect(() => {
@@ -71,10 +142,63 @@ export default function ProductPage() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Reset to page 1 when filters change
+    // Reset to page 1 only when list controls actually change
     useEffect(() => {
+        const prev = prevFiltersRef.current;
+        const changed =
+            prev.debouncedSearch !== debouncedSearch ||
+            prev.selectedCollections !== selectedCollections ||
+            prev.statusFilter !== statusFilter ||
+            prev.sortBy !== sortBy;
+
+        prevFiltersRef.current = {
+            debouncedSearch,
+            selectedCollections,
+            statusFilter,
+            sortBy,
+        };
+
+        if (!changed) return;
         setCurrentPage(1);
     }, [debouncedSearch, selectedCollections, statusFilter, sortBy]);
+
+    useEffect(() => {
+        const params = new URLSearchParams();
+
+        if (currentPage > 1) {
+            params.set("page", String(currentPage));
+        }
+        if (debouncedSearch) {
+            params.set("search", debouncedSearch);
+        }
+        if (selectedCollections.length > 0) {
+            params.set("collection", selectedCollections.join(","));
+        }
+        if (statusFilter !== "all") {
+            params.set("status", statusFilter);
+        }
+        if (sortBy !== "createdAt") {
+            params.set("sort", sortBy);
+        }
+
+        const nextQuery = params.toString();
+        const currentQuery = searchParams.toString();
+
+        if (nextQuery === currentQuery) return;
+
+        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+            scroll: false,
+        });
+    }, [
+        currentPage,
+        debouncedSearch,
+        pathname,
+        router,
+        searchParams,
+        selectedCollections,
+        sortBy,
+        statusFilter,
+    ]);
 
     // Fetch filter metadata once
     useEffect(() => {
@@ -241,6 +365,10 @@ export default function ProductPage() {
 
     const hasExtendedFilters =
         searchQuery.length > 0 || selectedCollections.length > 0;
+    const fromPage = currentPage > 1 ? currentPage : null;
+    const returnTo = searchParams.toString()
+        ? `${pathname}?${searchParams.toString()}`
+        : pathname;
 
     return (
         <div className="bg-gray-50 min-h-screen p-2">
@@ -260,7 +388,7 @@ export default function ProductPage() {
                     </h2>
 
                     <Link
-                        href="/dashboard/product/collection/new"
+                        href={`/dashboard/product/collection/new?returnTo=${encodeURIComponent(returnTo)}`}
                         className="flex items-center gap-2 text-gray-600 text-sm hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2"
                     >
                         <svg
@@ -310,7 +438,11 @@ export default function ProductPage() {
                 <div>
                     {activeTab === "product" && (
                         <Link
-                            href="/dashboard/product/new"
+                            href={
+                                fromPage
+                                    ? `/dashboard/product/new?from_page=${fromPage}`
+                                    : "/dashboard/product/new"
+                            }
                             className="flex items-center gap-2 bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 rounded-lg px-3 py-2"
                         >
                             <svg
@@ -500,6 +632,7 @@ export default function ProductPage() {
                         <ProductTable
                             products={productItems}
                             onDelete={handleProductDeleted}
+                            fromPage={fromPage ?? undefined}
                         />
                     )}
 

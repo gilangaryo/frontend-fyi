@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { API_BASE } from "@/lib/constants";
 import PhotoUploadGrid from "@/app/(dashboard)/components/PhotoUploadGrid";
 import { formatRupiah } from "@/lib/utils";
@@ -53,6 +53,13 @@ function AutoResizeTextarea({
 }
 
 export default function NewProductPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const fromPage = Math.max(
+        1,
+        Number(searchParams.get("from_page") ?? 1) || 1,
+    );
+
     const [collections, setCollections] = useState<
         { id: string; title: string }[]
     >([]);
@@ -94,9 +101,6 @@ export default function NewProductPage() {
         modelHeight: "",
         modelWeight: "",
     });
-
-    const router = useRouter();
-
     // Fetch collections, categories & fabrics
     useEffect(() => {
         async function fetchData() {
@@ -334,7 +338,11 @@ export default function NewProductPage() {
                 throw new Error(data.message || "Failed to create product");
 
             alert("✅ Product created successfully!");
-            router.push("/dashboard/product");
+            router.push(
+                fromPage > 1
+                    ? `/dashboard/product?page=${fromPage}`
+                    : "/dashboard/product",
+            );
         } catch (err) {
             console.error("❌ Error creating product:", err);
             alert("❌ Failed to create product");
@@ -827,7 +835,7 @@ export default function NewProductPage() {
                             ))}
                         </div>
                     </div>
-                    
+
                     {/* Model Measurements */}
                     <div className="grid grid-cols-2 gap-4 mt-6">
                         <div>

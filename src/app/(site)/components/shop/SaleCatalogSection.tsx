@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { API_BASE } from "@/lib/constants";
 import { Product } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
+import Pagination from "./Pagination";
 
 export default function SaleCatalogSection() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -138,16 +139,25 @@ export default function SaleCatalogSection() {
                                 {product.priceBeforeDiscount ? (
                                     <div className="flex items-center justify-center gap-2 mt-1">
                                         <p className="text-sm line-through text-gray-400">
-                                            IDR {Number(product.priceBeforeDiscount).toLocaleString("id-ID")}
+                                            IDR{" "}
+                                            {Number(
+                                                product.priceBeforeDiscount,
+                                            ).toLocaleString("id-ID")}
                                         </p>
                                         <p className="text-sm font-medium text-charcoal">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                            IDR{" "}
+                                            {Number(
+                                                product.price,
+                                            ).toLocaleString("id-ID")}
                                         </p>
                                     </div>
                                 ) : (
                                     product.price && (
                                         <p className="text-sm md:text-base font-medium text-center text-charcoal">
-                                            IDR {Number(product.price).toLocaleString("id-ID")}
+                                            IDR{" "}
+                                            {Number(
+                                                product.price,
+                                            ).toLocaleString("id-ID")}
                                         </p>
                                     )
                                 )}
@@ -157,38 +167,13 @@ export default function SaleCatalogSection() {
                 </div>
             )}
 
-            {/* Pagination */}
-            {!loading && products.length > 0 && (
-                <div className="flex justify-center items-center mt-8 gap-4">
-                    <button
-                        disabled={page === 1}
-                        onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                        className={`px-4 py-2 border rounded hover:bg-gray-200 transition-colors ${
-                            page === 1 ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
-                    >
-                        Prev
-                    </button>
-
-                    <span className="text-sm text-gray-600">
-                        Page {page} of {totalPages}
-                    </span>
-
-                    <button
-                        disabled={page === totalPages}
-                        onClick={() =>
-                            setPage((p) => Math.min(p + 1, totalPages))
-                        }
-                        className={`px-4 py-2 border rounded hover:bg-gray-200 transition-colors ${
-                            page === totalPages
-                                ? "opacity-50 cursor-not-allowed"
-                                : ""
-                        }`}
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
+            <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                isLoading={loading}
+                itemsCount={products.length}
+            />
         </section>
     );
 }

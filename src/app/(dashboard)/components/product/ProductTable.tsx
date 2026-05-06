@@ -24,6 +24,7 @@ interface ProductItem {
 interface ProductTableProps {
     products: ProductItem[];
     onDelete?: () => void;
+    fromPage?: number;
 }
 
 function ProductImage({ src, alt }: { src: string; alt: string }) {
@@ -66,6 +67,7 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
 export default function ProductTable({
     products,
     onDelete,
+    fromPage,
 }: ProductTableProps) {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{
@@ -183,7 +185,11 @@ export default function ProductTable({
 
                         <div className="flex justify-center gap-2 py-3">
                             <Link
-                                href={`/dashboard/product/${item.id}/edit`}
+                                href={
+                                    fromPage && fromPage > 1
+                                        ? `/dashboard/product/${item.id}/edit?from_page=${fromPage}`
+                                        : `/dashboard/product/${item.id}/edit`
+                                }
                                 className="px-4 py-2 bg-sky-500 text-white text-xs rounded hover:bg-sky-600 transition"
                             >
                                 Edit

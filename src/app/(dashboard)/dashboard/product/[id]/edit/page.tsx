@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { API_BASE } from "@/lib/constants";
 import PhotoUploadGrid from "@/app/(dashboard)/components/PhotoUploadGrid";
 import { formatRupiah } from "@/lib/utils";
@@ -73,6 +73,11 @@ type ProductVariant = {
 export default function EditProductPage() {
     const router = useRouter();
     const { id } = useParams<{ id: string }>();
+    const searchParams = useSearchParams();
+    const fromPage = Math.max(
+        1,
+        Number(searchParams.get("from_page") ?? 1) || 1,
+    );
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [uploadingImages, setUploadingImages] = useState(false);
@@ -402,7 +407,11 @@ export default function EditProductPage() {
                 throw new Error(data.message || "Failed to update product");
 
             alert("✅ Product updated successfully!");
-            router.push("/dashboard/product");
+            router.push(
+                fromPage > 1
+                    ? `/dashboard/product?page=${fromPage}`
+                    : "/dashboard/product",
+            );
         } catch (err) {
             console.error("❌ Update error:", err);
             alert("❌ Failed to update product");
@@ -922,7 +931,7 @@ export default function EditProductPage() {
                             ))}
                         </div>
                     </div>
-                    
+
                     {/* Model Measurements */}
                     <div className="grid grid-cols-2 gap-4 mt-6">
                         <div>
