@@ -364,6 +364,44 @@ export default function NewProductPage() {
         }
     };
 
+    const handleDeleteCategory = async (categoryId: string) => {
+        const confirmDelete = window.confirm(
+            "Delete this category? You can reactivate it later by typing the same name.",
+        );
+        if (!confirmDelete) return;
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("Unauthorized");
+
+            const res = await fetch(`${API_BASE}/categories/${categoryId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to delete category");
+            }
+
+            const deletedCategory = categories.find((c) => c.id === categoryId);
+            setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+
+            if (
+                deletedCategory &&
+                deletedCategory.title.toLowerCase() ===
+                    categoryInput.trim().toLowerCase()
+            ) {
+                setCategoryInput("");
+            }
+        } catch (err) {
+            console.error("❌ Error deleting category:", err);
+            alert("❌ Failed to delete category");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (uploadingImages) {
@@ -560,9 +598,26 @@ export default function NewProductPage() {
                                                             false,
                                                         );
                                                     }}
-                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex items-center justify-between gap-3"
                                                 >
-                                                    {category.title}
+                                                    <span>
+                                                        {category.title}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleDeleteCategory(
+                                                                category.id,
+                                                            );
+                                                        }}
+                                                        className="p-1 text-gray-400 hover:text-red-600"
+                                                        aria-label={`Delete category ${category.title}`}
+                                                        title="Delete category"
+                                                    >
+                                                        <Trash size={14} />
+                                                    </button>
                                                 </div>
                                             ))}
                                         {categories.filter((c) =>

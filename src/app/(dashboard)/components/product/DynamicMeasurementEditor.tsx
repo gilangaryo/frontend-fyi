@@ -12,6 +12,7 @@ import { GripVertical, Plus, Trash, Trash2 } from "lucide-react";
 import {
     AdminMeasurementField,
     AdminVariant,
+    normalizeMeasurementKey,
 } from "@/app/(dashboard)/components/product/measurement-helpers";
 
 type DynamicMeasurementEditorProps = {
@@ -228,30 +229,32 @@ function SortableField({
             <input
                 type="text"
                 value={field.displayName}
-                onChange={(e) =>
-                    onFieldChange(index, "displayName", e.target.value)
-                }
+                onChange={(e) => {
+                    const val = e.target.value;
+                    onFieldChange(index, "displayName", val);
+                    onFieldChange(index, "name", normalizeMeasurementKey(val));
+                }}
                 placeholder="Label (e.g., Bust)"
-                className="col-span-3 border-b border-gray-300 px-2 py-2 text-sm focus:outline-none focus:border-primary-studio transition"
+                className="col-span-8 border-b border-gray-300 px-2 py-2 text-sm focus:outline-none focus:border-primary-studio transition"
             />
 
             {/* Field Name Input */}
-            <input
+            {/* <input
                 type="text"
                 value={field.name}
                 onChange={(e) => onFieldChange(index, "name", e.target.value)}
                 placeholder="key (e.g., bust)"
                 className="col-span-3 border-b border-gray-300 px-2 py-2 text-sm focus:outline-none focus:border-primary-studio transition"
-            />
+            /> */}
 
             {/* Unit Input */}
-            <input
+            {/* <input
                 type="text"
                 value={field.unit || ""}
                 onChange={(e) => onFieldChange(index, "unit", e.target.value)}
                 placeholder="cm"
                 className="col-span-2 border-b border-gray-300 px-2 py-2 text-sm focus:outline-none focus:border-primary-studio transition"
-            />
+            /> */}
 
             {/* Delete Button */}
             <div className="col-span-1 flex items-center justify-end">

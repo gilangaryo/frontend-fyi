@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Menu, X, ChevronDown } from "lucide-react";
+import { Search, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -47,7 +47,8 @@ export default function Navbar() {
     const [isClient, setIsClient] = useState(false);
     const [announcement, setAnnouncement] = useState<string | null>(null);
     const [, setStoreOpen] = useState<boolean>(true);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [collectionDropdownOpen, setCollectionDropdownOpen] = useState(false);
+    const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
 
     const pathname = usePathname();
     const router = useRouter();
@@ -194,10 +195,8 @@ export default function Navbar() {
 
     const navItems = [
         { name: "Shop", href: "/shop" },
-        { name: "Collection", href: "/collection" },
         { name: "Story", href: "/story" },
         { name: "Beyond", href: "/beyond" },
-        { name: "Sale", href: "/sale" },
     ];
 
     return (
@@ -224,45 +223,128 @@ export default function Navbar() {
                         <ul className="hidden lg:flex gap-8 text-charcoal font-light">
                             {navItems.map((item) => (
                                 <li key={item.href} className="relative group">
-                                    {item.name === "Collection" ? (
+                                    {item.name === "Shop" ? (
                                         <>
                                             <button
                                                 onMouseEnter={() =>
-                                                    setDropdownOpen(true)
+                                                    setShopDropdownOpen(true)
                                                 }
                                                 onMouseLeave={() =>
-                                                    setDropdownOpen(false)
+                                                    setShopDropdownOpen(false)
                                                 }
                                                 onClick={() =>
                                                     router.push(item.href)
                                                 }
-                                                className={`pb-1 flex items-center gap-1 transition hover:opacity-70 ${
+                                                className={`pb-1 transition hover:opacity-70 ${
                                                     pathname === item.href
                                                         ? "text-secondary underline underline-offset-2 decoration-1"
                                                         : ""
                                                 }`}
                                             >
                                                 {item.name}
-                                                <ChevronDown
-                                                    size={18}
-                                                    className={`ml-1 transition-transform duration-200 ${
-                                                        dropdownOpen
-                                                            ? "rotate-180"
-                                                            : "rotate-0"
-                                                    }`}
-                                                />
                                             </button>
 
-                                            {/* Dropdown menu */}
+                                            {/* Shop Dropdown */}
                                             <div
                                                 onMouseEnter={() =>
-                                                    setDropdownOpen(true)
+                                                    setShopDropdownOpen(true)
                                                 }
                                                 onMouseLeave={() =>
-                                                    setDropdownOpen(false)
+                                                    setShopDropdownOpen(false)
                                                 }
                                                 className={`absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md transition-all duration-200 ${
-                                                    dropdownOpen
+                                                    shopDropdownOpen
+                                                        ? "opacity-100 visible translate-y-0"
+                                                        : "opacity-0 invisible -translate-y-2"
+                                                }`}
+                                            >
+                                                <ul className="py-2 min-w-[180px]">
+                                                    <li>
+                                                        <Link
+                                                            href="/sale"
+                                                            className="block px-4 py-2 text-sm text-[#B22222]  hover:bg-gray-100"
+                                                        >
+                                                            Sale
+                                                        </Link>
+                                                    </li>
+                                                    <li className="px-4 pt-3 pb-1">
+                                                        <span className="text-xs tracking-widest uppercase text-gray-400">
+                                                            Collection
+                                                        </span>
+                                                    </li>
+                                                    {collections.length > 0 ? (
+                                                        collections.map(
+                                                            (col) => (
+                                                                <li
+                                                                    key={col.id}
+                                                                >
+                                                                    <Link
+                                                                        href={`/collection/#${col.slug}`}
+                                                                        className="block px-8 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                                    >
+                                                                        {col.slug
+                                                                            .replace(
+                                                                                /-/g,
+                                                                                " ",
+                                                                            )
+                                                                            .replace(
+                                                                                /\b\w/g,
+                                                                                (
+                                                                                    l,
+                                                                                ) =>
+                                                                                    l.toUpperCase(),
+                                                                            )}
+                                                                    </Link>
+                                                                </li>
+                                                            ),
+                                                        )
+                                                    ) : (
+                                                        <li className="px-4 py-2 text-sm text-gray-400">
+                                                            Loading...
+                                                        </li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        </>
+                                    ) : item.name === "Collection" ? (
+                                        <>
+                                            <button
+                                                onMouseEnter={() =>
+                                                    setCollectionDropdownOpen(
+                                                        true,
+                                                    )
+                                                }
+                                                onMouseLeave={() =>
+                                                    setCollectionDropdownOpen(
+                                                        false,
+                                                    )
+                                                }
+                                                onClick={() =>
+                                                    router.push(item.href)
+                                                }
+                                                className={`pb-1 transition hover:opacity-70 ${
+                                                    pathname === item.href
+                                                        ? "text-secondary underline underline-offset-2 decoration-1"
+                                                        : ""
+                                                }`}
+                                            >
+                                                {item.name}
+                                            </button>
+
+                                            {/* Collection Dropdown */}
+                                            <div
+                                                onMouseEnter={() =>
+                                                    setCollectionDropdownOpen(
+                                                        true,
+                                                    )
+                                                }
+                                                onMouseLeave={() =>
+                                                    setCollectionDropdownOpen(
+                                                        false,
+                                                    )
+                                                }
+                                                className={`absolute left-0 mt-2 bg-white border border-gray-200 shadow-lg rounded-md transition-all duration-200 ${
+                                                    collectionDropdownOpen
                                                         ? "opacity-100 visible translate-y-0"
                                                         : "opacity-0 invisible -translate-y-2"
                                                 }`}
@@ -302,6 +384,17 @@ export default function Navbar() {
                                                 </ul>
                                             </div>
                                         </>
+                                    ) : item.name === "Sale" ? (
+                                        <Link
+                                            href={item.href}
+                                            className={`pb-1 transition hover:opacity-70 lowercase text-red-600 ${
+                                                pathname === item.href
+                                                    ? "underline underline-offset-2 decoration-1"
+                                                    : ""
+                                            }`}
+                                        >
+                                            {item.name}
+                                        </Link>
                                     ) : (
                                         <Link
                                             href={item.href}
@@ -360,7 +453,7 @@ export default function Navbar() {
                                 placeholder="Search"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="border-b border-charcoal focus:outline-none pr-8 pb-2 pl-3"
+                                className="w-50 border-b border-charcoal focus:outline-none pr-2 pb-2 pl-3"
                             />
                             <Search className="absolute right-0 top-2/5 -translate-y-1/2 w-6 h-8 text-charcoal" />
 
@@ -531,35 +624,96 @@ export default function Navbar() {
 
             {/* Mobile Menu */}
             <div
-                className={`lg:hidden fixed inset-0 z-[9998] bg-white flex flex-col items-center justify-center gap-8 text-2xl text-charcoal font-light transition-all duration-500 ${
+                className={`lg:hidden fixed inset-0 z-[9998] bg-white flex flex-col items-stretch justify-start px-4 pt-44 gap-3 text-charcoal font-light transition-all duration-500 overflow-y-auto ${
                     openMenu
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-[-100%] pointer-events-none"
                 }`}
             >
-                {navItems.map((item, index) => (
+                <div
+                    className={`w-full px-4 py-4 transition-all duration-500 ${
+                        openMenu
+                            ? "opacity-100 translate-x-0"
+                            : "opacity-0 -translate-x-8"
+                    }`}
+                    style={{
+                        transitionDelay: openMenu ? "0ms" : "0ms",
+                    }}
+                >
                     <Link
-                        key={item.href}
-                        href={item.href}
+                        href="/shop"
                         onClick={() => setOpenMenu(false)}
-                        className={`transition-all duration-500 hover:text-secondary hover:scale-110 ${
-                            pathname === item.href
+                        className={`text-3xl transition hover:opacity-70 ${
+                            pathname === "/shop"
                                 ? "text-secondary underline"
-                                : ""
-                        } ${
-                            openMenu
-                                ? "opacity-100 translate-x-0"
-                                : "opacity-0 -translate-x-8"
+                                : "hover:text-secondary"
                         }`}
-                        style={{
-                            transitionDelay: openMenu
-                                ? `${index * 100}ms`
-                                : "0ms",
-                        }}
                     >
-                        {item.name}
+                        Shop
                     </Link>
-                ))}
+                    <div className="mt-4 flex flex-col items-start gap-2 text-base">
+                        <Link
+                            href="/sale"
+                            onClick={() => setOpenMenu(false)}
+                            className="text-[#B22222]  hover:opacity-70"
+                        >
+                            Sale
+                        </Link>
+                        <span className="pt-1 pb-1 tracking-widest  text-gray-500">
+                            Collection
+                        </span>
+                        {collections.length > 0 ? (
+                            collections.map((col) => (
+                                <Link
+                                    key={col.id}
+                                    href={`/collection/#${col.slug}`}
+                                    onClick={() => setOpenMenu(false)}
+                                    className="text-sm mt-1 ml-5 text-gray-700 hover:opacity-70"
+                                >
+                                    {col.slug
+                                        .replace(/-/g, " ")
+                                        .replace(/\b\w/g, (l) =>
+                                            l.toUpperCase(),
+                                        )}
+                                </Link>
+                            ))
+                        ) : (
+                            <span className="text-sm text-gray-400">
+                                Loading...
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {navItems
+                    .filter((item) => item.name !== "Shop")
+                    .map((item, index) => (
+                        <div
+                            key={item.href}
+                            className={`w-full  px-4 py-4 transition-all duration-500 ${
+                                openMenu
+                                    ? "opacity-100 translate-x-0"
+                                    : "opacity-0 -translate-x-8"
+                            }`}
+                            style={{
+                                transitionDelay: openMenu
+                                    ? `${(index + 1) * 100}ms`
+                                    : "0ms",
+                            }}
+                        >
+                            <Link
+                                href={item.href}
+                                onClick={() => setOpenMenu(false)}
+                                className={`block text-3xl transition hover:opacity-70 ${
+                                    pathname === item.href
+                                        ? "text-secondary underline"
+                                        : "hover:text-secondary"
+                                }`}
+                            >
+                                {item.name}
+                            </Link>
+                        </div>
+                    ))}
             </div>
 
             <CartModal open={openCart} onClose={() => setOpenCart(false)} />
