@@ -21,14 +21,31 @@ export interface Variant {
     stock: number;
     sku: string | null;
 
-    bust: string | null;
-    waist: string | null;
-    length: string | null;
-    sleeve: string | null;
-    height: string | null;
+    measurements?: VariantMeasurement[];
 
     createdAt: string;
     updatedAt: string;
+}
+
+export interface MeasurementField {
+    id?: string;
+    productId?: string;
+    name: string;
+    displayName?: string;
+    unit?: string | null;
+    position?: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface VariantMeasurement {
+    id?: string;
+    variantId?: string;
+    fieldId?: string;
+    value: string;
+    createdAt?: string;
+    updatedAt?: string;
+    field?: MeasurementField;
 }
 
 export interface ProductImage {
@@ -62,7 +79,9 @@ export interface Product {
     updatedAt: string;
     categoryId: string;
     collectionId: string;
+    kainId?: string | null;
     variants: Variant[];
+    measurementFields?: MeasurementField[];
     images: ProductImage[];
     category: Category;
     collection: Collection;

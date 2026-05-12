@@ -8,6 +8,7 @@ import { AppDispatch } from "@/store";
 import { addToCart } from "@/store/cartSlice";
 import { Product } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
+import DynamicSizeChartTable from "@/app/(site)/components/product/DynamicSizeChartTable";
 // import AddToCartModal from "@/app/(site)/components/AddToCartModal";
 type ProductDetailProps = {
     product: Product;
@@ -156,7 +157,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     </div>
 
                     {/* Main Image */}
-                    <div 
+                    <div
                         className="flex-1 relative aspect-[3/4] cursor-zoom-in"
                         onClick={() => setIsZoomed(true)}
                     >
@@ -264,7 +265,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
                     <div className="divide-y text-sm">
                         <Accordion title="Details">
-                            <p className="mb-4 leading-relaxed">{product.description}</p>
+                            <p className="mb-4 leading-relaxed">
+                                {product.description}
+                            </p>
                             {product.details || "-"}
                         </Accordion>
                         <Accordion title="Delivery & Returns">
@@ -276,11 +279,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
             {/* Modal Image Zoom */}
             {isZoomed && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center cursor-zoom-out"
                     onClick={() => setIsZoomed(false)}
                 >
-                    <button 
+                    <button
                         className="absolute top-6 right-6 text-white hover:text-gray-300 z-50"
                         onClick={() => setIsZoomed(false)}
                     >
@@ -297,14 +300,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     </div>
                 </div>
             )}
-
-            {/*  Modal Add to Cart */}
-            {/* <AddToCartModal
-                isOpen={isAddCartModalOpen}
-                onClose={() => setIsAddCartModalOpen(false)}
-                productTitle={product.title}
-                productImage={getImageUrl(product.images[0]?.imageUrl)}
-            /> */}
 
             {/*  Modal Size & Fit Guide */}
             {isSizeModalOpen && (
@@ -364,67 +359,34 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         <div className="text-xl font-light">
                             {(product.modelHeight || product.modelWeight) && (
                                 <div className="px-6 pt-2 pb-0 text-sm text-gray-600 bg-primary-muted/50 py-2 mx-6 mb-4">
-                                    <span className="font-medium">Model info:</span>{" "}
-                                    {product.modelHeight && <span>Height: {product.modelHeight} cm</span>}
-                                    {product.modelHeight && product.modelWeight && <span> &middot; </span>}
-                                    {product.modelWeight && <span>Weight: {product.modelWeight} kg</span>}
+                                    <span className="font-medium">
+                                        Model info:
+                                    </span>{" "}
+                                    {product.modelHeight && (
+                                        <span>
+                                            Height: {product.modelHeight} cm
+                                        </span>
+                                    )}
+                                    {product.modelHeight &&
+                                        product.modelWeight && (
+                                            <span> &middot; </span>
+                                        )}
+                                    {product.modelWeight && (
+                                        <span>
+                                            Weight: {product.modelWeight} kg
+                                        </span>
+                                    )}
                                 </div>
                             )}
-                            <div className="px-6 pb-6 overflow-x-auto">
-                                <table className="min-w-full text-sm border border-gray-200">
-                                    <thead className="bg-gray-100 text-gray-700 font-medium">
-                                        <tr>
-                                            <th className="px-4 py-2 border">
-                                                Size
-                                            </th>
-                                            <th className="px-4 py-2 border">
-                                                Bust
-                                            </th>
-                                            <th className="px-4 py-2 border">
-                                                Waist
-                                            </th>
-                                            <th className="px-4 py-2 border">
-                                                Length
-                                            </th>
-                                            <th className="px-4 py-2 border">
-                                                Sleeve
-                                            </th>
-                                            <th className="px-4 py-2 border">
-                                                Hip
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {(product.variants ?? []).map((v) => (
-                                            <tr
-                                                key={v.id}
-                                                className="text-center border-t"
-                                            >
-                                                <td className="px-4 py-2 border font-medium">
-                                                    {v.size || "-"}
-                                                </td>
-                                                <td className="px-4 py-2 border">
-                                                    {v.bust || "-"}
-                                                </td>
-                                                <td className="px-4 py-2 border">
-                                                    {v.waist || "-"}
-                                                </td>
-                                                <td className="px-4 py-2 border">
-                                                    {v.length || "-"}
-                                                </td>
-                                                <td className="px-4 py-2 border">
-                                                    {v.sleeve || "-"}
-                                                </td>
-                                                <td className="px-4 py-2 border">
-                                                    {v.height || "-"}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="px-6 pb-6">
+                                <DynamicSizeChartTable
+                                    measurementFields={
+                                        product.measurementFields
+                                    }
+                                    variants={product.variants || []}
+                                />
                             </div>
 
-                            {/* Optional: Tips bawah */}
                             <div className="p-6 text-sm text-gray-600">
                                 <p>
                                     <strong>Tips:</strong> Measurements are

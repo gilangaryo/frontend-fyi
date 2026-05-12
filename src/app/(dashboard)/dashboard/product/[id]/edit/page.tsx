@@ -6,6 +6,18 @@ import { API_BASE } from "@/lib/constants";
 import PhotoUploadGrid from "@/app/(dashboard)/components/PhotoUploadGrid";
 import { formatRupiah } from "@/lib/utils";
 import { Trash } from "lucide-react";
+import DynamicMeasurementEditor from "@/app/(dashboard)/components/product/DynamicMeasurementEditor";
+import {
+    AdminVariant,
+    AdminMeasurementField,
+    DEFAULT_MEASUREMENT_FIELDS,
+    createEmptyVariant,
+    extractMeasurementFieldsFromProduct,
+    extractVariantMeasurements,
+    getNextMeasurementField,
+    normalizeMeasurementKey,
+} from "@/app/(dashboard)/components/product/measurement-helpers";
+import { Product } from "@/types/product";
 
 function AutoResizeTextarea({
     value,
@@ -58,18 +70,6 @@ type ProductImage = {
     isSecondary: boolean; // ✅ Tambahan
 };
 
-type ProductVariant = {
-    id?: string;
-    size: string;
-    bust: string;
-    waist: string;
-    length: string;
-    sleeve: string;
-    height: string;
-    stock: string;
-    sku: string;
-};
-
 export default function EditProductPage() {
     const router = useRouter();
     const { id } = useParams<{ id: string }>();
@@ -92,7 +92,10 @@ export default function EditProductPage() {
     const [images, setImages] = useState<
         { url: string; isPrimary: boolean; isSecondary: boolean }[]
     >([]);
-    const [variants, setVariants] = useState<ProductVariant[]>([]);
+    const [measurementFields, setMeasurementFields] = useState(
+        DEFAULT_MEASUREMENT_FIELDS,
+    );
+    const [variants, setVariants] = useState<AdminVariant[]>([]);
 
     const [fabricInput, setFabricInput] = useState("");
     const [showFabricSuggestions, setShowFabricSuggestions] = useState(false);
@@ -146,7 +149,10 @@ export default function EditProductPage() {
                     throw new Error(
                         prodData.message || "Failed to fetch product",
                     );
-                const product = prodData.data;
+                const product = prodData.data as Product;
+                const normalizedFields =
+                    extractMeasurementFieldsFromProduct(product);
+                setMeasurementFields(normalizedFields);
 
                 setForm({
                     title: product.title,
@@ -156,8 +162,16 @@ export default function EditProductPage() {
                     price: product.price?.toString() || "",
                     collectionId: product.collectionId || "",
                     categoryId: product.categoryId || "",
-                    modelHeight: product.modelHeight || "",
-                    modelWeight: product.modelWeight || "",
+                    modelHeight:
+                        product.modelHeight !== null &&
+                        product.modelHeight !== undefined
+                            ? String(product.modelHeight)
+                            : "",
+                    modelWeight:
+                        product.modelWeight !== null &&
+                        product.modelWeight !== undefined
+                            ? String(product.modelWeight)
+                            : "",
                 });
 
                 setImages(
@@ -169,16 +183,15 @@ export default function EditProductPage() {
                 );
 
                 setVariants(
-                    ((product.variants as ProductVariant[]) || []).map((v) => ({
+                    (product.variants || []).map((v) => ({
                         id: v.id,
                         size: v.size || "",
-                        bust: v.bust || "",
-                        waist: v.waist || "",
-                        length: v.length || "",
-                        sleeve: v.sleeve || "",
-                        height: v.height || "",
                         stock: v.stock?.toString() || "",
                         sku: v.sku || "",
+                        measurements: extractVariantMeasurements(
+                            v,
+                            normalizedFields,
+                        ),
                     })),
                 );
 
@@ -229,7 +242,7 @@ export default function EditProductPage() {
     // 🔹 Variant Handlers
     const handleVariantChange = (
         index: number,
-        field: string,
+        field: "size" | "stock" | "sku",
         value: string,
     ) => {
         const normalizedValue =
@@ -242,24 +255,126 @@ export default function EditProductPage() {
     };
 
     const addVariant = () => {
-        setVariants([
-            ...variants,
-            {
-                id: undefined,
-                size: "",
-                bust: "",
-                waist: "",
-                length: "",
-                sleeve: "",
-                height: "",
-                stock: "",
-                sku: "",
-            },
-        ]);
+        setVariants([...variants, createEmptyVariant(measurementFields)]);
     };
 
     const removeVariant = (index: number) => {
         setVariants(variants.filter((_, i) => i !== index));
+    };
+
+    const handleMeasurementFieldChange = (
+        index: number,
+        field: "name" | "displayName" | "unit",
+        value: string,
+    ) => {
+        setMeasurementFields((prev) => {
+            const next = [...prev];
+            const target = { ...next[index] };
+
+            if (field === "name") {
+                const oldName = target.name;
+                const normalized = normalizeMeasurementKey(value);
+                if (!normalized) return prev;
+
+                if (
+                    next.some((item, itemIndex) => {
+                        return itemIndex !== index && item.name === normalized;
+                    })
+                ) {
+                    return prev;
+                }
+
+                target.name = normalized;
+                if (!target.displayName || target.displayName === oldName) {
+                    target.displayName = normalized;
+                }
+
+                setVariants((variantPrev) =>
+                    variantPrev.map((variant) => {
+                        const measurements = { ...variant.measurements };
+                        measurements[normalized] = measurements[oldName] || "";
+                        delete measurements[oldName];
+
+                        return {
+                            ...variant,
+                            measurements,
+                        };
+                    }),
+                );
+            } else if (field === "displayName") {
+                target.displayName = value;
+            } else {
+                target.unit = value;
+            }
+
+            next[index] = target;
+
+            return next.map((item, itemIndex) => ({
+                ...item,
+                position: itemIndex,
+            }));
+        });
+    };
+
+    const handleAddMeasurementField = () => {
+        const nextField = getNextMeasurementField(measurementFields);
+        setMeasurementFields((prev) => [...prev, nextField]);
+        setVariants((prev) =>
+            prev.map((variant) => ({
+                ...variant,
+                measurements: {
+                    ...variant.measurements,
+                    [nextField.name]: "",
+                },
+            })),
+        );
+    };
+
+    const handleRemoveMeasurementField = (index: number) => {
+        if (measurementFields.length <= 1) return;
+
+        const removed = measurementFields[index];
+        const nextFields = measurementFields
+            .filter((_, i) => i !== index)
+            .map((field, i) => ({ ...field, position: i }));
+
+        setMeasurementFields(nextFields);
+        setVariants((prev) =>
+            prev.map((variant) => {
+                const measurements = { ...variant.measurements };
+                delete measurements[removed.name];
+                return { ...variant, measurements };
+            }),
+        );
+    };
+
+    const handleReorderMeasurementFields = (
+        newFields: AdminMeasurementField[],
+    ) => {
+        setMeasurementFields(
+            newFields.map((field, i) => ({
+                ...field,
+                position: i,
+            })),
+        );
+    };
+
+    const handleMeasurementValueChange = (
+        variantIndex: number,
+        fieldName: string,
+        value: string,
+    ) => {
+        setVariants((prev) => {
+            const next = [...prev];
+            next[variantIndex] = {
+                ...next[variantIndex],
+                measurements: {
+                    ...next[variantIndex].measurements,
+                    [fieldName]: value,
+                },
+            };
+            return next;
+        });
     };
 
     const findOrCreateFabric = async (
@@ -385,11 +500,13 @@ export default function EditProductPage() {
                     sku:
                         v.sku ||
                         `${form.title.slice(0, 3).toUpperCase()}-${v.size}`,
-                    bust: v.bust || null,
-                    waist: v.waist || null,
-                    length: v.length || null,
-                    sleeve: v.sleeve || null,
-                    height: v.height || null,
+                    measurements: v.measurements,
+                })),
+                measurementFields: measurementFields.map((field, index) => ({
+                    name: field.name,
+                    displayName: field.displayName || field.name,
+                    unit: field.unit || null,
+                    position: index,
                 })),
             };
 
@@ -813,7 +930,7 @@ export default function EditProductPage() {
                                         <button
                                             type="button"
                                             onClick={() => removeVariant(i)}
-                                            className="text-gray-400 hover:text-red-600 transition"
+                                            className="p-2 text-red-600 hover:bg-red-50  rounded transition disabled:text-gray-300 disabled:hover:bg-transparent"
                                         >
                                             <Trash size={18} />
                                         </button>
@@ -832,105 +949,15 @@ export default function EditProductPage() {
                         </div>
                     </div>
 
-                    {/* Size Chart Table */}
-                    <div>
-                        <label className="block text-base font-medium mb-3">
-                            Size Chart
-                        </label>
-                        <div className="border border-gray-200">
-                            {/* Rows */}
-                            {variants.map((v, i) => (
-                                <div
-                                    key={i}
-                                    className={`grid grid-cols-12 gap-4 p-3 items-center ${
-                                        i > 0 ? "border-t border-gray-200" : ""
-                                    }`}
-                                >
-                                    <div className="col-span-1">
-                                        <div className="text-sm font-normal text-gray-700">
-                                            {v.size || "-"}
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <input
-                                            type="text"
-                                            placeholder="[Waist] Add Size in cm"
-                                            value={v.waist}
-                                            onChange={(e) =>
-                                                handleVariantChange(
-                                                    i,
-                                                    "waist",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <input
-                                            type="text"
-                                            placeholder="[Length] Add Size in cm"
-                                            value={v.length}
-                                            onChange={(e) =>
-                                                handleVariantChange(
-                                                    i,
-                                                    "length",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <input
-                                            type="text"
-                                            placeholder="[Hip] Add Size in cm"
-                                            value={v.height}
-                                            onChange={(e) =>
-                                                handleVariantChange(
-                                                    i,
-                                                    "height",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <input
-                                            type="text"
-                                            placeholder="[Bust] Add Size in cm"
-                                            value={v.bust}
-                                            onChange={(e) =>
-                                                handleVariantChange(
-                                                    i,
-                                                    "bust",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <input
-                                            type="text"
-                                            placeholder="[Sleeve] Add Size in cm"
-                                            value={v.sleeve}
-                                            onChange={(e) =>
-                                                handleVariantChange(
-                                                    i,
-                                                    "sleeve",
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full border-b border-gray-300 px-2 py-1 text-sm focus:outline-none focus:border-gray-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-1"></div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <DynamicMeasurementEditor
+                        measurementFields={measurementFields}
+                        variants={variants}
+                        onAddField={handleAddMeasurementField}
+                        onRemoveField={handleRemoveMeasurementField}
+                        onReorderFields={handleReorderMeasurementFields}
+                        onFieldChange={handleMeasurementFieldChange}
+                        onMeasurementValueChange={handleMeasurementValueChange}
+                    />
 
                     {/* Model Measurements */}
                     <div className="grid grid-cols-2 gap-4 mt-6">
