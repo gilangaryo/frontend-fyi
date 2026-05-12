@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
-import { Ruler, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ruler, X } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import type { Swiper as SwiperType } from "swiper";
+import "swiper/css";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { addToCart } from "@/store/cartSlice";
@@ -47,6 +50,21 @@ function getDisplayPrices(product: Product) {
 
 export default function ProductDetail({ product }: ProductDetailProps) {
     const dispatch = useDispatch<AppDispatch>();
+    const mobileZoomSwiperRef = useRef<SwiperType | null>(null);
+    const desktopZoomSwiperRef = useRef<SwiperType | null>(null);
+
+    const imageUrls = useMemo(() => {
+        const list = (product.images ?? [])
+            .map((img) => getImageUrl(img.imageUrl))
+            .filter(Boolean);
+
+        if (list.length > 0) {
+            return list;
+        }
+
+        const fallback = product.imageUrl || product.images?.[0]?.imageUrl;
+        return [getImageUrl(fallback)];
+    }, [product.images, product.imageUrl]);
 
     const [mainImage, setMainImage] = useState(() => {
         const primary = product.images?.find((img) => img.isPrimary)?.imageUrl;
@@ -80,7 +98,80 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
     const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [zoomIndex, setZoomIndex] = useState(0);
+    const [isDesktopView, setIsDesktopView] = useState(false);
     // const [isAddCartModalOpen, setIsAddCartModalOpen] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(min-width: 768px)");
+
+        const handleMediaChange = () => {
+            setIsDesktopView(mediaQuery.matches);
+        };
+
+        handleMediaChange();
+        mediaQuery.addEventListener("change", handleMediaChange);
+
+        return () => {
+            mediaQuery.removeEventListener("change", handleMediaChange);
+        };
+    }, []);
+
+    const getActiveZoomSwiper = () => {
+        return isDesktopView
+            ? desktopZoomSwiperRef.current
+            : mobileZoomSwiperRef.current;
+    };
+
+    useEffect(() => {
+        if (!isZoomed) {
+            return;
+        }
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, [isZoomed]);
+
+    const openZoomModal = () => {
+        const currentIndex = imageUrls.findIndex((url) => url === mainImage);
+        const nextIndex = currentIndex >= 0 ? currentIndex : 0;
+        setZoomIndex(nextIndex);
+        setIsZoomed(true);
+    };
+
+    const goToZoomSlide = (nextIndex: number) => {
+        const totalSlides = imageUrls.length;
+        if (totalSlides === 0) {
+            return;
+        }
+
+        const normalizedIndex = (nextIndex + totalSlides) % totalSlides;
+        getActiveZoomSwiper()?.slideTo(normalizedIndex);
+
+        setZoomIndex(normalizedIndex);
+        setMainImage(imageUrls[normalizedIndex]);
+    };
+
+    useEffect(() => {
+        if (!isZoomed) {
+            return;
+        }
+
+        getActiveZoomSwiper()?.slideTo(zoomIndex, 0);
+    }, [isZoomed, zoomIndex, isDesktopView]);
+
+    const handleZoomSlideChange = (swiper: SwiperType) => {
+        const activeIndex = swiper.activeIndex;
+        setZoomIndex(activeIndex);
+
+        if (imageUrls[activeIndex]) {
+            setMainImage(imageUrls[activeIndex]);
+        }
+    };
 
     const handleAddToCart = () => {
         const selectedVariant = product.variants?.find(
@@ -159,7 +250,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     {/* Main Image */}
                     <div
                         className="flex-1 relative aspect-[3/4] cursor-zoom-in"
-                        onClick={() => setIsZoomed(true)}
+                        onClick={openZoomModal}
                     >
                         <Image
                             src={mainImage}
@@ -279,26 +370,159 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
             {/* Modal Image Zoom */}
             {isZoomed && (
-                <div
-                    className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center cursor-zoom-out"
-                    onClick={() => setIsZoomed(false)}
-                >
-                    <button
-                        className="absolute top-6 right-6 text-white hover:text-gray-300 z-50"
-                        onClick={() => setIsZoomed(false)}
-                    >
-                        <X size={32} />
-                    </button>
-                    <div className="relative w-full h-full max-w-5xl max-h-[90vh] mx-auto p-4 flex items-center justify-center">
-                        <Image
-                            src={mainImage}
-                            alt={product.title}
-                            fill
-                            className="object-contain"
-                            quality={100}
-                        />
-                    </div>
-                </div>
+                <>
+                    {!isDesktopView && (
+                        <div
+                            className="fixed inset-0 bg-white z-[9999] overflow-hidden cursor-zoom-out"
+                            onClick={() => setIsZoomed(false)}
+                        >
+                            <button
+                                className="fixed top-4 right-4 text-gray-700 hover:text-gray-500 z-50"
+                                onClick={() => setIsZoomed(false)}
+                            >
+                                <X size={32} />
+                            </button>
+                            {imageUrls.length > 1 && (
+                                <>
+                                    <button
+                                        className="fixed left-3 top-1/2 -translate-y-1/2 z-50 bg-black/45 hover:bg-black/60 text-white rounded-full p-2"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            goToZoomSlide(zoomIndex - 1);
+                                        }}
+                                        aria-label="Previous image"
+                                    >
+                                        <ChevronLeft size={24} />
+                                    </button>
+                                    <button
+                                        className="fixed right-3 top-1/2 -translate-y-1/2 z-50 bg-black/45 hover:bg-black/60 text-white rounded-full p-2"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            goToZoomSlide(zoomIndex + 1);
+                                        }}
+                                        aria-label="Next image"
+                                    >
+                                        <ChevronRight size={24} />
+                                    </button>
+                                </>
+                            )}
+                            <div
+                                className="w-full h-[100dvh] bg-white"
+                                onClick={(
+                                    e: React.MouseEvent<HTMLDivElement>,
+                                ) => e.stopPropagation()}
+                            >
+                                <Swiper
+                                    onSwiper={(swiper) => {
+                                        mobileZoomSwiperRef.current = swiper;
+                                    }}
+                                    onSlideChange={handleZoomSlideChange}
+                                    initialSlide={zoomIndex}
+                                    slidesPerView={1}
+                                    spaceBetween={0}
+                                    allowTouchMove
+                                    grabCursor
+                                    className="w-full h-full [&_.swiper-wrapper]:h-full"
+                                >
+                                    {imageUrls.map((imgUrl, index) => (
+                                        <SwiperSlide
+                                            key={`mobile-${imgUrl}-${index}`}
+                                            className="!h-full"
+                                        >
+                                            <div className="h-full w-full flex items-center justify-center bg-white">
+                                                <Image
+                                                    src={imgUrl}
+                                                    alt={`${product.title} ${index + 1}`}
+                                                    width={1600}
+                                                    height={2400}
+                                                    sizes="100vw"
+                                                    className="max-h-[88dvh] w-auto max-w-full h-auto"
+                                                    quality={100}
+                                                />
+                                            </div>
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
+                            </div>
+                        </div>
+                    )}
+
+                    {isDesktopView && (
+                        <div
+                            className="fixed p-20 inset-0 bg-white z-[9999] overflow-y-auto cursor-zoom-out"
+                            onClick={() => setIsZoomed(false)}
+                        >
+                            <button
+                                className="fixed  top-8 right-8 text-black hover:text-gray-500 z-50"
+                                onClick={() => setIsZoomed(false)}
+                            >
+                                <X size={32} />
+                            </button>
+                            {imageUrls.length > 1 && (
+                                <>
+                                    <button
+                                        className="fixed left-6 top-1/2 -translate-y-1/2 z-50 bg-black/45 hover:bg-black/60 text-white rounded-full p-2"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            goToZoomSlide(zoomIndex - 1);
+                                        }}
+                                        aria-label="Previous image"
+                                    >
+                                        <ChevronLeft size={24} />
+                                    </button>
+                                    <button
+                                        className="fixed right-6 top-1/2 -translate-y-1/2 z-50 bg-black/45 hover:bg-black/60 text-white rounded-full p-2"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            goToZoomSlide(zoomIndex + 1);
+                                        }}
+                                        aria-label="Next image"
+                                    >
+                                        <ChevronRight size={24} />
+                                    </button>
+                                </>
+                            )}
+                            <div
+                                className="w-full bg-white"
+                                onClick={(
+                                    e: React.MouseEvent<HTMLDivElement>,
+                                ) => e.stopPropagation()}
+                            >
+                                <Swiper
+                                    onSwiper={(swiper) => {
+                                        desktopZoomSwiperRef.current = swiper;
+                                    }}
+                                    onSlideChange={handleZoomSlideChange}
+                                    initialSlide={zoomIndex}
+                                    slidesPerView={1}
+                                    spaceBetween={0}
+                                    allowTouchMove
+                                    grabCursor
+                                    className="w-full"
+                                >
+                                    {imageUrls.map((imgUrl, index) => (
+                                        <SwiperSlide
+                                            key={`desktop-${imgUrl}-${index}`}
+                                            className="!h-auto"
+                                        >
+                                            <div className="w-full bg-white">
+                                                <Image
+                                                    src={imgUrl}
+                                                    alt={`${product.title} ${index + 1}`}
+                                                    width={1600}
+                                                    height={2400}
+                                                    sizes="100vw"
+                                                    className="w-full h-auto"
+                                                    quality={100}
+                                                />
+                                            </div>
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             {/*  Modal Size & Fit Guide */}
