@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { MessageCircle, X, Mail, Phone, MessageSquare } from 'lucide-react'
+import { useState } from "react";
+import { MessageCircle, X, Mail, Phone, MessageSquare } from "lucide-react";
 
 export default function HelpButton() {
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
 
     return (
         <>
@@ -26,18 +26,24 @@ export default function HelpButton() {
                             <Mail size={18} className="text-secondary" />
                             <div>
                                 <p className="font-medium">Our Email</p>
-                                <a href="mailto:foryourinfinity@gmail.com" className="text-xs text-gray-500 hover:underline">
+                                <a
+                                    href="mailto:foryourinfinity@gmail.com"
+                                    className="text-xs text-gray-500 hover:underline"
+                                >
                                     foryourinfinity@gmail.com
                                 </a>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <MessageSquare size={18} className="text-secondary" />
+                            <MessageSquare
+                                size={18}
+                                className="text-secondary"
+                            />
                             <div>
                                 <p className="font-medium">Chat via WhatsApp</p>
                                 <a
-                                    href="https://wa.me/+6281809095005"
+                                    href="https://wa.me/+628132883889"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs text-gray-500 hover:underline"
@@ -50,5 +56,5 @@ export default function HelpButton() {
                 </div>
             )}
         </>
-    )
+    );
 }

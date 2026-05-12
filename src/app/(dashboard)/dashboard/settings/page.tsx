@@ -34,9 +34,13 @@ export default function SettingsPage() {
     const [announcement, setAnnouncement] = useState("");
     const [closedMessage, setClosedMessage] = useState("");
     const [defaultCourier, setDefaultCourier] = useState("");
+    const [originAddress, setOriginAddress] = useState("");
+    const [originNote, setOriginNote] = useState("");
+    const [originPostalCode, setOriginPostalCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [savingStore, setSavingStore] = useState(false);
     const [savingCourier, setSavingCourier] = useState(false);
+    const [savingOrigin, setSavingOrigin] = useState(false);
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState<"success" | "error" | null>(
         null,
@@ -54,16 +58,28 @@ export default function SettingsPage() {
     useEffect(() => {
         (async () => {
             try {
-                const [storeRes, courierRes, announcementRes] =
-                    await Promise.all([
-                        fetch(`${API_BASE}/setting/store-status`),
-                        fetch(`${API_BASE}/setting/default-courier`),
-                        fetch(`${API_BASE}/setting/announcement/announcement`),
-                    ]);
+                const [
+                    storeRes,
+                    courierRes,
+                    announcementRes,
+                    originAddrRes,
+                    originNoteRes,
+                    originPostalRes,
+                ] = await Promise.all([
+                    fetch(`${API_BASE}/setting/store-status`),
+                    fetch(`${API_BASE}/setting/default-courier`),
+                    fetch(`${API_BASE}/setting/announcement/announcement`),
+                    fetch(`${API_BASE}/setting/origin_address`),
+                    fetch(`${API_BASE}/setting/origin_note`),
+                    fetch(`${API_BASE}/setting/origin_postal_code`),
+                ]);
 
                 const storeJson = await storeRes.json();
                 const courierJson = await courierRes.json();
                 const announcementJson = await announcementRes.json();
+                const originAddrJson = await originAddrRes.json();
+                const originNoteJson = await originNoteRes.json();
+                const originPostalJson = await originPostalRes.json();
 
                 if (storeJson.success) {
                     setStoreOpen(storeJson.data.isOpen);
@@ -77,6 +93,12 @@ export default function SettingsPage() {
                 const announcementValue =
                     getAnnouncementValue(announcementJson);
                 setAnnouncement(announcementValue || DEFAULT_OPEN_ANNOUNCEMENT);
+                if (originAddrJson.success)
+                    setOriginAddress(originAddrJson.data.value || "");
+                if (originNoteJson.success)
+                    setOriginNote(originNoteJson.data.value || "");
+                if (originPostalJson.success)
+                    setOriginPostalCode(originPostalJson.data.value || "");
             } catch (err) {
                 console.error("Failed to fetch settings:", err);
                 setAnnouncement(DEFAULT_OPEN_ANNOUNCEMENT);
@@ -140,6 +162,53 @@ export default function SettingsPage() {
             showMessage("Failed to update store settings.", "error");
         } finally {
             setSavingStore(false);
+        }
+    }
+
+    async function updateOriginAddress() {
+        if (!originAddress.trim())
+            return alert("Please enter an origin address.");
+        if (!originPostalCode.trim())
+            return alert("Please enter an origin postal code.");
+        setSavingOrigin(true);
+        try {
+            const token = localStorage.getItem("token");
+            const headers = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            };
+            const [addrRes, noteRes, postalRes] = await Promise.all([
+                fetch(`${API_BASE}/setting/origin_address`, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify({ value: originAddress.trim() }),
+                }),
+                fetch(`${API_BASE}/setting/origin_note`, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify({ value: originNote.trim() }),
+                }),
+                fetch(`${API_BASE}/setting/origin_postal_code`, {
+                    method: "PUT",
+                    headers,
+                    body: JSON.stringify({ value: originPostalCode.trim() }),
+                }),
+            ]);
+            const [addrJson, noteJson, postalJson] = await Promise.all([
+                addrRes.json(),
+                noteRes.json(),
+                postalRes.json(),
+            ]);
+            if (addrJson.success && noteJson.success && postalJson.success) {
+                showMessage("Origin address saved successfully!", "success");
+            } else {
+                showMessage("Failed to save origin address.", "error");
+            }
+        } catch (err) {
+            console.error("Failed to update origin address:", err);
+            showMessage("Failed to save origin address.", "error");
+        } finally {
+            setSavingOrigin(false);
         }
     }
 
@@ -306,6 +375,69 @@ export default function SettingsPage() {
                     }`}
                 >
                     {savingStore ? "Saving..." : "Save Store Settings"}
+                </button>
+            </div>
+
+            {/* Store Origin Address Section */}
+            <div className="border border-gray-200 rounded-lg p-6 space-y-4">
+                <div>
+                    <p className="text-gray-800 font-semibold text-lg">
+                        Store Origin Address
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Origin address used for Biteship shipping calculations
+                    </p>
+                </div>
+
+                <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                        Origin Address
+                    </label>
+                    <textarea
+                        value={originAddress}
+                        onChange={(e) => setOriginAddress(e.target.value)}
+                        rows={3}
+                        placeholder="e.g., Jl. Tanah Barak No.15, Canggu, Kec. Kuta Utara, Kabupaten Badung, Bali 80351"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent focus:outline-none resize-none"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                        Origin Note / Store Name
+                    </label>
+                    <input
+                        type="text"
+                        value={originNote}
+                        onChange={(e) => setOriginNote(e.target.value)}
+                        placeholder="e.g., FYI Couture Store"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent focus:outline-none"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                        Origin Postal Code
+                    </label>
+                    <input
+                        type="text"
+                        value={originPostalCode}
+                        onChange={(e) => setOriginPostalCode(e.target.value)}
+                        placeholder="e.g., 80351"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent focus:outline-none"
+                    />
+                </div>
+
+                <button
+                    onClick={updateOriginAddress}
+                    disabled={savingOrigin}
+                    className={`w-full mt-4 px-4 py-3 rounded-lg font-medium text-white transition ${
+                        savingOrigin
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-primary-studio hover:bg-secondary-studio"
+                    }`}
+                >
+                    {savingOrigin ? "Saving..." : "Save Origin Address"}
                 </button>
             </div>
 
