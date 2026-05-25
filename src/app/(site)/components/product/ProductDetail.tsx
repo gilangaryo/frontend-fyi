@@ -197,6 +197,16 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         );
         window.dispatchEvent(new Event("open-cart"));
         // setIsAddCartModalOpen(true);
+
+        if (typeof window.fbq === "function") {
+            window.fbq("track", "AddToCart", {
+                content_ids: [product.id],
+                content_type: "product",
+                content_name: product.title,
+                value: displayPrice,
+                currency: "IDR",
+            });
+        }
     };
     const hasStock = product.variants?.some((v) => v.stock > 0);
     const selectedVariant = product.variants?.find(
@@ -204,6 +214,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     );
     const isSelectedOutOfStock = selectedVariant?.stock === 0;
     const { displayPrice, originalPrice } = getDisplayPrices(product);
+
+    // ✅ Tambah ini — ViewContent saat user buka halaman produk
+    useEffect(() => {
+        if (typeof window.fbq !== "function") return;
+        window.fbq("track", "ViewContent", {
+            content_ids: [product.id],
+            content_type: "product",
+            content_name: product.title,
+            value: displayPrice,
+            currency: "IDR",
+        });
+    }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <>

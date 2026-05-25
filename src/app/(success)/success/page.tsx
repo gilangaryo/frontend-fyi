@@ -79,7 +79,35 @@ function SuccessContent() {
                     `${API_BASE}/orders/session/${order_id}`,
                 );
                 const json: OrderResponse = await res.json();
-                if (json.success) setData(json.data);
+                if (json.success) {
+                    setData(json.data);
+
+                    // ✅ Purchase event — fire sekali saat order sukses
+                    if (typeof window.fbq === "function") {
+                        const order = json.data.order;
+                        const total = Number(
+                            order.total || json.data.session.amount || 0,
+                        );
+                        window.fbq("track", "Purchase", {
+                            value: total,
+                            currency: "IDR",
+                            content_ids: order.items.map(
+                                (it: OrderItem) => it.product.id,
+                            ),
+                            content_type: "product",
+                            contents: order.items.map((it: OrderItem) => ({
+                                id: it.product.id,
+                                quantity: it.quantity,
+                                item_price: Number(it.priceAtPurchase),
+                            })),
+                            num_items: order.items.reduce(
+                                (s: number, it: OrderItem) => s + it.quantity,
+                                0,
+                            ),
+                            order_id: order.id,
+                        });
+                    }
+                }
             } catch (err) {
                 console.error("Failed to fetch payment:", err);
             } finally {
