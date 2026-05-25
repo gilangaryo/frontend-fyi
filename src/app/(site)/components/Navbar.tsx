@@ -197,6 +197,7 @@ export default function Navbar() {
         { name: "Shop", href: "/shop" },
         { name: "Story", href: "/story" },
         { name: "Beyond", href: "/beyond" },
+        { name: "Sale", href: "/sale" },
     ];
 
     return (
@@ -259,14 +260,6 @@ export default function Navbar() {
                                                 }`}
                                             >
                                                 <ul className="py-2 min-w-[180px]">
-                                                    <li>
-                                                        <Link
-                                                            href="/sale"
-                                                            className="block px-4 py-2 text-sm text-[#B22222]  hover:bg-gray-100"
-                                                        >
-                                                            Sale
-                                                        </Link>
-                                                    </li>
                                                     <li className="px-4 pt-3 pb-1">
                                                         <span className="text-xs tracking-widest uppercase text-gray-400">
                                                             Collection
@@ -384,17 +377,6 @@ export default function Navbar() {
                                                 </ul>
                                             </div>
                                         </>
-                                    ) : item.name === "Sale" ? (
-                                        <Link
-                                            href={item.href}
-                                            className={`pb-1 transition hover:opacity-70 lowercase text-red-600 ${
-                                                pathname === item.href
-                                                    ? "underline underline-offset-2 decoration-1"
-                                                    : ""
-                                            }`}
-                                        >
-                                            {item.name}
-                                        </Link>
                                     ) : (
                                         <Link
                                             href={item.href}
