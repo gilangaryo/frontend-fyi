@@ -19,25 +19,10 @@ const nextConfig: NextConfig = {
                 source: "/api/:path*",
                 destination: "http://localhost:4300/api/:path*",
             },
-            {
-                source: "/api/:path*",
-                destination: "http://localhost:4400/api/:path*",
-            },
-            {
-                source: "/api/:path*",
-                destination: "http://localhost:4300/api/:path*",
-            },
-            {
-                source: "/api/:path*",
-                destination: "http://api.cobatesting.my.id/api/:path*",
-            },
-            {
-                source: "/api/:path*",
-                destination: "https://api.cobatesting.my.id/api/:path*",
-            },
         ];
     },
     images: {
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: "https",
