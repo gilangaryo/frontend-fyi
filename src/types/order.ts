@@ -31,6 +31,7 @@ export interface OrderItem {
 
 export interface Payment {
     status: string;
+    expiredAt?: string | null;
 }
 
 export interface PricingBreakdownItemAdjustment {
@@ -138,7 +139,7 @@ export interface OrderApi {
             price?: string;
         };
     }[];
-    payments: { status: string }[];
+    payments: { status: string; expiredAt?: string | null }[];
     shippingAddress: {
         address: string;
         addressDetails: string;
@@ -175,5 +176,6 @@ export interface OrderCardData {
     createdAt: string;
     status: string;
     paymentStatus: string;
+    paymentExpiredAt?: string | null;
     trackingLink?: string;
 }

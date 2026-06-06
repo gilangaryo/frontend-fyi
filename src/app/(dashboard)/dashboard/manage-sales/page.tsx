@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Search } from "lucide-react";
 import { API_BASE } from "@/lib/constants";
 import OrderCard from "../../components/manage-sales/OrderCard";
 import OrderDetailModal from "../../components/manage-sales/OrderDetailModal";
@@ -13,7 +14,8 @@ type TabKey =
     | "packed"
     | "shipped"
     | "delivered"
-    | "cancelled";
+    | "cancelled"
+    | "expired";
 
 export default function ManageSalesPage() {
     const [activeTab, setActiveTab] = useState<TabKey>("all");
@@ -22,18 +24,33 @@ export default function ManageSalesPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [selectedOrder, setSelectedOrder] = useState<OrderApi | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     useEffect(() => {
-        fetchOrders(page, activeTab);
-    }, [page, activeTab]);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery.trim());
+            setPage(1);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
-    async function fetchOrders(page: number, status: TabKey) {
+    useEffect(() => {
+        fetchOrders(page, activeTab, debouncedSearch);
+    }, [page, activeTab, debouncedSearch]);
+
+    async function fetchOrders(
+        page: number,
+        status: TabKey,
+        search: string,
+    ) {
         try {
             setLoading(true);
             const query = new URLSearchParams({
                 page: String(page),
                 limit: "6",
                 ...(status !== "all" ? { status } : {}),
+                ...(search ? { search } : {}),
             }).toString();
 
             const res = await fetch(`${API_BASE}/orders?${query}`, {
@@ -53,6 +70,7 @@ export default function ManageSalesPage() {
                         createdAt: o.createdAt,
                         status: o.status,
                         paymentStatus: o.payments?.[0]?.status || "PENDING",
+                        paymentExpiredAt: o.payments?.[0]?.expiredAt ?? null,
                         trackingLink: o.tracking?.[0]?.trackingLink,
                     }),
                 );
@@ -97,6 +115,7 @@ export default function ManageSalesPage() {
         { key: "shipped", label: "Shipped" },
         { key: "delivered", label: "Delivered" },
         { key: "cancelled", label: "Cancelled" },
+        { key: "expired", label: "Expired" },
     ];
 
     return (
@@ -105,6 +124,17 @@ export default function ManageSalesPage() {
                 <h1 className="text-2xl font-semibold text-gray-800">
                     Manage Sales
                 </h1>
+            </div>
+
+            <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Search by order ID, customer, or product..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-studio focus:border-transparent focus:outline-none"
+                />
             </div>
 
             {/* Tabs */}
@@ -175,7 +205,9 @@ export default function ManageSalesPage() {
                 </>
             ) : (
                 <div className="text-center text-gray-400 py-20">
-                    No orders found.
+                    {debouncedSearch
+                        ? "No orders match your search."
+                        : "No orders found."}
                 </div>
             )}
 

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useEffect } from "react";
-import { getImageUrl } from "@/lib/utils";
+import { getImageUrl, formatPaymentExpiry, isPaymentExpired } from "@/lib/utils";
 import type {
     AppliedPromotion,
     OrderApi,
@@ -63,6 +63,8 @@ export default function OrderDetailModal({
     const shippingCost = Number(order.shippingCost || 0);
     const totalPayment = Number(order.total || finalProductSubtotal);
     const appliedPromotions = pricing?.promotions.applied ?? [];
+    const payment = order.payments?.[0];
+    const paymentExpiredAt = payment?.expiredAt ?? null;
 
     const pricingItemsByVariantId = new Map(
         (pricing?.items ?? []).map((item) => [item.variantId, item]),
@@ -305,6 +307,28 @@ export default function OrderDetailModal({
                             Payment Details
                         </h3>
                         <div className="text-sm text-gray-600 space-y-1">
+                            <div className="flex justify-between">
+                                <span>Payment Status</span>
+                                <span>{payment?.status ?? "PENDING"}</span>
+                            </div>
+                            {order.status === "DRAFT" && paymentExpiredAt && (
+                                <div className="flex justify-between">
+                                    <span>Payment Expires</span>
+                                    <span
+                                        className={
+                                            isPaymentExpired(paymentExpiredAt)
+                                                ? "text-red-600 font-medium"
+                                                : "text-amber-600"
+                                        }
+                                    >
+                                        {isPaymentExpired(paymentExpiredAt)
+                                            ? "Expired"
+                                            : formatPaymentExpiry(
+                                                  paymentExpiredAt,
+                                              )}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex justify-between">
                                 <span>Initial Product Total</span>
                                 <span>{formatCurrency(baseSubtotal)}</span>

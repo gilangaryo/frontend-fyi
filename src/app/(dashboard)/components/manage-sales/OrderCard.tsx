@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { getImageUrl } from "@/lib/utils";
+import { getImageUrl, formatPaymentExpiry, isPaymentExpired } from "@/lib/utils";
 import AcceptOrderButton from "./AcceptOrderButton";
 
 interface Order {
@@ -13,6 +13,7 @@ interface Order {
     createdAt: string;
     status: string;
     paymentStatus: string;
+    paymentExpiredAt?: string | null;
     trackingLink?: string;
 }
 
@@ -30,6 +31,9 @@ export default function OrderCard({
     //             ? "bg-yellow-100 text-yellow-700"
     //             : "bg-red-100 text-red-700"
 
+    const isExpiredOrder =
+        order.status === "EXPIRED" || order.paymentStatus === "EXPIRED";
+
     const orderColor =
         order.status === "NEW"
             ? "bg-sky-100 text-sky-700"
@@ -39,9 +43,12 @@ export default function OrderCard({
                 ? "bg-indigo-100 text-indigo-700"
                 : order.status === "DELIVERED" || order.status === "COMPLETED"
                   ? "bg-green-100 text-green-700"
-                  : order.status === "CANCELLED"
+                  : order.status === "EXPIRED" ||
+                      order.paymentStatus === "EXPIRED"
                     ? "bg-red-100 text-red-700"
-                    : "bg-gray-100 text-gray-600";
+                    : order.status === "CANCELLED"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-600";
 
     return (
         <div className="h-full bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col hover:shadow-md transition cursor-pointer">
@@ -67,7 +74,7 @@ export default function OrderCard({
                     <span
                         className={`text-xs px-2 py-1 rounded whitespace-nowrap ${orderColor}`}
                     >
-                        {order.status}
+                        {isExpiredOrder ? "EXPIRED" : order.status}
                     </span>
                 </div>
             </div>
@@ -96,6 +103,22 @@ export default function OrderCard({
                             year: "numeric",
                         })}
                     </p>
+                    {(order.status === "DRAFT" || isExpiredOrder) &&
+                        order.paymentExpiredAt && (
+                        <p
+                            className={`text-xs mt-1 ${
+                                isPaymentExpired(order.paymentExpiredAt) ||
+                                isExpiredOrder
+                                    ? "text-red-600 font-semibold"
+                                    : "text-amber-600"
+                            }`}
+                        >
+                            {isPaymentExpired(order.paymentExpiredAt) ||
+                            isExpiredOrder
+                                ? "Expired"
+                                : `Payment expires: ${formatPaymentExpiry(order.paymentExpiredAt)}`}
+                        </p>
+                    )}
                 </div>
             </div>
 
