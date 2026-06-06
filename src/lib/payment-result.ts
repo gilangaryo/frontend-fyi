@@ -115,9 +115,3 @@ export function trackPurchaseEvent(data: PaymentSessionData) {
         order_id: order.id,
     });
 }
-
-declare global {
-    interface Window {
-        fbq?: (...args: unknown[]) => void;
-    }
-}
