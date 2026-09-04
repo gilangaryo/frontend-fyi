@@ -1,12 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { API_BASE } from "@/lib/constants";
 import { Product } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
 import Pagination from "./Pagination";
+import ProductImage from "@/app/(site)/components/ProductImage";
+import { useLenis } from "lenis/react";
 
 export default function SaleCatalogSection() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -14,6 +15,9 @@ export default function SaleCatalogSection() {
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
     const limit = 12;
+    const lenis = useLenis();
+    const lenisRef = useRef(lenis);
+    lenisRef.current = lenis;
 
     useEffect(() => {
         async function fetchSaleProducts() {
@@ -44,7 +48,12 @@ export default function SaleCatalogSection() {
         }
 
         fetchSaleProducts();
-        window.scrollTo({ top: 130, behavior: "smooth" });
+        const currentLenis = lenisRef.current;
+        if (currentLenis) {
+            currentLenis.scrollTo(130);
+        } else {
+            window.scrollTo({ top: 130, behavior: "smooth" });
+        }
     }, [page]);
 
     // Skeleton Loader Component
@@ -81,19 +90,20 @@ export default function SaleCatalogSection() {
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {products.map((product) => {
-                        const primaryImg = getImageUrl(
+                        const primaryRaw =
                             product.images?.find((img) => img.isPrimary)
-                                ?.imageUrl,
-                        );
-                        const secondaryImage = product.images?.find(
-                            (img) => img.isSecondary,
-                        );
-                        const fallbackImage = product.images?.find(
-                            (img) => !img.isPrimary,
-                        );
-                        const hoverImg = getImageUrl(
-                            secondaryImage?.imageUrl || fallbackImage?.imageUrl,
-                        );
+                                ?.imageUrl ||
+                            product.images?.[0]?.imageUrl ||
+                            product.imageUrl;
+                        const hoverRaw =
+                            product.images?.find((img) => img.isSecondary)
+                                ?.imageUrl ||
+                            product.images?.find(
+                                (img) =>
+                                    img.imageUrl &&
+                                    img.imageUrl !== primaryRaw &&
+                                    !img.isPrimary,
+                            )?.imageUrl;
 
                         return (
                             <Link
@@ -106,28 +116,30 @@ export default function SaleCatalogSection() {
                                     <div className="absolute top-3 left-3 bg-[#5a4b43] text-white text-xs font-semibold px-3 py-1 z-10">
                                         SALE
                                     </div>
-                                    <Image
-                                        src={primaryImg}
+                                    <ProductImage
+                                        src={getImageUrl(primaryRaw)}
                                         alt={product.title}
                                         fill
                                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                                         quality={60}
-                                        className="object-cover transition-opacity duration-300 group-hover:opacity-0"
+                                        className={`object-cover transition-opacity duration-300 ${hoverRaw ? "group-hover:opacity-0" : ""}`}
                                         loading="lazy"
                                         placeholder="blur"
                                         blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
                                     />
-                                    <Image
-                                        src={hoverImg}
-                                        alt={product.title}
-                                        fill
-                                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-                                        quality={60}
-                                        className="object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
-                                        loading="lazy"
-                                        placeholder="blur"
-                                        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
-                                    />
+                                    {hoverRaw && (
+                                        <ProductImage
+                                            src={getImageUrl(hoverRaw)}
+                                            alt=""
+                                            fill
+                                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                                            quality={60}
+                                            className="object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+                                            loading="lazy"
+                                            placeholder="blur"
+                                            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
+                                        />
+                                    )}
                                 </div>
 
                                 <p className="text-sm md:text-base font-light mb-1">

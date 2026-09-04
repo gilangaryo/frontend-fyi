@@ -6,6 +6,7 @@ import CollectionForm, {
     CollectionFormValues,
 } from '@/app/(dashboard)/components/collection/CollectionForm'
 import { API_BASE } from '@/lib/constants'
+import { getImageUrl } from '@/lib/utils'
 
 export default function EditCollectionPage() {
     const router = useRouter()
@@ -42,7 +43,7 @@ export default function EditCollectionPage() {
                     quote: data.data.quote,
                     hero: null,
                     heroPreview: data.data.heroImage
-                        ? `${API_BASE}${data.data.heroImage}`
+                        ? getImageUrl(data.data.heroImage)
                         : null,
                 })
             } catch (err) {

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -11,10 +10,15 @@ import Pagination from "./Pagination";
 import { API_BASE } from "@/lib/constants";
 import { Product, Kain, Collection, Category } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
+import ProductImage from "@/app/(site)/components/ProductImage";
+import { useLenis } from "lenis/react";
 
 export default function CatalogSection() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const lenis = useLenis();
+    const lenisRef = useRef(lenis);
+    lenisRef.current = lenis;
 
     const initialCategory = searchParams.get("category");
     const initialCollection = searchParams.get("collection");
@@ -127,7 +131,12 @@ export default function CatalogSection() {
         }
 
         fetchProducts();
-        window.scrollTo({ top: 130, behavior: "smooth" });
+        const currentLenis = lenisRef.current;
+        if (currentLenis) {
+            currentLenis.scrollTo(130);
+        } else {
+            window.scrollTo({ top: 130, behavior: "smooth" });
+        }
     }, [page, selectedCollections, selectedCategories, selectedKains]);
 
     useEffect(() => {
@@ -267,20 +276,20 @@ export default function CatalogSection() {
                 // Products Grid
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {products.map((product) => {
-                        const primaryImg = getImageUrl(
+                        const primaryRaw =
                             product.images?.find((img) => img.isPrimary)
-                                ?.imageUrl,
-                        );
-
-                        const secondaryImage = product.images?.find(
-                            (img) => img.isSecondary,
-                        );
-                        const fallbackImage = product.images?.find(
-                            (img) => !img.isPrimary,
-                        );
-                        const hoverImg = getImageUrl(
-                            secondaryImage?.imageUrl || fallbackImage?.imageUrl,
-                        );
+                                ?.imageUrl ||
+                            product.images?.[0]?.imageUrl ||
+                            product.imageUrl;
+                        const hoverRaw =
+                            product.images?.find((img) => img.isSecondary)
+                                ?.imageUrl ||
+                            product.images?.find(
+                                (img) =>
+                                    img.imageUrl &&
+                                    img.imageUrl !== primaryRaw &&
+                                    !img.isPrimary,
+                            )?.imageUrl;
 
                         return (
                             <Link
@@ -294,28 +303,30 @@ export default function CatalogSection() {
                                             SALE
                                         </div>
                                     )}
-                                    <Image
-                                        src={primaryImg}
+                                    <ProductImage
+                                        src={getImageUrl(primaryRaw)}
                                         alt={product.title}
                                         fill
                                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                                         quality={60}
-                                        className="object-cover transition-opacity duration-300 group-hover:opacity-0"
+                                        className={`object-cover transition-opacity duration-300 ${hoverRaw ? "group-hover:opacity-0" : ""}`}
                                         loading="lazy"
                                         placeholder="blur"
                                         blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
                                     />
-                                    <Image
-                                        src={hoverImg}
-                                        alt={product.title}
-                                        fill
-                                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-                                        quality={60}
-                                        className="object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
-                                        loading="lazy"
-                                        placeholder="blur"
-                                        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
-                                    />
+                                    {hoverRaw && (
+                                        <ProductImage
+                                            src={getImageUrl(hoverRaw)}
+                                            alt=""
+                                            fill
+                                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+                                            quality={60}
+                                            className="object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+                                            loading="lazy"
+                                            placeholder="blur"
+                                            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2UwZTBlMCIvPjwvc3ZnPg=="
+                                        />
+                                    )}
                                     <button
                                         className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition duration-300"
                                         onClick={(e) => {

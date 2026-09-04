@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { useLockLenis } from '@/app/(site)/components/SmoothScroll'
 
 export default function FloatingEmail() {
     const [open, setOpen] = useState(false)
@@ -12,6 +13,8 @@ export default function FloatingEmail() {
         message: string
     } | null>(null)
     const [isClosing, setIsClosing] = useState(false)
+
+    useLockLenis(open)
 
 
     useEffect(() => {
@@ -98,7 +101,10 @@ export default function FloatingEmail() {
     return (
         <>
             {/* Floating Email Form */}
-            <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div
+                className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                data-lenis-prevent
+            >
                 <div className="relative bg-secondary/50 text-white p-10 w-[90vw] max-w-md shadow-2xl animate-slideUp flex flex-col items-center">
                     {/* Close button */}
                     <button

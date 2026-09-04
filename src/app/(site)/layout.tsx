@@ -2,6 +2,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Providers from "./providers";
 import HelpButton from "./components/HelpButton";
+import SmoothScroll from "./components/SmoothScroll";
 
 export default function SiteLayout({
   children,
@@ -10,10 +11,12 @@ export default function SiteLayout({
 }) {
   return (
     <Providers>
-      <Navbar />
-      {children}
-      <Footer />
-      <HelpButton />
+      <SmoothScroll>
+        <Navbar />
+        {children}
+        <Footer />
+        <HelpButton />
+      </SmoothScroll>
     </Providers>
   );
 }

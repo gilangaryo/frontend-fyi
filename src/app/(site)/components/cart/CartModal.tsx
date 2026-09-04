@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/constants";
 import toast from "react-hot-toast";
 import { Product } from "@/types/product";
+import { useLockLenis } from "@/app/(site)/components/SmoothScroll";
 
 interface CartModalProps {
     open: boolean;
@@ -56,6 +57,8 @@ export default function CartModal({ open, onClose }: CartModalProps) {
         (sum, item) => sum + item.price * item.quantity,
         0,
     );
+
+    useLockLenis(open);
 
     const [storeOpen, setStoreOpen] = useState<boolean | null>(null);
     const [giftNoteOpen, setGiftNoteOpen] = useState(false);
@@ -200,6 +203,7 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                     {/* Side Drawer */}
                     <motion.div
                         className="fixed top-0 right-0 h-full w-[92%] md:w-[85%] max-w-2xl bg-white shadow-xl z-50 flex flex-col"
+                        data-lenis-prevent
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
@@ -230,7 +234,10 @@ export default function CartModal({ open, onClose }: CartModalProps) {
                         </div>
 
                         {/* Cart Items */}
-                        <div className="p-6 flex-1 overflow-y-auto space-y-4">
+                        <div
+                            className="p-6 flex-1 overflow-y-auto space-y-4"
+                            data-lenis-prevent
+                        >
                             {cartItems.map((item) =>
                                 (() => {
                                     const fallbackPrices =

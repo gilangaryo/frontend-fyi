@@ -54,7 +54,10 @@ export default function FilterDropdown({
                     />
 
                     {/* MOBILE: Bottom sheet */}
-                    <div className="md:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[70vh] bg-white shadow-2xl rounded-t-2xl border-t border-gray-200">
+                    <div
+                        className="md:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[70vh] bg-white shadow-2xl rounded-t-2xl border-t border-gray-200"
+                        data-lenis-prevent
+                    >
                         {/* Handle bar */}
                         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
                             <div className="w-10 h-1 rounded-full bg-gray-300" />
@@ -70,7 +73,10 @@ export default function FilterDropdown({
                             </button>
                         </div>
                         {/* Scrollable options */}
-                        <div className="overflow-y-auto flex-1 px-6 py-4">
+                        <div
+                            className="overflow-y-auto flex-1 px-6 py-4"
+                            data-lenis-prevent
+                        >
                             <div className="grid grid-cols-2 gap-2 mb-6">
                                 {options.map((opt) => (
                                     <label
@@ -103,7 +109,10 @@ export default function FilterDropdown({
                     </div>
 
                     {/* DESKTOP: Dropdown di bawah button */}
-                    <div className="hidden md:block absolute top-full left-0 w-full bg-white shadow-md p-4 z-50 max-h-64 overflow-y-auto">
+                    <div
+                        className="hidden md:block absolute top-full left-0 w-full bg-white shadow-md p-4 z-50 max-h-64 overflow-y-auto"
+                        data-lenis-prevent
+                    >
                         {options.map((opt) => (
                             <label
                                 key={opt.value}

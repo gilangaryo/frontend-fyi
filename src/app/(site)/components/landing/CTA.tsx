@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { API_BASE } from "@/lib/constants";
 import { getImageUrl } from "@/lib/utils";
+import ProductImage from "@/app/(site)/components/ProductImage";
 
 interface Product {
     id: string;
@@ -97,17 +97,17 @@ export default function CTA() {
                                             </div>
                                         )}
                                         {/* Image utama */}
-                                        <Image
+                                        <ProductImage
                                             src={getImageUrl(primary)}
                                             alt={product.title}
                                             fill
-                                            className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+                                            className={`object-cover transition-opacity duration-500 ${secondary ? "group-hover:opacity-0" : ""}`}
                                         />
                                         {/* Gambar hover */}
                                         {secondary && (
-                                            <Image
+                                            <ProductImage
                                                 src={getImageUrl(secondary)}
-                                                alt={product.title}
+                                                alt=""
                                                 fill
                                                 className="object-cover absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                                             />
@@ -160,16 +160,16 @@ export default function CTA() {
                                                 SALE
                                             </div>
                                         )}
-                                        <Image
-                                            src={getImageUrl(primary || "/placeholder.jpg")}
+                                        <ProductImage
+                                            src={getImageUrl(primary)}
                                             alt={product.title}
                                             fill
-                                            className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+                                            className={`object-cover transition-opacity duration-500 ${secondary ? "group-hover:opacity-0" : ""}`}
                                         />
                                         {secondary && (
-                                            <Image
+                                            <ProductImage
                                                 src={getImageUrl(secondary)}
-                                                alt={product.title}
+                                                alt=""
                                                 fill
                                                 className="object-cover absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                                             />
@@ -222,16 +222,16 @@ export default function CTA() {
                                                 SALE
                                             </div>
                                         )}
-                                        <Image
-                                            src={getImageUrl(primary || "/placeholder.jpg")}
+                                        <ProductImage
+                                            src={getImageUrl(primary)}
                                             alt={product.title}
                                             fill
-                                            className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+                                            className={`object-cover transition-opacity duration-500 ${secondary ? "group-hover:opacity-0" : ""}`}
                                         />
                                         {secondary && (
-                                            <Image
+                                            <ProductImage
                                                 src={getImageUrl(secondary)}
-                                                alt={product.title}
+                                                alt=""
                                                 fill
                                                 className="object-cover absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                                             />

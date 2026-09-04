@@ -96,13 +96,13 @@ export default function About() {
                 </div>
 
                 <div className="flex flex-col justify-between">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden contain-paint">
                         <video
                             ref={setVideoRef}
                             muted={muted}
                             loop
                             playsInline
-                            autoPlay
+                            preload="none"
                             className="absolute inset-0 w-full h-full object-cover"
                         >
                             <source

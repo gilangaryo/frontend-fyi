@@ -2,9 +2,17 @@
 
 import { ArrowUp, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { useLenis } from "lenis/react";
+
 export default function Footer() {
+    const lenis = useLenis();
+
     const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        if (lenis) {
+            lenis.scrollTo(0);
+        } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
     };
 
     return (
@@ -48,17 +56,23 @@ export default function Footer() {
                             <p className="uppercase text-xs text-charcoal mb-1">
                                 Contact Us
                             </p>
-                            <p className="text-sm md:text-lg font-medium">
+                            <a
+                                href="tel:+6281809095005"
+                                className="text-sm md:text-lg font-medium hover:underline block"
+                            >
                                 +62 818 0909 5005
-                            </p>
+                            </a>
                         </div>
                         <div>
                             <p className="uppercase text-xs text-charcoal mb-1">
                                 Email
                             </p>
-                            <p className="text-sm md:text-lg text-charcoal">
+                            <a
+                                href="mailto:foryourinfinity@gmail.com"
+                                className="text-sm md:text-lg text-charcoal hover:underline block"
+                            >
                                 foryourinfinity@gmail.com
-                            </p>
+                            </a>
                         </div>
                     </div>
 
@@ -90,7 +104,7 @@ export default function Footer() {
                     </div>
                     {/* Copyright */}
                     <div className="text-xs text-charcoal text-right place-self-end ">
-                        © 2025 — Copyright FYI Couture
+                        © 2026 — Copyright FYI Couture
                     </div>
                 </div>
 

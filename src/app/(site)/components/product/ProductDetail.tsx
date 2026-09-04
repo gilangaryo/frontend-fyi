@@ -12,6 +12,7 @@ import { addToCart } from "@/store/cartSlice";
 import { Product } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
 import DynamicSizeChartTable from "@/app/(site)/components/product/DynamicSizeChartTable";
+import { useLockLenis } from "@/app/(site)/components/SmoothScroll";
 // import AddToCartModal from "@/app/(site)/components/AddToCartModal";
 type ProductDetailProps = {
     product: Product;
@@ -101,6 +102,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     const [zoomIndex, setZoomIndex] = useState(0);
     const [isDesktopView, setIsDesktopView] = useState(false);
     // const [isAddCartModalOpen, setIsAddCartModalOpen] = useState(false);
+
+    useLockLenis(isZoomed);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(min-width: 768px)");
@@ -396,6 +399,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     {!isDesktopView && (
                         <div
                             className="fixed inset-0 bg-white z-[9999] overflow-hidden cursor-zoom-out"
+                            data-lenis-prevent
                             onClick={() => setIsZoomed(false)}
                         >
                             <button
@@ -472,6 +476,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     {isDesktopView && (
                         <div
                             className="fixed p-20 inset-0 bg-white z-[9999] overflow-y-auto cursor-zoom-out"
+                            data-lenis-prevent
                             onClick={() => setIsZoomed(false)}
                         >
                             <button

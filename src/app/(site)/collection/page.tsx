@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import CollectionSection from '../components/collection/CollectionSection'
 import { API_BASE } from '@/lib/constants'
 import Loading from '@/app/(site)/components/Loading'
+import { useLenis } from 'lenis/react'
 
 interface Product {
     id: string
@@ -34,6 +35,7 @@ export default function CollectionPage() {
     const [collections, setCollections] = useState<Collection[]>([])
     const [loading, setLoading] = useState(true)
     const [error] = useState<string | null>(null)
+    const lenis = useLenis()
 
     useEffect(() => {
         async function fetchCollections() {
@@ -63,10 +65,14 @@ export default function CollectionPage() {
         const target = document.querySelector(hash)
         if (target) {
             setTimeout(() => {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                if (lenis) {
+                    lenis.scrollTo(target as HTMLElement, { offset: 0 })
+                } else {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
             }, 300)
         }
-    }, [loading, collections])
+    }, [loading, collections, lenis])
 
     if (loading) return <div className="p-10 text-center"><Loading /></div>
     if (error) return <div className="p-10 text-center text-red-500">{error}</div>

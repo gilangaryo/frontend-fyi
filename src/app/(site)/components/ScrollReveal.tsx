@@ -13,7 +13,7 @@ export default function ScrollReveal({
     children,
     className,
     delay = 0,
-    yOffset = 20,
+    yOffset = 16,
 }: ScrollRevealProps) {
     const variants: Variants = {
         hidden: { opacity: 0, y: yOffset },
@@ -21,9 +21,9 @@ export default function ScrollReveal({
             opacity: 1,
             y: 0,
             transition: {
-                duration: 1,
+                duration: 0.55,
                 delay: delay / 1000,
-                ease: [0.35, 0.1, 0.35, 1],
+                ease: [0.25, 0.1, 0.25, 1],
             },
         },
     };
@@ -34,7 +34,8 @@ export default function ScrollReveal({
             initial="hidden"
             whileInView="visible"
             variants={variants}
-            viewport={{ once: true, amount: 0.2 }}
+            viewport={{ once: true, amount: 0.15, margin: "0px 0px -8% 0px" }}
+            style={{ willChange: "opacity, transform" }}
         >
             {children}
         </motion.div>

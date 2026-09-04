@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,8 +10,10 @@ import type { RootState } from "@/store";
 import CartModal from "@/app/(site)/components/cart/CartModal";
 import { API_BASE } from "@/lib/constants";
 import { getImageUrl } from "@/lib/utils";
+import ProductImage from "@/app/(site)/components/ProductImage";
+import { useLockLenis } from "@/app/(site)/components/SmoothScroll";
 
-interface ProductImage {
+interface SearchProductImage {
     id: string;
     imageUrl: string;
     isPrimary: boolean;
@@ -23,7 +25,7 @@ interface Product {
     title: string;
     imageUrl?: string | null;
     price?: number | string;
-    images?: ProductImage[];
+    images?: SearchProductImage[];
 }
 interface CollectionSlug {
     id: string;
@@ -57,31 +59,47 @@ export default function Navbar() {
         state.cart.items.reduce((sum, item) => sum + item.quantity, 0),
     );
 
-    const [lastScrollY, setLastScrollY] = useState(0);
+    const lastScrollYRef = useRef(0);
     const [showNavbar, setShowNavbar] = useState(true);
+    const showNavbarRef = useRef(true);
+
+    useLockLenis(openMenu || showMobileSearch);
 
     useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+        let ticking = false;
+
+        const updateNavbar = (currentScrollY: number) => {
+            const lastScrollY = lastScrollYRef.current;
+            let next = showNavbarRef.current;
 
             if (currentScrollY < 150) {
-                setShowNavbar(true);
-                setLastScrollY(currentScrollY);
-                return;
+                next = true;
+            } else if (currentScrollY > lastScrollY + 8 && currentScrollY > 100) {
+                next = false;
+            } else if (currentScrollY < lastScrollY - 12) {
+                next = true;
             }
 
-            if (currentScrollY > lastScrollY && currentScrollY > 100) {
-                setShowNavbar(false);
-            } else if (currentScrollY < lastScrollY - 10) {
-                setShowNavbar(true);
-            }
+            lastScrollYRef.current = currentScrollY;
 
-            setLastScrollY(currentScrollY);
+            if (next !== showNavbarRef.current) {
+                showNavbarRef.current = next;
+                setShowNavbar(next);
+            }
+        };
+
+        const handleScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+                updateNavbar(window.scrollY);
+                ticking = false;
+            });
         };
 
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
-    }, [lastScrollY]);
+    }, []);
 
     // ✅ Updated: Fetch announcement with custom closed message
     useEffect(() => {
@@ -193,6 +211,13 @@ export default function Navbar() {
         router.push(`/product/${slug}`);
     };
 
+    const getSearchResultImage = (product: Product) => {
+        const primaryImage = product.images?.find(
+            (img) => img.isPrimary,
+        )?.imageUrl;
+        return getImageUrl(primaryImage || product.imageUrl);
+    };
+
     const navItems = [
         { name: "Shop", href: "/shop" },
         { name: "Story", href: "/story" },
@@ -203,7 +228,7 @@ export default function Navbar() {
     return (
         <>
             <header
-                className={`w-full sticky top-0 bg-white shadow-sm transition-transform duration-300 
+                className={`w-full sticky top-0 bg-white shadow-sm transition-transform duration-300 will-change-transform
     ${showNavbar ? "translate-y-0" : "-translate-y-full"} 
     ${openMenu ? "z-[10000]" : "z-50"}`}
             >
@@ -449,15 +474,7 @@ export default function Navbar() {
                                     )}
 
                                     {!loadingSearch &&
-                                        searchResults.map((p) => {
-                                            const primaryImage = p.images?.find(
-                                                (img) => img.isPrimary,
-                                            )?.imageUrl;
-                                            const imageSrc = primaryImage
-                                                ? `${API_BASE}${primaryImage}`
-                                                : `${API_BASE}${p.imageUrl}`;
-
-                                            return (
+                                        searchResults.map((p) => (
                                                 <button
                                                     key={p.id}
                                                     onClick={() =>
@@ -467,21 +484,20 @@ export default function Navbar() {
                                                     }
                                                     className="flex items-center gap-3 w-full text-left px-4 py-2 hover:bg-gray-100"
                                                 >
-                                                    <Image
-                                                        src={getImageUrl(
-                                                            imageSrc,
+                                                    <ProductImage
+                                                        src={getSearchResultImage(
+                                                            p,
                                                         )}
-                                                        alt={p.title}
+                                                        alt=""
                                                         width={40}
                                                         height={40}
-                                                        className="object-cover rounded"
+                                                        className="h-10 w-10 shrink-0 object-cover rounded bg-primary-muted"
                                                     />
-                                                    <span className="text-sm text-gray-700 line-clamp-1">
+                                                    <span className="min-w-0 flex-1 text-sm text-gray-700 line-clamp-1">
                                                         {p.title}
                                                     </span>
                                                 </button>
-                                            );
-                                        })}
+                                            ))}
                                 </div>
                             )}
                         </div>
@@ -517,7 +533,10 @@ export default function Navbar() {
 
             {/* Mobile Search Overlay */}
             {showMobileSearch && (
-                <div className="fixed inset-0 bg-white z-[9999] flex flex-col">
+                <div
+                    className="fixed inset-0 bg-white z-[9999] flex flex-col"
+                    data-lenis-prevent
+                >
                     <div className="flex items-center justify-center p-4">
                         <Image
                             src="/logo-fyi.png"
@@ -541,7 +560,7 @@ export default function Navbar() {
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto" data-lenis-prevent>
                         {loadingSearch && (
                             <div className="p-4 text-gray-500 text-sm">
                                 Searching...
@@ -550,15 +569,7 @@ export default function Navbar() {
 
                         {!loadingSearch && searchResults.length > 0 ? (
                             <div className="divide-y divide-gray-200">
-                                {searchResults.map((p) => {
-                                    const primaryImage = p.images?.find(
-                                        (img) => img.isPrimary,
-                                    )?.imageUrl;
-                                    const imageSrc = primaryImage
-                                        ? `${API_BASE}${primaryImage}`
-                                        : `${API_BASE}${p.imageUrl}`;
-
-                                    return (
+                                {searchResults.map((p) => (
                                         <button
                                             key={p.id}
                                             onClick={() =>
@@ -566,12 +577,12 @@ export default function Navbar() {
                                             }
                                             className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50"
                                         >
-                                            <Image
-                                                src={getImageUrl(imageSrc)}
-                                                alt={p.title}
+                                            <ProductImage
+                                                src={getSearchResultImage(p)}
+                                                alt=""
                                                 width={60}
                                                 height={60}
-                                                className="object-cover"
+                                                className="h-[60px] w-[60px] shrink-0 object-cover bg-primary-muted"
                                             />
                                             <div className="flex flex-col">
                                                 <span className="text-gray-800 text-base">
@@ -589,8 +600,7 @@ export default function Navbar() {
                                                 )}
                                             </div>
                                         </button>
-                                    );
-                                })}
+                                    ))}
                             </div>
                         ) : (
                             !loadingSearch &&
@@ -606,6 +616,7 @@ export default function Navbar() {
 
             {/* Mobile Menu */}
             <div
+                data-lenis-prevent
                 className={`lg:hidden fixed inset-0 z-[9998] bg-white flex flex-col items-stretch justify-start px-4 pt-44 gap-3 text-charcoal font-light transition-all duration-500 overflow-y-auto ${
                     openMenu
                         ? "opacity-100 translate-y-0"

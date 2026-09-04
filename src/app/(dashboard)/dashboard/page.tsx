@@ -91,7 +91,7 @@ export default function DashboardPage() {
                     collection: p.collection,
                     price: p.price,
                     stock: p.stock,
-                    imageUrl: `${API_BASE}${p.imageUrl}`,
+                    imageUrl: p.imageUrl,
                 }));
                 setProducts(mappedProducts);
             }
