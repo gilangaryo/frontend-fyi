@@ -71,6 +71,9 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
                 smoothWheel: true,
                 wheelMultiplier: 0.9,
                 touchMultiplier: 1.5,
+                // Windows "Animation effects: Off" sets prefers-reduced-motion.
+                // Lenis would otherwise force lerp=1 (no smoothing) even when mounted.
+                respectReducedMotion: false,
             }}
         >
             <RouteScrollReset />
