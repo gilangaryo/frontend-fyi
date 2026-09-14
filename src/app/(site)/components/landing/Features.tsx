@@ -3,9 +3,24 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const categories = [
-    { id: 1, name: "Dresses", slug: "dresses", image: "/categories/dresses.webp" },
-    { id: 2, name: "Bottom", slug: "bottom", image: "/categories/bottom.webp" },
-    { id: 3, name: "Outer", slug: "outer", image: "/categories/outer.webp" },
+    {
+        id: 1,
+        name: "Dresses",
+        slug: "dresses",
+        image: "/categories/dress-new.webp",
+    },
+    {
+        id: 2,
+        name: "Bottom",
+        slug: "bottom",
+        image: "/categories/bottom-new.webp",
+    },
+    {
+        id: 3,
+        name: "Outer",
+        slug: "outer",
+        image: "/categories/outer-new.webp",
+    },
 ];
 
 export default function Features() {
@@ -17,7 +32,6 @@ export default function Features() {
 
     return (
         <section className="px-4 pb-8 md:px-10 md:pb-12 bg-white">
-
             <div className="max-w-full mx-auto">
                 <div className="grid md:grid-cols-3 gap-2">
                     {categories.map((cat) => (
@@ -36,7 +50,6 @@ export default function Features() {
                                 />
                             </div>
 
-
                             <div className="absolute top-2/5 -translate-y-1/2 left-3">
                                 <span className="text-white text-4xl font-light tracking-wider [writing-mode:vertical-rl] rotate-180">
                                     {cat.name}
@@ -52,8 +65,6 @@ export default function Features() {
                     ))}
                 </div>
             </div>
-
         </section>
     );
 }
-
