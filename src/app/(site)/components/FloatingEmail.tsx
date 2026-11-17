@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { API_BASE } from '@/lib/constants'
 import { useLockLenis } from '@/app/(site)/components/SmoothScroll'
 
 export default function FloatingEmail() {
@@ -54,7 +55,7 @@ export default function FloatingEmail() {
 
         try {
             setLoading(true)
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/subscribe`, {
+            const res = await fetch(`${API_BASE}/subscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

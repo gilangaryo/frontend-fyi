@@ -1,6 +1,5 @@
-"use client";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const categories = [
     {
@@ -24,21 +23,16 @@ const categories = [
 ];
 
 export default function Features() {
-    const router = useRouter();
-
-    const handleCategoryClick = (categoryName: string) => {
-        router.push(`/shop?category=${encodeURIComponent(categoryName)}`);
-    };
-
     return (
         <section className="px-4 pb-8 md:px-10 md:pb-12 bg-white">
             <div className="max-w-full mx-auto">
                 <div className="grid md:grid-cols-3 gap-2">
                     {categories.map((cat) => (
-                        <div
+                        <Link
                             key={cat.id}
-                            className="relative group overflow-hidden cursor-pointer"
-                            onClick={() => handleCategoryClick(cat.slug)}
+                            href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                            className="relative group overflow-hidden block"
+                            aria-label={`Shop ${cat.name}`}
                         >
                             <div className="relative aspect-[4/6] w-full">
                                 <Image
@@ -46,6 +40,7 @@ export default function Features() {
                                     alt={cat.name}
                                     fill
                                     sizes="(max-width: 768px) 100vw, 33vw"
+                                    quality={85}
                                     className="object-cover"
                                 />
                             </div>
@@ -56,12 +51,12 @@ export default function Features() {
                                 </span>
                             </div>
                             <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-                                <button className="text-white text-xl font-medium underline underline-offset-2 transition">
+                                <span className="text-white text-xl font-medium underline underline-offset-2 transition">
                                     See all
-                                </button>
+                                </span>
                             </div>
                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-50 transition" />
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>

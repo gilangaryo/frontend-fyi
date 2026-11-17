@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { buildPageMetadata, SITE_NAME } from "@/lib/seo";
 import Hero from "./components/landing/Hero";
 import Features from "./components/landing/Features";
 import About from "./components/landing/About";
@@ -5,17 +7,29 @@ import CTA from "./components/landing/CTA";
 import ScrollReveal from "./components/ScrollReveal";
 import FloatingEmail from "./components/FloatingEmail";
 
+const homeMeta = buildPageMetadata({
+    title: SITE_NAME,
+    description:
+        "FYI Couture official website. Explore shop, collections, stories, and beyond.",
+    path: "/",
+});
+
+export const metadata: Metadata = {
+    ...homeMeta,
+    title: { absolute: SITE_NAME },
+    openGraph: { ...homeMeta.openGraph, title: SITE_NAME },
+    twitter: { ...homeMeta.twitter, title: SITE_NAME },
+};
+
 export default function Home() {
     return (
         <>
             <Hero />
             <FloatingEmail />
 
-            <ScrollReveal>
-                <h2 className="relative text-secondary text-base md:text-xl font-light text-center mx-auto px-4 md:px-0 pt-20 md:pt-0 pb-20 leading-relaxed my-0">
-                    Welcome to FYI Couture
-                </h2>
-            </ScrollReveal>
+            <h2 className="relative text-secondary text-base md:text-xl font-light text-center mx-auto px-4 md:px-0 pt-20 md:pt-0 pb-20 leading-relaxed my-0">
+                Welcome to FYI Couture
+            </h2>
             <ScrollReveal>
                 <Features />
             </ScrollReveal>

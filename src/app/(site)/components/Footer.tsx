@@ -57,10 +57,10 @@ export default function Footer() {
                                 Contact Us
                             </p>
                             <a
-                                href="tel:+6281809095005"
+                                href="tel:+628132883889"
                                 className="text-sm md:text-lg font-medium hover:underline block"
                             >
-                                +62 818 0909 5005
+                                +62 813-2883-889
                             </a>
                         </div>
                         <div>
@@ -83,7 +83,7 @@ export default function Footer() {
                                 Address
                             </p>
                             <a
-                                href="https://maps.app.goo.gl/frfYqC6MGVJrgEaD9"
+                                href="https://maps.app.goo.gl/FCjBXochwQ62wzoj8"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm md:text-lg text-charcoal hover:underline block"

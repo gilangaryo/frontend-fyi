@@ -11,6 +11,7 @@ import { AppDispatch } from "@/store";
 import { addToCart } from "@/store/cartSlice";
 import { Product } from "@/types/product";
 import { getImageUrl } from "@/lib/utils";
+import ProductImage from "@/app/(site)/components/ProductImage";
 import DynamicSizeChartTable from "@/app/(site)/components/product/DynamicSizeChartTable";
 import { useLockLenis } from "@/app/(site)/components/SmoothScroll";
 // import AddToCartModal from "@/app/(site)/components/AddToCartModal";
@@ -260,10 +261,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                                                 : "border-gray-200"
                                         }`}
                                     >
-                                        <Image
+                                        <ProductImage
                                             src={imgUrl}
                                             alt={`${product.title} ${i + 1}`}
                                             fill
+                                            sizes="96px"
                                             className="object-cover"
                                         />
                                     </button>
@@ -277,10 +279,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         className="flex-1 relative aspect-[3/4] cursor-zoom-in"
                         onClick={openZoomModal}
                     >
-                        <Image
+                        <ProductImage
                             src={mainImage}
                             alt={product.title}
                             fill
+                            priority
+                            sizes="(max-width: 768px) 100vw, 50vw"
                             className="object-cover"
                         />
                     </div>
@@ -456,14 +460,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                                             className="!h-full"
                                         >
                                             <div className="h-full w-full flex items-center justify-center bg-white">
-                                                <Image
+                                                <ProductImage
                                                     src={imgUrl}
                                                     alt={`${product.title} ${index + 1}`}
                                                     width={1600}
                                                     height={2400}
                                                     sizes="100vw"
                                                     className="max-h-[88dvh] w-auto max-w-full h-auto"
-                                                    quality={100}
+                                                    quality={90}
                                                 />
                                             </div>
                                         </SwiperSlide>
@@ -533,14 +537,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                                             className="!h-auto"
                                         >
                                             <div className="w-full bg-white">
-                                                <Image
+                                                <ProductImage
                                                     src={imgUrl}
                                                     alt={`${product.title} ${index + 1}`}
                                                     width={1600}
                                                     height={2400}
                                                     sizes="100vw"
                                                     className="w-full h-auto"
-                                                    quality={100}
+                                                    quality={90}
                                                 />
                                             </div>
                                         </SwiperSlide>
@@ -673,7 +677,7 @@ function Accordion({
                     open ? "max-h-50 mt-2" : "max-h-0"
                 }`}
             >
-                <p className="text-gray-600">{children}</p>
+                <div className="text-gray-600">{children}</div>
             </div>
         </div>
     );

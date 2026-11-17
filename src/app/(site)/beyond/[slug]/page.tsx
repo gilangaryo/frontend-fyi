@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import BlogSection from "@/app/(site)/components/beyond/BlogSection";
-import { API_BASE } from "@/lib/constants";
+import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
+import { getBlogDetail } from "@/lib/content";
 import { getImageUrl } from "@/lib/utils";
 
 interface BlogDetail {
@@ -36,24 +38,33 @@ interface BlogDetail {
     secondFooterImage?: string;
 }
 
-async function getBlogDetail(slug: string): Promise<BlogDetail | null> {
-    try {
-        const res = await fetch(`${API_BASE}/blog/slug/${slug}`, {
-            cache: "no-store",
-        });
-        if (!res.ok) return null;
-        const json = await res.json();
-        return json.data;
-    } catch {
-        return null;
-    }
+export async function generateMetadata(props: {
+    params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+    const { slug } = await props.params;
+    const blog = await getBlogDetail<BlogDetail>(slug);
+    if (!blog) return { title: "Not found", robots: { index: false } };
+
+    const path = `/beyond/${slug}`;
+    const description = (blog.description ?? "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 160);
+    return buildPageMetadata({
+        title: blog.title,
+        description: description || `${blog.event} — FYI Couture Beyond.`,
+        path,
+        image: false, // provided by ./opengraph-image.tsx
+        type: "article",
+    });
 }
 
 export default async function BeyondDetailPage(props: {
     params: Promise<{ slug: string }>;
 }) {
     const { slug } = await props.params;
-    const blog = await getBlogDetail(slug);
+    const blog = await getBlogDetail<BlogDetail>(slug);
     if (!blog) return notFound();
 
     return (

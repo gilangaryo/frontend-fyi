@@ -1,84 +1,32 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import { useFadeInVideo } from "@/app/(site)/components/landing/useFadeInVideo";
+
+const CDN = "https://cdn.fyicouture.com/videos";
 
 export default function About() {
-    const videoRefs = useRef<HTMLVideoElement[]>([]);
-    const [, setUserInteracted] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const [muted, setMuted] = useState(true);
-
-    useEffect(() => {
-        const handleInteraction = () => {
-            setUserInteracted(true);
-            window.removeEventListener("click", handleInteraction);
-            window.removeEventListener("touchstart", handleInteraction);
-            window.removeEventListener("scroll", handleInteraction);
-        };
-
-        window.addEventListener("click", handleInteraction);
-        window.addEventListener("touchstart", handleInteraction);
-        window.addEventListener("scroll", handleInteraction);
-
-        return () => {
-            window.removeEventListener("click", handleInteraction);
-            window.removeEventListener("touchstart", handleInteraction);
-            window.removeEventListener("scroll", handleInteraction);
-        };
-    }, []);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach(async (entry) => {
-                    const video = entry.target as HTMLVideoElement;
-
-                    if (entry.isIntersecting) {
-                        try {
-                            video.muted = muted;
-                            await video.play();
-                        } catch (err) {
-                            console.warn("Autoplay blocked:", err);
-                            video.muted = true;
-                            await video.play().catch(() => { });
-                        }
-                    } else {
-                        video.pause();
-                    }
-                });
-            },
-            { threshold: 0.3 }
-        );
-
-        videoRefs.current.forEach((video) => {
-            if (video) observer.observe(video);
-        });
-
-        return () => observer.disconnect();
-    }, [muted]);
-
-    const setVideoRef = (el: HTMLVideoElement | null) => {
-        if (el && !videoRefs.current.includes(el)) {
-            videoRefs.current.push(el);
-        }
-    };
+    const visible = useFadeInVideo(videoRef, { threshold: 0.3 });
 
     const toggleMute = () => {
-        const newMuted = !muted;
-        setMuted(newMuted);
-        videoRefs.current.forEach((video) => {
-            video.muted = newMuted;
-            if (!newMuted) {
-                video.volume = 1;
-            }
-        });
+        const video = videoRef.current;
+        if (!video) return;
+        const next = !muted;
+        video.muted = next;
+        if (!next) {
+            video.volume = 1;
+            // Unmuting is a user gesture, so play() with sound is allowed here.
+            video.play().catch(() => {});
+        }
+        setMuted(next);
     };
 
     return (
         <section className="bg-white px-4 md:px-10">
             <div className="max-w-full grid lg:grid-cols-2 gap-2">
-                {/* 🖼️ LEFT COLUMN — Text Area */}
                 <div className="flex flex-col justify-center bg-white p-8 md:p-12 text-gray-700 h-full w-full">
                     <h2 className="text-2xl font-medium mb-6">Wear Your Worth</h2>
 
@@ -89,32 +37,32 @@ export default function About() {
                         The world tells that self-worth is something to prove. That it needs to be louder, bolder, more. Real self-worth isn’t about proving. It’s about owning it gracefully.
                         <br />
                         <br />
-
                         We create daily couture carrying that presence: intentional, refined, versatile. Pieces that move with you, elevating your worth without crying for validation. Because self-worth isn’t something you perform. It’s something you embody.
                     </p>
                     <h2 className="text-xl md:text-2xl font-medium mt-6">Wear your worth. Day in, day out.</h2>
                 </div>
 
                 <div className="flex flex-col justify-between">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden contain-paint">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden contain-paint bg-white">
                         <video
-                            ref={setVideoRef}
+                            ref={videoRef}
                             muted={muted}
                             loop
                             playsInline
                             preload="none"
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out ${visible ? "opacity-100" : "opacity-0"}`}
                         >
                             <source
-                                src="https://cdn.fyicouture.com/videos/wear-your-worth.mp4"
-                                type="video/mp4"
+                                src={`${CDN}/wear-your-worth-v2.av1.mp4`}
+                                type='video/mp4; codecs="av01.0.08M.08"'
                             />
+                            <source src={`${CDN}/wear-your-worth.mp4`} type="video/mp4" />
                         </video>
 
                         <button
                             onClick={toggleMute}
                             className="absolute bottom-7 right-7 bg-white/20 backdrop-blur-xs p-2 rounded-full hover:bg-white/40 transition"
-                            aria-label="Toggle sound"
+                            aria-label={muted ? "Unmute video" : "Mute video"}
                         >
                             {muted ? (
                                 <VolumeX size={21} className="text-white hover:text-gray-800" />
@@ -123,18 +71,6 @@ export default function About() {
                             )}
                         </button>
                     </div>
-
-                    {/* <div className="text-gray-600 font-light text-sm leading-relaxed">
-                        <p className="mb-6 mt-6 md:mt-0">
-                            We create daily couture carrying that presence: intentional, refined,
-                            versatile. Pieces that move with you, elevating your worth without
-                            crying for validation. Because self-worth isn’t something you perform.
-                            It’s something you embody.
-                        </p>
-                        <p className="text-xl md:text-2xl font-semibold">
-                            Wear your worth. Day in, day out.
-                        </p>
-                    </div> */}
                 </div>
             </div>
         </section>

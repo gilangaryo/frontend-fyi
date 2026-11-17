@@ -1,35 +1,30 @@
 import ProductDetail from "@/app/(site)/components/product/ProductDetail";
 import { Product } from "@/types/product";
-import { API_BASE } from "@/lib/constants";
+import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
+import { getProductBySlug } from "@/lib/content";
 
 type PageProps = {
     params: Promise<{ slug: string }> | { slug: string };
 };
 
-type ApiResponse<T> = {
-    success: boolean;
-    status: number;
-    message: string;
-    data: T;
-};
+const stripHtml = (s?: string) =>
+    (s ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
-async function getProductBySlug(slug: string): Promise<Product | null> {
-    try {
-        const res = await fetch(`${API_BASE}/products/slug/${slug}`, {
-            cache: "no-store",
-        });
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { slug } = await Promise.resolve(params);
+    const product = await getProductBySlug(slug);
+    if (!product) return { title: "Product not found", robots: { index: false } };
 
-        if (!res.ok) {
-            console.error("❌ Failed to fetch product:", res.status);
-            return null;
-        }
-
-        const json: ApiResponse<Product> = await res.json();
-        return json.data;
-    } catch (err) {
-        console.error("❌ Network error while fetching product:", err);
-        return null;
-    }
+    const path = `/product/${slug}`;
+    return buildPageMetadata({
+        title: product.title,
+        description:
+            stripHtml(product.description).slice(0, 160) ||
+            `Shop ${product.title} at FYI Couture.`,
+        path,
+        image: false, // provided by ./opengraph-image.tsx
+    });
 }
 
 export default async function ProductPage({ params }: PageProps) {

@@ -173,12 +173,16 @@ export default function Navbar() {
         if (!search.trim()) {
             setSearchResults([]);
             setShowResults(false);
+            setLoadingSearch(false);
             return;
         }
 
+        // Tampilkan "Searching..." selama debounce agar "No results" tidak berkedip
+        setLoadingSearch(true);
+        setShowResults(true);
+
         const timeout = setTimeout(async () => {
             try {
-                setLoadingSearch(true);
                 const res = await fetch(
                     `${API_BASE}/products?search=${encodeURIComponent(
                         search,
@@ -186,13 +190,7 @@ export default function Navbar() {
                 );
                 const data = await res.json();
 
-                if (data?.success) {
-                    setSearchResults(data.data);
-                    setShowResults(true);
-                } else {
-                    setSearchResults([]);
-                    setShowResults(false);
-                }
+                setSearchResults(data?.success ? data.data ?? [] : []);
             } catch (err) {
                 console.error("Search error:", err);
                 setSearchResults([]);
@@ -447,6 +445,7 @@ export default function Navbar() {
                                 alt="FYI Logo"
                                 width={80}
                                 height={60}
+                                priority
                             />
                         </Link>
                     </div>
@@ -465,13 +464,20 @@ export default function Navbar() {
                             <Search className="absolute right-0 top-2/5 -translate-y-1/2 w-6 h-8 text-charcoal" />
 
                             {/* Dropdown results */}
-                            {showResults && searchResults.length > 0 && (
+                            {showResults && search.trim() && (
                                 <div className="absolute left-0 mt-2 w-80 bg-white border border-gray-200 shadow-lg z-50 rounded-md overflow-hidden">
                                     {loadingSearch && (
                                         <div className="px-4 py-2 text-sm text-gray-500">
                                             Searching...
                                         </div>
                                     )}
+
+                                    {!loadingSearch &&
+                                        searchResults.length === 0 && (
+                                            <div className="px-4 py-3 text-sm text-gray-500">
+                                                No results found.
+                                            </div>
+                                        )}
 
                                     {!loadingSearch &&
                                         searchResults.map((p) => (
@@ -604,7 +610,7 @@ export default function Navbar() {
                             </div>
                         ) : (
                             !loadingSearch &&
-                            search && (
+                            search.trim() && (
                                 <div className="p-4 text-gray-500 text-sm">
                                     No results found.
                                 </div>

@@ -47,14 +47,19 @@ function loadGiftNote(): string {
 }
 
 const initialState: CartState = {
-    items: loadCart(),
-    giftNote: loadGiftNote(),
+    items: [],
+    giftNote: "",
 };
 
 const cartSlice = createSlice({
     name: "cart",
     initialState,
     reducers: {
+        hydrateCart: (state) => {
+            state.items = loadCart();
+            state.giftNote = loadGiftNote();
+        },
+
         addToCart: (state, action: PayloadAction<CartItem>) => {
             const existing = state.items.find(
                 (i) =>
@@ -114,6 +119,7 @@ const cartSlice = createSlice({
 });
 
 export const {
+    hydrateCart,
     addToCart,
     removeFromCart,
     updateQuantity,

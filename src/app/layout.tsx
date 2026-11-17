@@ -65,12 +65,22 @@ export const metadata: Metadata = {
         url: siteUrl,
         siteName: "FYI Couture",
         type: "website",
+        locale: "en_US",
+        images: [
+            {
+                url: `${siteUrl}/opengraph-image`,
+                width: 1200,
+                height: 630,
+                alt: "FYI Couture",
+            },
+        ],
     },
     twitter: {
         card: "summary_large_image",
         title: "FYI Couture",
         description:
             "Explore shop, collections, stories, and beyond from FYI Couture.",
+        images: [`${siteUrl}/opengraph-image`],
     },
     robots: {
         index: true,
